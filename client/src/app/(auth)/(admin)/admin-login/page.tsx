@@ -1,4 +1,4 @@
-export default function Home() {
+const page = () => {
   return (
     <div
       style={{
@@ -7,7 +7,17 @@ export default function Home() {
         height: "100vh",
       }}
     >
-      This is Home Page
+
+        <div>
+            {/* //logo */}
+            <h1 className='font-agrandirGrand'>wit</h1>
+
+            <h1>Admin login</h1>
+        </div>
+
+
     </div>
   );
-}
+};
+
+export default page;
