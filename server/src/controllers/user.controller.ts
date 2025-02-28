@@ -16,7 +16,17 @@ class UserController {
             const user = await userService.registerUser({username, email, password});
 
             if(user.isNewUser) {
-                return res.status(HttpStatus.CREATED).json({message: "Signup Successfull", newUser: user?.user});
+                const accessToken = userService.generateAccessToken(user?.user?.username);
+              const refreshToken = userService.generateRefreshToken(user?.user?.username);
+                //setting refreshToken
+                    res.cookie("refreshToken", refreshToken, {
+                              httpOnly: true, 
+                              secure: process.env.NODE_ENV === "production",
+                              sameSite: "strict", 
+                              maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+                            });
+
+                    return res.status(HttpStatus.CREATED).json({message: "Signup Successfull", newUser: user?.user, accessToken});
             } else if (user.duplicate === 'username'){
                  return res.status(HttpStatus.BAD_REQUEST).json({ message: "username already exist" });
             } else {
