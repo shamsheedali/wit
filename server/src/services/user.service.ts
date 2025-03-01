@@ -7,7 +7,7 @@ class UserService {
     
     //User signUp
     async registerUser(userData: IUser) {
-        const {username, email, password} = userData;
+        const {username, email, password, role = 'user'} = userData;
 
         const existingUserEmail = await userRepository.findOneByEmail(email);
         if(existingUserEmail) {
@@ -21,25 +21,29 @@ class UserService {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const newUser = await userRepository.createUser({username, email, password: hashedPassword});
+        const newUser = await userRepository.createUser({username, email, password: hashedPassword, role});
 
         return {user: newUser, isNewUser: true};
     }
 
+    async isPasswordValid(typedPassword : string, password : string) {
+        return await bcrypt.compare(typedPassword, password);
+    }
+
     //Get Access token
-    generateAccessToken(username: string) {
+    generateAccessToken(email: string, role: string) {
         if(!process.env.JWT_SECRET) {
           throw new Error('JWT_SECRET is not defined in environment variables');
         }
-        return jwt.sign({username}, process.env.JWT_SECRET, {expiresIn : "1d"});
+        return jwt.sign({email, role}, process.env.JWT_SECRET, {expiresIn : "1d"});
     }
 
     //Get Refrest token
-    generateRefreshToken(username: string) {
+    generateRefreshToken(email: string, role: string) {
         if(!process.env.REFRESH_JWT_SECRET) {
           throw new Error('REFRESH_JWT_SECRET is not defined in environment variables');
         }
-        return jwt.sign({username}, process.env.REFRESH_JWT_SECRET, {expiresIn : "7d"});
+        return jwt.sign({email, role}, process.env.REFRESH_JWT_SECRET, {expiresIn : "7d"});
     }
 
     //Verify token

@@ -1,15 +1,70 @@
+"use client"
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { login } from "@/lib/api/user";
+
+
+type FormData = {
+  email: string;
+  password: string;
+};
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"form">) {
+  const [formData, setFormData] = useState<FormData>({
+    email: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState<Partial<FormData>>({});
+
+  const validate = () => {
+    const newErrors: Partial<FormData> = {};
+    if (!formData.email.includes("@") || !formData.email.includes(".")) {
+      newErrors.email = "Enter a valid email address.";
+    }
+    if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters.";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const resetForm = () => {
+    setFormData({ email: "", password: "" });
+    setErrors({});
+  };
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: login,
+    onSuccess: () => {
+      alert("Login Success");
+      resetForm();
+    },
+    onError: (error) => {
+      console.error("Error login", error);
+    },
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    mutate(formData);
+  };
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form className={cn("flex flex-col gap-6", className)} {...props} onSubmit={handleSubmit}>
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">Login to your account</h1>
         <p className="text-balance text-sm text-muted-foreground">
@@ -19,7 +74,8 @@ export function LoginForm({
       <div className="grid gap-6">
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="Your email" required />
+          <Input id="email" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Your email" />
+          {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
         </div>
         <div className="grid gap-2">
           <div className="flex items-center">
@@ -31,10 +87,11 @@ export function LoginForm({
               Forgot your password?
             </a>
           </div>
-          <Input id="password" type="password" required />
+          <Input id="password" type="password" name="password" value={formData.password} onChange={handleChange} />
+          {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
         </div>
-        <Button type="submit" className="w-full">
-          Login
+        <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending ? 'Logging in' : 'Log in'} 
         </Button>
         <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
           <span className="relative z-10 bg-black px-2 text-muted-foreground">

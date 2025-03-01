@@ -1,41 +1,100 @@
+"use client"
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useState } from "react";
 import Link from "next/link";
+import { useMutation } from "@tanstack/react-query";
+import { registerUser } from "@/lib/api/user";
 
-export function SignupForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"form">) {
+
+type FormData = {
+  username: string;
+  email: string;
+  password: string;
+};
+
+export function SignupForm({ className, ...props }: React.ComponentPropsWithoutRef<"form">) {
+  const [formData, setFormData] = useState<FormData>({
+    username: "",
+    email: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState<Partial<FormData>>({});
+
+  const validate = () => {
+    const newErrors: Partial<FormData> = {};
+    if (formData.username.length < 4) {
+      newErrors.username = "Username must be at least 4 characters.";
+    }
+    if (!formData.email.includes("@") || !formData.email.includes(".")) {
+      newErrors.email = "Enter a valid email address.";
+    }
+    if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters.";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const resetForm = () => {
+    setFormData({ username: "", email: "", password: "" });
+    setErrors({});
+  };
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: registerUser,
+    onSuccess: () => {
+      alert("Signup successful");
+      resetForm();
+    },
+    onError: (err) => {
+      console.error("Error user registration", err);
+    },
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    mutate(formData);
+  };
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form className={cn("flex flex-col gap-6", className)} {...props} onSubmit={handleSubmit}>
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">Create an account</h1>
         <p className="text-balance text-sm text-muted-foreground">
-        Enter your email below to create your account
+          Enter your email below to create your account
         </p>
       </div>
       <div className="grid gap-6">
-        {/* Username */}
         <div className="grid gap-2">
           <Label htmlFor="username">Username</Label>
-          <Input id="username" type="text" placeholder="username" required />
+          <Input id="username" type="text" name="username" value={formData.username} onChange={handleChange} placeholder="username" />
+          {errors.username && <p className="text-red-500 text-xs">{errors.username}</p>}
         </div>
-        {/* Email */}
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="email" required />
+          <Input id="email" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="email" />
+          {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
         </div>
-        {/* Password */}
         <div className="grid gap-2">
-          <div className="flex items-center">
-            <Label htmlFor="password">Password</Label>
-          </div>
-          <Input id="password" type="password" required />
+          <Label htmlFor="password">Password</Label>
+          <Input id="password" type="password" name="password" value={formData.password} onChange={handleChange} />
+          {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
         </div>
-        <Button type="submit" className="w-full">
-          Create account
+        <Button type="submit" disabled={isPending} className="w-full">
+          {isPending ? "Creating account" : "Create account"}
         </Button>
         <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
           <span className="relative z-10 bg-black px-2 text-muted-foreground">
@@ -53,7 +112,7 @@ export function SignupForm({
         </Button>
       </div>
       <div className="text-center text-sm">
-        Already a user?{" "}
+        Already a user? {" "}
         <Link href="/login" className="underline underline-offset-4">
           Log in
         </Link>

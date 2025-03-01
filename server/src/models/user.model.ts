@@ -5,9 +5,10 @@ export interface IUser {
     username : string;
     email : string;
     password : string;
+    role : 'user' | 'admin';
 } 
 
-const UserSchema = new mongoose.Schema({
+const UserSchema = new mongoose.Schema<IUser>({
     username : {
         type : String,
         required : true,
@@ -21,6 +22,11 @@ const UserSchema = new mongoose.Schema({
     password : {
         type : String,
         required : true,
+    },
+    role : {
+        type : String,
+        enum : ['user', 'admin'],
+        default : 'user'
     }
 }, { timestamps : true })
 
