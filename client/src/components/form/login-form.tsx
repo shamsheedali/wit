@@ -1,5 +1,6 @@
 "use client"
 
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { login } from "@/lib/api/user";
+import { useRouter } from "next/navigation";
 
 
 type FormData = {
@@ -19,6 +21,9 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"form">) {
+
+  const router = useRouter();
+
   const [formData, setFormData] = useState<FormData>({
     email: "",
     password: "",
@@ -48,9 +53,11 @@ export function LoginForm({
 
   const { mutate, isPending } = useMutation({
     mutationFn: login,
-    onSuccess: () => {
-      alert("Login Success");
-      resetForm();
+    onSuccess: (result) => {
+      if(result?.success) {
+        router.push("/")
+        resetForm();
+      }
     },
     onError: (error) => {
       console.error("Error login", error);
@@ -80,19 +87,28 @@ export function LoginForm({
         <div className="grid gap-2">
           <div className="flex items-center">
             <Label htmlFor="password">Password</Label>
-            <a
-              href="#"
+            <Link
+              href="/forgot-password"
               className="ml-auto text-sm underline-offset-4 hover:underline"
             >
               Forgot your password?
-            </a>
+            </Link>
           </div>
           <Input id="password" type="password" name="password" value={formData.password} onChange={handleChange} />
           {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
         </div>
-        <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? 'Logging in' : 'Log in'} 
-        </Button>
+
+        {isPending ? (
+          <Button disabled>
+            <Loader2 className="animate-spin" />
+            Logging in
+          </Button>
+        ) : (
+          <Button type="submit" className="w-full">
+            Log in
+          </Button>
+        )}
+
         <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
           <span className="relative z-10 bg-black px-2 text-muted-foreground">
             Or continue with

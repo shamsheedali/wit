@@ -1,6 +1,6 @@
-import { LoginForm } from "@/components/form/login-form";
+import ForgotPasswordForm from "@/components/form/forgot-password-form";
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   return (
     <div
       style={{
@@ -13,7 +13,7 @@ export default function LoginPage() {
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
-            <LoginForm />
+            <ForgotPasswordForm />
           </div>
         </div>
       </div>

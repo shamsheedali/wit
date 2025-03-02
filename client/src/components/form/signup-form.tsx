@@ -1,5 +1,6 @@
-"use client"
+"use client";
 
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { registerUser } from "@/lib/api/user";
-
+import { useRouter } from "next/navigation";
 
 type FormData = {
   username: string;
@@ -16,7 +17,12 @@ type FormData = {
   password: string;
 };
 
-export function SignupForm({ className, ...props }: React.ComponentPropsWithoutRef<"form">) {
+export function SignupForm({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<"form">) {
+  const router = useRouter();
+
   const [formData, setFormData] = useState<FormData>({
     username: "",
     email: "",
@@ -54,9 +60,11 @@ export function SignupForm({ className, ...props }: React.ComponentPropsWithoutR
 
   const { mutate, isPending } = useMutation({
     mutationFn: registerUser,
-    onSuccess: () => {
-      alert("Signup successful");
-      resetForm();
+    onSuccess: (result) => {
+      if(result?.success) {
+        router.push('/')
+        resetForm();
+      }
     },
     onError: (err) => {
       console.error("Error user registration", err);
@@ -70,7 +78,11 @@ export function SignupForm({ className, ...props }: React.ComponentPropsWithoutR
   };
 
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props} onSubmit={handleSubmit}>
+    <form
+      className={cn("flex flex-col gap-6", className)}
+      {...props}
+      onSubmit={handleSubmit}
+    >
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">Create an account</h1>
         <p className="text-balance text-sm text-muted-foreground">
@@ -80,22 +92,57 @@ export function SignupForm({ className, ...props }: React.ComponentPropsWithoutR
       <div className="grid gap-6">
         <div className="grid gap-2">
           <Label htmlFor="username">Username</Label>
-          <Input id="username" type="text" name="username" value={formData.username} onChange={handleChange} placeholder="username" />
-          {errors.username && <p className="text-red-500 text-xs">{errors.username}</p>}
+          <Input
+            id="username"
+            type="text"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            placeholder="username"
+          />
+          {errors.username && (
+            <p className="text-red-500 text-xs">{errors.username}</p>
+          )}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="email" />
-          {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
+          <Input
+            id="email"
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="email"
+          />
+          {errors.email && (
+            <p className="text-red-500 text-xs">{errors.email}</p>
+          )}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="password">Password</Label>
-          <Input id="password" type="password" name="password" value={formData.password} onChange={handleChange} />
-          {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
+          <Input
+            id="password"
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+          />
+          {errors.password && (
+            <p className="text-red-500 text-xs">{errors.password}</p>
+          )}
         </div>
-        <Button type="submit" disabled={isPending} className="w-full">
-          {isPending ? "Creating account" : "Create account"}
-        </Button>
+
+        {isPending ? (
+          <Button disabled>
+            <Loader2 className="animate-spin" />
+            Creating account
+          </Button>
+        ) : (
+          <Button type="submit" className="w-full">
+            Create account
+          </Button>
+        )}
+
         <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
           <span className="relative z-10 bg-black px-2 text-muted-foreground">
             Or continue with
@@ -112,7 +159,7 @@ export function SignupForm({ className, ...props }: React.ComponentPropsWithoutR
         </Button>
       </div>
       <div className="text-center text-sm">
-        Already a user? {" "}
+        Already a user?{" "}
         <Link href="/login" className="underline underline-offset-4">
           Log in
         </Link>
