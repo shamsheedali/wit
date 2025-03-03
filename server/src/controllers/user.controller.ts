@@ -112,6 +112,32 @@ class UserController {
         .json({ message: "Error while user login" });
     }
   }
+
+
+  async googleUser(req: Request, res: Response) {
+    try {
+      const {googleId, username, email, profileImage} = req.body;
+
+      let user = await userRepository.findOneByEmail(email);
+
+      if(!user) {
+        user = await userRepository.createUser({
+          googleId,
+          username,
+          email,
+          profileImage,
+          role: "user"
+        });
+      }
+
+      const accessToken = userService.generateAccessToken(email, user.role);
+
+      return res.status(HttpStatus.CREATED).json({message: "Google auth succssful", accessToken, user});
+    } catch (error) {
+      console.error("Google Auth Error:", error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Error processing Google auth" });
+    }
+  }
 }
 
 export default new UserController();

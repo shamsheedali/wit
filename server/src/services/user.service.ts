@@ -19,6 +19,10 @@ class UserService {
             return {user: existingUserUsername, isNewUser: false, duplicate: 'username'}
         }
 
+        if (!password) {
+            throw new Error("Password is required for user registration.");
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const newUser = await userRepository.createUser({username, email, password: hashedPassword, role});
@@ -26,7 +30,8 @@ class UserService {
         return {user: newUser, isNewUser: true};
     }
 
-    async isPasswordValid(typedPassword : string, password : string) {
+    async isPasswordValid(typedPassword : string, password? : string) {
+        if(!password) return false;
         return await bcrypt.compare(typedPassword, password);
     }
 

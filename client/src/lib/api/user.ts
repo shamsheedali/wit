@@ -56,3 +56,22 @@ export const login = async(userData: {email: string, password: string}) => {
     }
   }
 }
+
+
+//GOOGLE_USER_AUTH
+export const googleUser = async (userData: { googleId: string; username: string; email: string; profileImage: string }) => {
+  try {
+    const response = await axios.post(`${API_URL}/google-user`, userData);
+    if (response.status === HttpStatus.CREATED || response.status === HttpStatus.OK) {
+      return { success: true, data: response.data };
+    }
+  } catch (error) {
+    console.error("Error storing google-user", error);
+    if (error.response?.status === HttpStatus.BAD_REQUEST) {
+      toast.error(error.response.data.message);
+    } else {
+      toast.error("An unexpected error occurred. Please try again.");
+    }
+    return { success: false, error };
+  }
+}

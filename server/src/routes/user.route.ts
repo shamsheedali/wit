@@ -14,4 +14,9 @@ router.post('/login', async(req: Request, res: Response) => {
 })
 
 
+//Google-user
+router.post("/google-user", async (req: Request, res: Response) => {
+  await userController.googleUser(req, res);
+});
+
 export default router;

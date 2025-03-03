@@ -4,7 +4,9 @@ export interface IUser {
     _id? : string,
     username : string;
     email : string;
-    password : string;
+    password? : string;
+    googleId? : string;
+    profileImage? : string;
     role : 'user' | 'admin';
 } 
 
@@ -21,7 +23,19 @@ const UserSchema = new mongoose.Schema<IUser>({
     },
     password : {
         type : String,
-        required : true,
+        validate : {
+            validator : function(this: IUser, value: string) {
+                return this.googleId || value; // If googleId exists, password is optional
+            },
+            message: "Password is required for non-Google users.",
+        },
+    },
+    googleId : {
+        type : String,
+        default : null,
+    },
+    profileImage : {
+        type : String,
     },
     role : {
         type : String,
