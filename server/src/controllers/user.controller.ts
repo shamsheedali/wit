@@ -8,7 +8,7 @@ class UserController {
     //USER_SIGN_UP
   async registerUser(req: Request, res: Response): Promise<Response> {
     try {
-      const { username, email, password, role = "user" }: IUser = req.body;
+      const { username, email, password }: IUser = req.body;
 
       if (!username || !email || !password) {
         return res
@@ -20,17 +20,16 @@ class UserController {
         username,
         email,
         password,
-        role,
       });
 
       if (user.isNewUser) {
         const accessToken = userService.generateAccessToken(
           user?.user?.email,
-          user?.user?.role
+          "user"
         );
         const refreshToken = userService.generateRefreshToken(
           user?.user?.email,
-          user?.user?.role
+          "user"
         );
         //setting refreshToken
         res.cookie("refreshToken", refreshToken, {
@@ -86,14 +85,15 @@ class UserController {
         password,
         user.password
       );
+
       if (!passwordValidation) {
         return res
           .status(HttpStatus.BAD_REQUEST)
           .json({ message: "Invalid password" });
       }
 
-      const accessToken = userService.generateAccessToken(email, user.role);
-      const refreshToken = userService.generateRefreshToken(email, user.role);
+      const accessToken = userService.generateAccessToken(email, "user");
+      const refreshToken = userService.generateRefreshToken(email, "user");
       //setting refreshToken
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
@@ -126,13 +126,12 @@ class UserController {
           username,
           email,
           profileImage,
-          role: "user"
         });
       }
 
-      const accessToken = userService.generateAccessToken(email, user.role);
+      const accessToken = userService.generateAccessToken(email, "user");
 
-      return res.status(HttpStatus.CREATED).json({message: "Google auth succssful", accessToken, user});
+      return res.status(HttpStatus.CREATED).json({message: "Google auth successful", accessToken, user});
     } catch (error) {
       console.error("Google Auth Error:", error);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Error processing Google auth" });

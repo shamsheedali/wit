@@ -161,7 +161,7 @@ export function SignupForm({
               fill="currentColor"
             />
           </svg>
-          Login with Google
+          Continue with Google
         </Button>
       </div>
       <div className="text-center text-sm">

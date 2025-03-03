@@ -15,18 +15,17 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       return res.status(HttpStatus.FORBIDDEN).json({ message: 'Invalid Token' });
     }
 
-    // Type-check the decoded object
     if (typeof decoded === 'string' || !decoded) {
       return res.status(HttpStatus.FORBIDDEN).json({ message: 'Invalid Token Payload' });
     }
 
-    // Ensure the decoded object has the expected structure
+    // Ensuring the decoded object has the expected structure
     if (!('email' in decoded) || !('role' in decoded)) {
       return res.status(HttpStatus.FORBIDDEN).json({ message: 'Invalid Token Payload' });
     }
 
     // Assign the decoded payload to req.user
-    req.user = decoded as { email: string; role: string }; // Type assertion
+    req.user = decoded as { email: string; role: string }; 
     next();
   });
 };

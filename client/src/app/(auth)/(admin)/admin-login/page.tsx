@@ -1,4 +1,6 @@
-const page = () => {
+import { AdminLoginForm } from "@/components/form/admin-login-from";
+
+export default function LoginPage() {
   return (
     <div
       style={{
@@ -6,18 +8,15 @@ const page = () => {
         width: "100%",
         height: "100vh",
       }}
+      className="grid min-h-svh lg:grid-cols-1"
     >
-
-        <div>
-            {/* //logo */}
-            <h1 className='font-agrandirGrand'>wit</h1>
-
-            <h1>Admin login</h1>
+      <div className="flex flex-col gap-4 p-6 md:p-10">
+        <div className="flex flex-1 items-center justify-center">
+          <div className="w-full max-w-xs">
+            <AdminLoginForm />
+          </div>
         </div>
-
-
+      </div>
     </div>
   );
-};
-
-export default page;
+}

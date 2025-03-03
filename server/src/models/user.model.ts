@@ -7,7 +7,6 @@ export interface IUser {
     password? : string;
     googleId? : string;
     profileImage? : string;
-    role : 'user' | 'admin';
 } 
 
 const UserSchema = new mongoose.Schema<IUser>({
@@ -36,11 +35,6 @@ const UserSchema = new mongoose.Schema<IUser>({
     },
     profileImage : {
         type : String,
-    },
-    role : {
-        type : String,
-        enum : ['user', 'admin'],
-        default : 'user'
     }
 }, { timestamps : true })
 

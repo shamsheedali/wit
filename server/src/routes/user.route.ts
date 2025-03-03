@@ -13,7 +13,6 @@ router.post('/login', async(req: Request, res: Response) => {
     await userController.login(req, res);
 })
 
-
 //Google-user
 router.post("/google-user", async (req: Request, res: Response) => {
   await userController.googleUser(req, res);
