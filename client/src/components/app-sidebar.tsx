@@ -57,7 +57,7 @@ const data = {
     },
     {
       title: "User Management",
-      url: "/user-management",
+      url: "/dashboard/user-management",
       icon: Bot,
       items: [
         {
