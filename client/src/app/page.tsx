@@ -7,7 +7,7 @@ export default function Home() {
         height: "100vh",
       }}
     >
-      This is Home Page
+      This is Just /
     </div>
   );
 }

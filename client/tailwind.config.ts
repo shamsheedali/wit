@@ -17,7 +17,11 @@ export default {
   			agrandirGrand: [
   				'AgrandirGrand',
   				'sans-serif'
-  			]
+  			],
+			stardom: [
+				'Stardom',
+				'sans-serif'
+			]
   		},
   		colors: {
   			background: 'hsl(var(--background))',

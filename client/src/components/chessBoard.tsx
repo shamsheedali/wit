@@ -7,7 +7,7 @@ import { Chessboard } from "react-chessboard";
 export const ChessBoard: React.FC = () => {
   const [game, setGame] = useState<Chess>(new Chess());
 
-  // Function to handle piece movement
+  //Handle piece movement
   const handleMove = (sourceSquare: string, targetSquare: string) => {
     const newGame = new Chess(game.fen());
     const move = newGame.move({
@@ -20,7 +20,7 @@ export const ChessBoard: React.FC = () => {
       setGame(newGame);
 
 
-      //checking checkmate or not
+      //checking checkmate
       if(newGame.isCheckmate()) {
         alert("Checkmate! Game Over");
       }
@@ -31,7 +31,8 @@ export const ChessBoard: React.FC = () => {
       <Chessboard 
         position={game.fen()} 
         onPieceDrop={handleMove} 
-        boardWidth={500} 
+        customNotationStyle={{color: '#000', fontWeight: 'bold'}}
+        boardWidth={450} 
       />
   );
 };

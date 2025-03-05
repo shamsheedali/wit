@@ -31,3 +31,16 @@ export const adminlogin = async(adminData: {email: string, password: string}) =>
   }
 }
 
+
+//GET_ALL_USERS
+export const getUsers = async(page: number, limit: number) => {
+  try {
+    const response = await axios.get(`${API_URL}/get-users`, {
+      params : {page, limit},
+    });
+    console.log(response);
+    return response.data;
+  } catch (error) {
+    console.log(error);
+  }
+}
