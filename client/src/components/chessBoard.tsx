@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
+import { Button } from "./ui/button";
 
 export const ChessBoard: React.FC = () => {
   const [game, setGame] = useState<Chess>(new Chess());
@@ -27,13 +28,21 @@ export const ChessBoard: React.FC = () => {
     }
   };
 
+  const handleGameRestart = () => {
+    setGame(new Chess());
+  }
+
   return (
+    <>
       <Chessboard 
         position={game.fen()} 
         onPieceDrop={handleMove} 
         customNotationStyle={{color: '#000', fontWeight: 'bold'}}
         boardWidth={450} 
       />
+
+      <Button onClick={handleGameRestart}>Restart</Button>
+    </>
   );
 };
 

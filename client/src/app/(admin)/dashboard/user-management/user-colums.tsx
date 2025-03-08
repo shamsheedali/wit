@@ -21,15 +21,19 @@ export type UserData = {
 
 export const userColumns: ColumnDef<UserData>[] = [
   {
-    accessorKey: "userId",
+    accessorKey: "_id",
     header: "User ID",
-    cell: ({ row }) => <span>{row.getValue("userId")}</span>,
-    enableSorting: false, // No sorting for user IDs
+    cell: ({ row }) => <span>{row.getValue("_id")}</span>,
+    enableSorting: false, 
   },
   {
     accessorKey: "username",
-    header: () => (
-      <Button variant="ghost" className="flex items-center">
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="flex items-center"
+      >
         Username
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
@@ -39,8 +43,12 @@ export const userColumns: ColumnDef<UserData>[] = [
   },
   {
     accessorKey: "rating",
-    header: () => (
-      <Button variant="ghost" className="flex items-center">
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="flex items-center"
+      >
         Elo Rating
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
@@ -65,7 +73,7 @@ export const userColumns: ColumnDef<UserData>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user.userId)}>
+            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user._id)}>
               Copy User ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />

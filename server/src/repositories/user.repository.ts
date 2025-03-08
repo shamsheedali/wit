@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import Users, { IUser } from '../models/user.model';
 
 class UserRepository {

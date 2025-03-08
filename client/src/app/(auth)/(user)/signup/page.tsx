@@ -1,6 +1,19 @@
+"use client"
+
 import { SignupForm } from "@/components/form/signup-form";
+import { useRouter } from "next/navigation";
+import {useEffect} from 'react'
 
 export default function SignUpPage() {
+
+  const router = useRouter();
+  useEffect(() => {
+    const token = localStorage.getItem('userToken');
+    if(token) {
+      router.push('/homepage')
+    }
+  }, [router])
+    
   return (
     <div
       style={{

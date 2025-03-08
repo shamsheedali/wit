@@ -63,7 +63,7 @@ export function SignupForm({
     mutationFn: registerUser,
     onSuccess: (result) => {
       if(result?.success) {
-        router.push('/')
+        router.push('/homepage')
         resetForm();
       }
     },

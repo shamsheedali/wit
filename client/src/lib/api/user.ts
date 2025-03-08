@@ -12,7 +12,7 @@ export const registerUser = async (userData: { username: string; email: string; 
       toast.success(response.data.message); 
       return {success: true, data: response.data};
     }
-  } catch (error) {
+  } catch (error: any) {
     console.log('Error registration', error);
     if (error.response?.status === HttpStatus.BAD_REQUEST) {
       toast.error(error.response.data.message, {

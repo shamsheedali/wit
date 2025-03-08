@@ -10,8 +10,6 @@ import {
   getFilteredRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -66,14 +64,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
-                    <Button
-                      variant="ghost"
-                      onClick={() => header.column.toggleSorting(header.column.getIsSorted() === "asc")}
-                      className="flex items-center"
-                    >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
+                    {flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>

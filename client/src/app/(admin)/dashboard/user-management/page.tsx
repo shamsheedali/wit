@@ -17,7 +17,7 @@ export default function UserManagementPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["users", page],
     queryFn: () => getUsers(page, LIMIT),
-    keepPreviousData: true, // Smooth page transitions
+    keepPreviousData: true, 
   });
 
   if (isLoading) return <div>Loading users...</div>;
@@ -32,33 +32,34 @@ export default function UserManagementPage() {
           <h1>All Users</h1>
         </div>
       </header>
+
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
         <DataTable columns={userColumns} data={data?.users || []} />
-      </div>
 
-      {/* Pagination Controls */}
-      <div className="flex justify-center mt-4 gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-          disabled={page === 1}
-        >
-          Previous
-        </Button>
+        {/* Pagination Controls - Now right below the table and right-aligned */}
+        <div className="flex justify-end mt-4 gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+            disabled={page === 1}
+          >
+            Previous
+          </Button>
 
-        <span className="flex items-center px-4">
-          Page {page} of {data?.totalPages || 1}
-        </span>
+          <span className="flex items-center px-4">
+            Page {page} of {data?.totalPages || 1}
+          </span>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage((prev) => prev + 1)}
-          disabled={page >= (data?.totalPages || 1)}
-        >
-          Next
-        </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((prev) => prev + 1)}
+            disabled={page >= (data?.totalPages || 1)}
+          >
+            Next
+          </Button>
+        </div>
       </div>
     </>
   );

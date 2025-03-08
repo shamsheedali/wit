@@ -56,7 +56,7 @@ export function LoginForm({
     mutationFn: login,
     onSuccess: (result) => {
       if(result?.success) {
-        router.push("/")
+        router.push("/homepage")
         resetForm();
       }
     },

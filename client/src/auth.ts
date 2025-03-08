@@ -50,6 +50,9 @@ export const { handlers, signIn, signOut } = NextAuth({
       }
       return true;
     },
+    async redirect({ url, baseUrl}) {
+      return '/homepage'
+    }
   },
   secret: process.env.AUTH_SECRET,
   debug: true, // debug logs for troubleshooting
