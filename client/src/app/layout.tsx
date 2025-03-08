@@ -31,6 +31,7 @@ export default function RootLayout({
           href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=stardom@400&display=swap"
           rel="stylesheet"
         />
+        <title>Wit</title>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

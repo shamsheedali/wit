@@ -10,9 +10,14 @@ export const connectDB = async() => {
         const connect = await mongoose.connect(MONGO_URI);
         console.log(`MongoDB Connected: ${connect.connection.host}`);
     } catch (error) {
-        console.log(error);
+        console.error(error);
         process.exit(1);
     }
 }
+
+mongoose.connection.on("disconnected", () => {
+    console.warn("⚠️ MongoDB Disconnected. Reconnecting...");
+    connectDB(); // Attempt to reconnect
+});
 
 export default connectDB;

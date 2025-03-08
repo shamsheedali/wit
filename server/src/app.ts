@@ -1,9 +1,9 @@
 import express, { Request, Response, NextFunction } from "express";
 import cors from 'cors';
 import morgan from 'morgan';
-import connectDB from './config/db';
-import userRouter from './routes/user.route';
-import adminRouter from './routes/admin.route';
+import connectDB from './config/database';
+import userRouter from './app/routes/user.route';
+import adminRouter from './app/routes/admin.route';
 
 const app = express();
 
