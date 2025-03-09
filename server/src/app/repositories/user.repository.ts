@@ -1,5 +1,5 @@
 import { inject, injectable } from "inversify";
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import BaseRepository from "../../core/base.repository";
 import { IUser } from "../models/user.model";
 import { IGoogleUserInput, IUserInput } from "../dtos/user.dto";

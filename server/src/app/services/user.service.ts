@@ -32,14 +32,22 @@ export default class UserService extends BaseService<IUser> {
             throw new Error("Password is required for user registration.");
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await this.hashPassword(password);
         const newUser = await this.userRepository.createUser({ username, email, password: hashedPassword });
 
         return { user: newUser, isNewUser: true };
     }
 
+    async hashPassword(password: string) {
+        return await bcrypt.hash(password, 10);
+    }
+
     async isPasswordValid(typedPassword: string, password?: string) {
         if (!password) return false;
         return await bcrypt.compare(typedPassword, password);
+    }
+
+    async getUserByEmail(email: string): Promise<IUser | null> {
+        return await this.userRepository.findOneByEmail(email);
     }
 }

@@ -18,4 +18,12 @@ router.post("/google-auth", async (req: Request, res: Response) => {
   await userController.googleUser(req, res);
 });
 
+router.post("/forgot-password", async (req: Request, res: Response) => {
+  await userController.forgotPassword(req, res);
+})
+
+router.post("/reset-password", async (req: Request, res: Response) => {
+  await userController.resetPassword(req, res);
+})
+
 export default router;

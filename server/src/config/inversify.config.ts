@@ -7,8 +7,9 @@ import UserController from "../app/controllers/user.controller";
 import AdminController from "../app/controllers/admin.controller";
 import TokenService from "../app/services/token.service";
 import userModel, { IUser } from "../app/models/user.model";
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import adminModel, { IAdmin } from "../app/models/admin.model";
+import MailService from "../app/services/mail.service";
 
 const container = new Container();
 
@@ -23,6 +24,7 @@ container.bind<AdminRepository>(TYPES.AdminRepository).to(AdminRepository);
 // Bind Services
 container.bind<UserService>(TYPES.UserService).to(UserService);
 container.bind<TokenService>(TYPES.TokenService).to(TokenService);
+container.bind<MailService>(TYPES.MailService).to(MailService);
 
 // Bind Controllers
 container.bind<UserController>(TYPES.UserController).to(UserController);

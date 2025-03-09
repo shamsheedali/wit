@@ -4,8 +4,9 @@ const TYPES = {
     UserRepository: Symbol.for("UserRepository"),
     AdminRepository: Symbol.for("AdminRepository"),
     UserService: Symbol.for("UserService"),
-    TokenService: Symbol.for("TokenService"),
     AdminService: Symbol.for("AdminService"),
+    TokenService: Symbol.for("TokenService"),
+    MailService: Symbol.for("MailService"),
     UserController: Symbol.for("UserController"),
     AdminController: Symbol.for("AdminController"),
 };

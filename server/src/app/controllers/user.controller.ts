@@ -7,20 +7,24 @@ import { IUser } from "../models/user.model";
 import UserRepository from "../repositories/user.repository";
 import TYPES from "../../config/types";
 import { IUserInput } from "../dtos/user.dto";
+import MailService from "../services/mail.service";
 
 @injectable()
 export default class UserController {
   private userService: UserService;
   private tokenService: TokenService;
+  private mailService: MailService;
   private userRepository: UserRepository;
 
   constructor(
     @inject(TYPES.UserService) userService: UserService,
     @inject(TYPES.TokenService) tokenService: TokenService,
+    @inject(TYPES.MailService) mailService: MailService,
     @inject(TYPES.UserRepository) userRepository: UserRepository
   ) {
     this.userService = userService;
     this.tokenService = tokenService;
+    this.mailService = mailService;
     this.userRepository = userRepository;
   }
 
@@ -136,6 +140,70 @@ export default class UserController {
       return res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
         .json({ message: "Error processing Google auth" });
+    }
+  }
+
+  // FORGOT_PASSWORD
+  async forgotPassword(req: Request, res: Response): Promise<Response> {
+    try {
+      const { email } = req.body;
+
+      if(!email) {
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: "Email is required" });
+      }
+
+      const user = await this.userService.getUserByEmail(email);
+
+      if (!user) {
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: "User not available" });
+      }
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER || "",
+        to: email,
+        subject: "Password Reset Verification Link",
+        text: `Click this link to reset your password ${process.env.RESET_PASSWORD_LINK}`,
+      };
+
+      this.mailService.sendMail(mailOptions);
+
+      return res.status(HttpStatus.OK).json({ message: "Password reset email sent" });
+    } catch (error) {
+      console.error(error);
+      return res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ message: "Server error" });
+    }
+  }
+
+  // RESET_PASSWORD
+  async resetPassword(req: Request, res: Response): Promise<Response> {
+    try {
+      const { email, newPassword } = req.body;
+
+      if(!email || !newPassword) {
+        return res.status(HttpStatus.BAD_REQUEST).json({message: "All fields are required"});
+      }
+
+      const user = await this.userService.getUserByEmail(email);
+
+      if(!user) {
+        return res.status(HttpStatus.BAD_REQUEST).json({message: "User not available"});
+      }
+
+      const hashedPassword = await this.userService.hashPassword(newPassword);
+      const updateData = {
+        password: hashedPassword
+      }
+      await this.userService.update(user._id as string, updateData);
+
+      return res.status(HttpStatus.OK).json({ message: "Password reset successfully" });
+      
+    } catch (error) {
+      console.error(error);
+      return res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ message: "Server error" });
     }
   }
 }
