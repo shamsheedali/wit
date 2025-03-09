@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user`;
 
+//USER_SIGN_UP
 export const registerUser = async (userData: { username: string; email: string; password: string }) => {
   try {
     const response = await axios.post(`${API_URL}/register`, userData);
@@ -12,7 +13,7 @@ export const registerUser = async (userData: { username: string; email: string; 
       toast.success(response.data.message); 
       return {success: true, data: response.data};
     }
-  } catch (error: any) {
+  } catch (error) {
     console.log('Error registration', error);
     if (error.response?.status === HttpStatus.BAD_REQUEST) {
       toast.error(error.response.data.message, {
@@ -57,7 +58,6 @@ export const login = async(userData: {email: string, password: string}) => {
   }
 }
 
-
 //GOOGLE_USER_AUTH
 export const googleUser = async (userData: { googleId: string; username: string; email: string; profileImage: string }) => {
   try {
@@ -73,5 +73,30 @@ export const googleUser = async (userData: { googleId: string; username: string;
       toast.error("An unexpected error occurred. Please try again.");
     }
     return { success: false, error };
+  }
+}
+
+//FORGOT_PASSWORD
+export const forgotPassword = async (email: string) => {
+  try {
+    const response = await axios.post(`${API_URL}/forgot-password`, {email});
+    if(response.status === HttpStatus.OK) {
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+//RESET_PASSWORD
+export const resetPassword = async (email: string, newPassword: string) => {
+  try {
+    const response = await axios.post(`${API_URL}/reset-password`, {email, newPassword});
+    if(response.status === HttpStatus.OK) {
+      return true;
+    }
+  } catch (error) {
+    console.error(error);
   }
 }

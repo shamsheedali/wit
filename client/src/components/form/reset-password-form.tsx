@@ -23,6 +23,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { PasswordInput } from '@/components/ui/password-input'
+import { resetPassword } from '@/lib/api/user'
+import { useRouter } from 'next/navigation'
 
 // Schema for password validation
 const formSchema = z
@@ -39,6 +41,9 @@ const formSchema = z
   })
 
 export default function ResetPasswordForm() {
+
+  const router = useRouter();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -47,13 +52,18 @@ export default function ResetPasswordForm() {
     },
   })
 
+  //form submission
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      // Assuming an async reset password function
-      console.log(values)
-      toast.success(
-        'Password reset successful. You can now log in with your new password.',
-      )
+      const email = localStorage.getItem('userEmail');
+      const result = await resetPassword(email as string, values.password);
+      if(result) {
+        toast.success(
+          'Password reset successful. You can now log in with your new password.',
+        )
+        //redirect to login
+        router.push('/login');
+      }
     } catch (error) {
       console.error('Error resetting password', error)
       toast.error('Failed to reset the password. Please try again.')

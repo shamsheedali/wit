@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { forgotPassword } from '@/lib/api/user'
 
 // Schema for email validation
 const formSchema = z.object({
@@ -38,9 +39,11 @@ export default function ForgotPasswordForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      // Assuming a function to send reset email
-      console.log(values)
-      toast.success('Password reset email sent. Please check your inbox.')
+      const result = await forgotPassword(values.email);
+      if(result) {
+        localStorage.setItem('userEmail', values.email);
+        toast.success('Password reset email sent. Please check your inbox.')
+      }
     } catch (error) {
       console.error('Error sending password reset email', error)
       toast.error('Failed to send password reset email. Please try again.')
