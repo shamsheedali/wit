@@ -11,15 +11,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toggleBan } from "@/lib/api/admin";
+import { QueryClient } from "@tanstack/react-query";
 
 // Define the shape of UserData
 export type UserData = {
+  _id: string;
   userId: string;
   username: string;
-  rating?: number; // Optional to handle missing values
+  rating?: number; 
+  isBanned: boolean;
 };
 
-export const userColumns: ColumnDef<UserData>[] = [
+export const userColumns = (queryClient: QueryClient): ColumnDef<UserData>[] => [
   {
     accessorKey: "_id",
     header: "User ID",
@@ -64,6 +68,12 @@ export const userColumns: ColumnDef<UserData>[] = [
     header: "Actions",
     cell: ({ row }) => {
       const user = row.original;
+
+      const handleBanUser = async (userId: string) => {
+        await toggleBan(userId);
+        await queryClient.invalidateQueries({queryKey: ["users"]});
+      };
+
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -73,12 +83,13 @@ export const userColumns: ColumnDef<UserData>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user._id)}>
+            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user._id)} className="cursor-pointer">
               Copy User ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>View Profile</DropdownMenuItem>
-            <DropdownMenuItem>Send Message</DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer">View Profile</DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer">Send Message</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleBanUser(user._id)} className="cursor-pointer">{user?.isBanned ? 'Unban User' : 'Ban User'}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       );

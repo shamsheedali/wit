@@ -1,19 +1,6 @@
-"use client"
+import { OTPForm } from "@/components/form/otp-form";
 
-import { AdminLoginForm } from "@/components/form/admin-login-from";
-import { useRouter } from "next/navigation";
-import { useLayoutEffect } from "react";
-
-export default function LoginPage() {
-
-  const router = useRouter();
-  useLayoutEffect(() => {
-    const token = localStorage.getItem('adminToken');
-    if(token) {
-      router.push('/dashboard')
-    }
-  }, [router])
-
+export default function OtpPage() {
   return (
     <div
       style={{
@@ -26,7 +13,7 @@ export default function LoginPage() {
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
-            <AdminLoginForm />
+            <OTPForm />
           </div>
         </div>
       </div>

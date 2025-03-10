@@ -1,7 +1,10 @@
+"use client"
+
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import withAuth from "@/hoc/withAuth";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
         {/* Persistent Sidebar */}
@@ -10,3 +13,5 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </SidebarProvider>
   );
 }
+
+export default withAuth(DashboardLayout);

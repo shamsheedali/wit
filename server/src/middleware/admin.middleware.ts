@@ -1,17 +1,14 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from "express";
+import HttpStatus from "../constants/httpStatus";
 
-declare module 'express' {
-  interface Request {
-    user?: {
-      email: string;
-      role: string;
-    };
-  }
-}
-
-export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if (req.user?.role !== 'admin') {
-    return res.status(403).json({ message: 'Access denied. Admin role required.' });
-  }
-  next();
+const requireRole = (role: string) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user || req.user.role !== role) {
+      res.status(HttpStatus.FORBIDDEN).json({ message: `Access denied. ${role} role required.` });
+      return;
+    }
+    next();
+  };
 };
+
+export default requireRole;

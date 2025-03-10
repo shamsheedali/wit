@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
-import { registerUser } from "@/lib/api/user";
+import { getOtp, registerUser } from "@/lib/api/user";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react"; 
 
@@ -66,9 +66,11 @@ export function SignupForm({
 
   const { mutate, isPending } = useMutation({
     mutationFn: registerUser,
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       if(result?.success) {
-        router.push('/homepage')
+        localStorage.setItem('userEmail', formData.email);
+        await getOtp(formData.email)
+        router.push('/otp');
         resetForm();
       }
     },

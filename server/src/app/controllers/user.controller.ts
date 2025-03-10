@@ -211,7 +211,9 @@ export default class UserController {
   async sendOtp(req: Request, res: Response): Promise<Response> {
     try {
       const { email } = req.body;
-      const otp = Math.floor(100000 + Math. random() * 900000);
+      console.log("email", email)
+      const generatedOtp = Math.floor(100000 + Math. random() * 900000);
+      const otp = generatedOtp.toString();
 
       const mailOptions = {
         from: process.env.EMAIL_USER || "",
@@ -229,6 +231,7 @@ export default class UserController {
       }
 
       await this.userService.update(user._id as string, {otp});
+      console.log("SHARED OTP : ", otp);
 
       return res.status(HttpStatus.OK).json({message: "OTP mail shared"});
       } catch (error) {
@@ -249,8 +252,9 @@ export default class UserController {
       }
 
       if(otpValue === user.otp) {
-        return res.status(HttpStatus.OK).json({ message: "OTP Matched", user });
+        return res.status(HttpStatus.OK).json({ message: "OTP Verified", user });
       }
+
       return res.status(HttpStatus.BAD_REQUEST).json({ message: "Invalid OTP" });
     } catch (error) {
       console.error(error);

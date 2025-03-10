@@ -4,7 +4,7 @@ import { DataTable } from "@/components/data-table";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { userColumns } from "./user-colums";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { getUsers } from "../../../../lib/api/admin";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ const LIMIT = 7;
 
 export default function UserManagementPage() {
   const [page, setPage] = useState(1);
+
+  const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["users", page],
@@ -34,9 +36,9 @@ export default function UserManagementPage() {
       </header>
 
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <DataTable columns={userColumns} data={data?.users || []} />
+        <DataTable columns={userColumns(queryClient)} data={data?.users || []} />
 
-        {/* Pagination Controls - Now right below the table and right-aligned */}
+        {/* Pagination Controls */}
         <div className="flex justify-end mt-4 gap-2">
           <Button
             variant="outline"

@@ -6,7 +6,8 @@ export interface IUser extends Document {
     password?: string;
     googleId?: string;
     profileImage?: string;
-    otp?: number;
+    otp?: string;
+    isBanned: boolean;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -38,7 +39,11 @@ const UserSchema = new Schema<IUser>(
         type: String,
     },
     otp: {
-        type: Number,
+        type: String,
+    },
+    isBanned: {
+        type: Boolean,
+        default: false,
     }
 },
 { timestamps: true }

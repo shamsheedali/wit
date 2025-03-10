@@ -10,11 +10,11 @@ export const registerUser = async (userData: { username: string; email: string; 
     const response = await axios.post(`${API_URL}/register`, userData);
     if (response.status === HttpStatus.CREATED) {
       localStorage.setItem('userToken', response.data.accessToken);
-      toast.success(response.data.message); 
+      // toast.success(response.data.message); 
       return {success: true, data: response.data};
     }
   } catch (error) {
-    console.log('Error registration', error);
+    console.error('Error registration', error);
     if(error instanceof AxiosError) {
       if (error.response?.status === HttpStatus.BAD_REQUEST) {
         toast.error(error.response.data.message, {
@@ -107,5 +107,63 @@ export const resetPassword = async (email: string, newPassword: string) => {
     }
   } catch (error) {
     console.error(error);
+  }
+}
+
+//SHARE_OTP
+export const getOtp = async (email: string) => {
+  try {
+    const response = await axios.post(`${API_URL}/otp`, {email});
+    if(response.status === HttpStatus.OK) {
+      toast.success(response.data.message); 
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error(error);
+    if(error instanceof AxiosError) {
+      if (error.response?.status === HttpStatus.BAD_REQUEST) {
+        toast.error(error.response.data.message, {
+          classNames: {
+            toast: 'bg-red-500 text-white',
+          },
+        });
+      } else {
+        toast.error('An unexpected error occurred. Please try again.', {
+          classNames: {
+            toast: 'bg-red-500 text-white',
+          },
+        });
+      }
+    }
+  }
+}
+
+//VERIFY_OTP
+export const verifyOtp = async (otpValue: string, email: string) => {
+  try {
+    const response = await axios.post(`${API_URL}/verify-otp`, {otpValue, email});
+    if(response.status === HttpStatus.OK) {
+      toast.success(response.data.message);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error(error);
+    if(error instanceof AxiosError) {
+      if (error.response?.status === HttpStatus.BAD_REQUEST) {
+        toast.error(error.response.data.message, {
+          classNames: {
+            toast: 'bg-red-500 text-white',
+          },
+        });
+      } else {
+        toast.error('An unexpected error occurred. Please try again.', {
+          classNames: {
+            toast: 'bg-red-500 text-white',
+          },
+        });
+      }
+    }
   }
 }

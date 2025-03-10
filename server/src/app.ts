@@ -20,7 +20,13 @@ app.use(
   )
 );
 
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:3000", //frontend
+  credentials: true,
+  methods: "GET,POST,PUT,DELETE",
+  allowedHeaders: "Content-Type,Authorization",
+}));
+
 
 //All Routes
 //USER-ROUTE

@@ -82,4 +82,25 @@ export default class AdminController {
       });
     }
   }
+
+  //BAN_UNBAN_USER
+  async toggleBan(req: Request, res: Response): Promise<Response> {
+    try {
+      const userId = req.params.id;
+      console.log("userId", userId)
+
+      const user = await this.userService.findById(userId);
+
+      if(!user) {
+        return res.status(HttpStatus.BAD_REQUEST).json({message: "User not found"});
+      }
+
+      const updatedUser = await this.userService.update(userId, {isBanned: !user.isBanned});
+
+      return res.status(HttpStatus.OK).json({message: updatedUser?.isBanned ? "User banned successfully" : "User unbanned successfully", user: updatedUser})
+    } catch (error) {
+      console.error("Error toggling ban status", error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error" });
+    }
+  }
 }
