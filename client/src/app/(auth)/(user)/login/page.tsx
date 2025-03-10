@@ -1,12 +1,12 @@
 "use client"
 
-import {useEffect} from 'react'
+import { useLayoutEffect } from 'react'
 import { LoginForm } from "@/components/form/login-form";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
-  useEffect(() => {
+  useLayoutEffect(() => {
     const token = localStorage.getItem('userToken');
     if(token) {
       router.push('/homepage')

@@ -16,6 +16,7 @@ type FormData = {
   username: string;
   email: string;
   password: string;
+  confirmPassword: string;
 };
 
 export function SignupForm({
@@ -28,6 +29,7 @@ export function SignupForm({
     username: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
@@ -42,6 +44,9 @@ export function SignupForm({
     if (formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters.";
     }
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Password Passwords do not match.";
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -55,7 +60,7 @@ export function SignupForm({
   };
 
   const resetForm = () => {
-    setFormData({ username: "", email: "", password: "" });
+    setFormData({ username: "", email: "", password: "", confirmPassword: "" });
     setErrors({});
   };
 
@@ -134,6 +139,20 @@ export function SignupForm({
           />
           {errors.password && (
             <p className="text-red-500 text-xs">{errors.password}</p>
+          )}
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+          />
+          {errors.confirmPassword && (
+            <p className="text-red-500 text-xs">{errors.confirmPassword}</p>
           )}
         </div>
 

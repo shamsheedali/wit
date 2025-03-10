@@ -61,6 +61,7 @@ export default function ResetPasswordForm() {
         toast.success(
           'Password reset successful. You can now log in with your new password.',
         )
+        localStorage.removeItem('userEmail');
         //redirect to login
         router.push('/login');
       }

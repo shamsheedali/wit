@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import HttpStatus from '../constants/httpStatus';
 import { toast } from 'sonner';
 
@@ -15,18 +15,20 @@ export const registerUser = async (userData: { username: string; email: string; 
     }
   } catch (error) {
     console.log('Error registration', error);
-    if (error.response?.status === HttpStatus.BAD_REQUEST) {
-      toast.error(error.response.data.message, {
-        classNames: {
-          toast: 'bg-red-500 text-white',
-        },
-      });
-    } else {
-      toast.error('An unexpected error occurred. Please try again.', {
-        classNames: {
-          toast: 'bg-red-500 text-white',
-        },
-      });
+    if(error instanceof AxiosError) {
+      if (error.response?.status === HttpStatus.BAD_REQUEST) {
+        toast.error(error.response.data.message, {
+          classNames: {
+            toast: 'bg-red-500 text-white',
+          },
+        });
+      } else {
+        toast.error('An unexpected error occurred. Please try again.', {
+          classNames: {
+            toast: 'bg-red-500 text-white',
+          },
+        });
+      }
     }
   }
 };
@@ -42,18 +44,20 @@ export const login = async(userData: {email: string, password: string}) => {
     }
   } catch (error) {
     console.error("Error login", error);
-    if (error.response?.status === HttpStatus.BAD_REQUEST) {
-      toast.error(error.response.data.message, {
-        classNames: {
-          toast: 'bg-red-500 text-white',
-        },
-      });
-    } else {
-      toast.error('An unexpected error occurred. Please try again.', {
-        classNames: {
-          toast: 'bg-red-500 text-white',
-        },
-      });
+    if(error instanceof AxiosError) {
+      if (error.response?.status === HttpStatus.BAD_REQUEST) {
+        toast.error(error.response.data.message, {
+          classNames: {
+            toast: 'bg-red-500 text-white',
+          },
+        });
+      } else {
+        toast.error('An unexpected error occurred. Please try again.', {
+          classNames: {
+            toast: 'bg-red-500 text-white',
+          },
+        });
+      }
     }
   }
 }
@@ -61,16 +65,21 @@ export const login = async(userData: {email: string, password: string}) => {
 //GOOGLE_USER_AUTH
 export const googleUser = async (userData: { googleId: string; username: string; email: string; profileImage: string }) => {
   try {
-    const response = await axios.post(`${API_URL}/google-user`, userData);
+    const response = await axios.post(`${API_URL}/google-auth`, userData);
     if (response.status === HttpStatus.CREATED || response.status === HttpStatus.OK) {
       return { success: true, data: response.data };
+    } else {
+      console.error("Unexpected API response:", response);
+      return { success: false, error: "Unexpected response" };
     }
   } catch (error) {
     console.error("Error storing google-user", error);
-    if (error.response?.status === HttpStatus.BAD_REQUEST) {
-      toast.error(error.response.data.message);
-    } else {
-      toast.error("An unexpected error occurred. Please try again.");
+    if(error instanceof AxiosError) {
+      if (error.response?.status === HttpStatus.BAD_REQUEST) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("An unexpected error occurred. Please try again.");
+      }
     }
     return { success: false, error };
   }

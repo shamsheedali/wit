@@ -1,11 +1,11 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import HttpStatus from '../constants/httpStatus';
 import { toast } from 'sonner';
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin`;
 
 //ADMIN_LOGIN
-export const adminlogin = async(adminData: {email: string, password: string}) => {
+export const adminLogin = async(adminData: {email: string, password: string}) => {
   try{
     const response = await axios.post(`${API_URL}/login`, adminData);
     if (response.status === HttpStatus.OK) {
@@ -15,18 +15,20 @@ export const adminlogin = async(adminData: {email: string, password: string}) =>
     }
   } catch (error) {
     console.error("Error admin login", error);
-    if (error.response?.status === HttpStatus.BAD_REQUEST || error.response?.status === HttpStatus.UNAUTHORIZED) {
-      toast.error(error.response.data.message, {
-        classNames: {
-          toast: 'bg-red-500 text-white',
-        },
-      });
-    } else {
-      toast.error('An unexpected error occurred. Please try again.', {
-        classNames: {
-          toast: 'bg-red-500 text-white',
-        },
-      });
+    if(error instanceof AxiosError) {
+      if (error.response?.status === HttpStatus.BAD_REQUEST || error.response?.status === HttpStatus.UNAUTHORIZED) {
+        toast.error(error.response.data.message, {
+          classNames: {
+            toast: 'bg-red-500 text-white',
+          },
+        });
+      } else {
+        toast.error('An unexpected error occurred. Please try again.', {
+          classNames: {
+            toast: 'bg-red-500 text-white',
+          },
+        });
+      }
     }
   }
 }

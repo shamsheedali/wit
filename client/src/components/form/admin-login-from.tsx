@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { adminlogin } from "@/lib/api/admin";
+import { adminLogin } from "@/lib/api/admin";
 
 type FormData = {
   email: string;
@@ -50,7 +50,7 @@ export function AdminLoginForm({
   };
 
   const { mutate, isPending } = useMutation({
-    mutationFn: adminlogin,
+    mutationFn: adminLogin,
     onSuccess: (result) => {
       if(result?.success) {
         router.push("/dashboard")

@@ -2,12 +2,12 @@
 
 import { SignupForm } from "@/components/form/signup-form";
 import { useRouter } from "next/navigation";
-import {useEffect} from 'react'
+import { useLayoutEffect } from 'react'
 
 export default function SignUpPage() {
 
   const router = useRouter();
-  useEffect(() => {
+  useLayoutEffect(() => {
     const token = localStorage.getItem('userToken');
     if(token) {
       router.push('/homepage')
