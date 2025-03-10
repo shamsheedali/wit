@@ -1,6 +1,19 @@
+"use client"
+
 import { OTPForm } from "@/components/form/otp-form";
+import { useRouter } from "next/navigation";
+import { useLayoutEffect } from "react";
 
 export default function OtpPage() {
+
+  const router = useRouter();
+    useLayoutEffect(() => {
+      const token = localStorage.getItem('userToken');
+      if(token) {
+        router.push('/homepage')
+      }
+    }, [router])
+
   return (
     <div
       style={{
@@ -12,7 +25,7 @@ export default function OtpPage() {
     >
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">
+          <div className="w-[50%] flex justify-center">
             <OTPForm />
           </div>
         </div>

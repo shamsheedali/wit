@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, response, Response } from "express";
 import { inject, injectable } from "inversify";
 import HttpStatus from "../../constants/httpStatus";
 import UserService from "../services/user.service";
@@ -43,21 +43,9 @@ export default class UserController {
       const user = await this.userService.registerUser(userInput);
 
       if (user.isNewUser) {
-        const accessToken = this.tokenService.generateAccessToken(user?.user?.email, "user");
-        const refreshToken = this.tokenService.generateRefreshToken(user?.user?.email, "user");
-
-        // Setting refreshToken as HTTP-only cookie
-        res.cookie("refreshToken", refreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        });
-
         return res.status(HttpStatus.CREATED).json({
           message: "Signup Successful",
           newUser: user?.user,
-          accessToken,
         });
       } else if (user.duplicate === "username") {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "Username already exists" });
@@ -84,6 +72,10 @@ export default class UserController {
       const user = await this.userRepository.findOneByEmail(email);
       if (!user) {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "User not available" });
+      }
+
+      if(user.isBanned) {
+        return res.status(HttpStatus.FORBIDDEN).json({message: "This account is banned!"});
       }
 
       const passwordValidation = await this.userService.isPasswordValid(password, user.password);
@@ -116,6 +108,7 @@ export default class UserController {
 
   // GOOGLE_AUTH
   async googleUser(req: Request, res: Response): Promise<Response> {
+    console.log("hellogoogle")
     try {
       const { googleId, username, email, profileImage } = req.body;
 
@@ -252,7 +245,13 @@ export default class UserController {
       }
 
       if(otpValue === user.otp) {
-        return res.status(HttpStatus.OK).json({ message: "OTP Verified", user });
+
+        const accessToken = this.tokenService.generateAccessToken(user?.email, "user");
+        const refreshToken = this.tokenService.generateRefreshToken(user?.email, "user");
+
+        this.tokenService.setRefreshTokenCookie(res, refreshToken);
+
+        return res.status(HttpStatus.OK).json({ message: "OTP Verified", user, accessToken });
       }
 
       return res.status(HttpStatus.BAD_REQUEST).json({ message: "Invalid OTP" });

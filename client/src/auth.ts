@@ -57,4 +57,3 @@ export const { handlers, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET,
   // debug: true, // debug logs for troubleshooting
 });
-
