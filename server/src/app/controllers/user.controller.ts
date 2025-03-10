@@ -206,4 +206,55 @@ export default class UserController {
         .json({ message: "Server error" });
     }
   }
+
+  //SENT_OTP_MAIL
+  async sendOtp(req: Request, res: Response): Promise<Response> {
+    try {
+      const { email } = req.body;
+      const otp = Math.floor(100000 + Math. random() * 900000);
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER || "",
+        to: email,
+        subject: "Your OTP Code",
+        text: `Your OTP code is ${otp}.`,
+      };
+
+      this.mailService.sendMail(mailOptions);
+
+      const user = await this.userService.getUserByEmail(email);
+
+      if(!user) {
+        return res.status(HttpStatus.BAD_REQUEST).json({message: "User not available"});
+      }
+
+      await this.userService.update(user._id as string, {otp});
+
+      return res.status(HttpStatus.OK).json({message: "OTP mail shared"});
+      } catch (error) {
+      console.error(error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({message: "Server Error"});
+    }
+  }
+
+  //VERIFY_OTP
+  async verifyOtp(req: Request, res: Response): Promise<Response> {
+    try {
+      const { otpValue, email } = req.body;
+
+      const user = await this.userService.getUserByEmail(email);
+
+      if(!user) {
+        return res.status(HttpStatus.BAD_REQUEST).json({message: "User not found"});
+      }
+
+      if(otpValue === user.otp) {
+        return res.status(HttpStatus.OK).json({ message: "OTP Matched", user });
+      }
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: "Invalid OTP" });
+    } catch (error) {
+      console.error(error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Error While matching OTP" });
+    }
+  }
 }

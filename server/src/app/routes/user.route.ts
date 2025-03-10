@@ -26,4 +26,12 @@ router.post("/reset-password", async (req: Request, res: Response) => {
   await userController.resetPassword(req, res);
 })
 
+router.post("/otp", async (req: Request, res: Response) => {
+  await userController.sendOtp(req, res);
+})
+
+router.post("/verify-otp", async (req: Request, res: Response) => {
+  await userController.verifyOtp(req, res);
+})
+
 export default router;

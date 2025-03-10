@@ -6,6 +6,7 @@ export interface IUser extends Document {
     password?: string;
     googleId?: string;
     profileImage?: string;
+    otp?: number;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -36,6 +37,9 @@ const UserSchema = new Schema<IUser>(
     profileImage: {
         type: String,
     },
+    otp: {
+        type: Number,
+    }
 },
 { timestamps: true }
 );
