@@ -57,7 +57,7 @@ export function OTPForm() {
     const response = await verifyOtp(data.pin, email as string);
     if (response) {
       localStorage.removeItem("userEmail");
-      router.push("/homepage");
+      router.push("/home");
     }
   }
 

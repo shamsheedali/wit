@@ -9,7 +9,7 @@ export default function LoginPage() {
   useLayoutEffect(() => {
     const token = localStorage.getItem('userToken');
     if(token) {
-      router.push('/homepage')
+      router.push('/home')
     }
   }, [router])
     

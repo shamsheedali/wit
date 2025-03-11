@@ -4,7 +4,7 @@ export default function PlayComputer() {
         <div
             className="px-16 w-full h-screen overflow-hidden pt-[80px] font-clashDisplay"
         >
-           <ChessBoard /> 
+        <ChessBoard /> 
         </div>
     )
 }

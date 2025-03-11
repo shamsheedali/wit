@@ -108,7 +108,6 @@ export default class UserController {
 
   // GOOGLE_AUTH
   async googleUser(req: Request, res: Response): Promise<Response> {
-    console.log("hellogoogle")
     try {
       const { googleId, username, email, profileImage } = req.body;
 

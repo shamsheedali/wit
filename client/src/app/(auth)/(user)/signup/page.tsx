@@ -10,7 +10,7 @@ export default function SignUpPage() {
   useLayoutEffect(() => {
     const token = localStorage.getItem('userToken');
     if(token) {
-      router.push('/homepage')
+      router.push('/home')
     }
   }, [router])
     
