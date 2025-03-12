@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { login } from "@/lib/api/user";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react"; 
@@ -24,6 +24,8 @@ export function LoginForm({
 }: React.ComponentPropsWithoutRef<"form">) {
 
   const router = useRouter();
+
+  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState<FormData>({
     email: "",
@@ -56,6 +58,9 @@ export function LoginForm({
     mutationFn: login,
     onSuccess: (result) => {
       if(result?.success) {
+
+        queryClient.setQueryData(["user"], result.data.user);
+
         router.push("/home")
         resetForm();
       }

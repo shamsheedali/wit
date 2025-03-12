@@ -1,19 +1,23 @@
+"use client"
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import useUser from "@/hooks/queryHooks/useUser";
 import { Calendar1, Pencil, Swords, TrendingUp, UsersRound } from "lucide-react";
 
-export default function PlayComputer() {
+export default function ProfilePage() {
+  const {data: user} = useUser();
   return (
     <div className="px-56 w-full h-screen overflow-hidden pt-[120px] font-clashDisplay">
       <div className="border-2 rounded-lg flex justify-center items-center p-8 gap-20">
         <Avatar className="cursor-pointer w-40 h-40">
           <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-          <AvatarFallback>CN</AvatarFallback>
+          <AvatarFallback>{user?.username[0].toUpperCase()}</AvatarFallback>
         </Avatar>
 
         <div className="flex flex-col gap-5 relative">
           <div>
-            <h1 className="text-2xl">shamsheed_ali</h1>
+            <h1 className="text-2xl">{user?.username}</h1>
             <p className="text-sm w-[250px] text-gray-500">
               Lorem ipsum dolor sit amet consectetur adipisicing elit. Doloribus
               excepturi aliquam repellat.

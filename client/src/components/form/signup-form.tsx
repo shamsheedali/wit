@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import Link from "next/link";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getOtp, registerUser } from "@/lib/api/user";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react"; 
@@ -24,6 +24,8 @@ export function SignupForm({
   ...props
 }: React.ComponentPropsWithoutRef<"form">) {
   const router = useRouter();
+
+  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState<FormData>({
     username: "",
@@ -69,6 +71,9 @@ export function SignupForm({
     onSuccess: async (result) => {
       if(result?.success) {
         localStorage.setItem('userEmail', formData.email);
+
+        queryClient.setQueryData(["user"], result.data.user);
+
         await getOtp(formData.email)
         router.push('/otp');
         resetForm();

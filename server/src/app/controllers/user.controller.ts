@@ -87,17 +87,13 @@ export default class UserController {
       const accessToken = this.tokenService.generateAccessToken(email, "user");
       const refreshToken = this.tokenService.generateRefreshToken(email, "user");
 
-      // Setting refreshToken as HTTP-only cookie
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
+      this.tokenService.setRefreshTokenCookie(res, refreshToken);
+
+      const { password: dbPassword, ...userWithoutPassword } = user.toObject(); 
 
       return res.status(HttpStatus.CREATED).json({
         message: "Login Successful",
-        user,
+        user: userWithoutPassword,
         accessToken,
       });
     } catch (error) {
@@ -250,7 +246,10 @@ export default class UserController {
 
         this.tokenService.setRefreshTokenCookie(res, refreshToken);
 
-        return res.status(HttpStatus.OK).json({ message: "OTP Verified", user, accessToken });
+        // Removing password before sending response
+        const { password, ...userWithoutPassword } = user.toObject(); 
+
+        return res.status(HttpStatus.OK).json({ message: "OTP Verified", user: userWithoutPassword, accessToken });
       }
 
       return res.status(HttpStatus.BAD_REQUEST).json({ message: "Invalid OTP" });

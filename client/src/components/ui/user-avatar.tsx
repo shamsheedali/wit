@@ -8,10 +8,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import useUser from "@/hooks/queryHooks/useUser";
 import { User, Settings, LogOut } from "lucide-react";
 import Link from "next/link";
 
 export function UserAvatar() {
+
+  const { data: user } = useUser();
+
   const handleLogout = () => {
     localStorage.removeItem("userToken");
   };
@@ -29,7 +33,7 @@ export function UserAvatar() {
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">Signed in as</p>
             <p className="text-xs leading-none text-muted-foreground">
-              user@example.com
+              {user?.email}
             </p>
           </div>
         </DropdownMenuLabel>

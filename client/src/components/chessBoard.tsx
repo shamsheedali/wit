@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { useState } from "react";
 import { Chess } from "chess.js";
@@ -20,9 +20,8 @@ export const ChessBoard: React.FC = () => {
     if (move) {
       setGame(newGame);
 
-
       //checking checkmate
-      if(newGame.isCheckmate()) {
+      if (newGame.isCheckmate()) {
         alert("Checkmate! Game Over");
       }
     }
@@ -30,19 +29,22 @@ export const ChessBoard: React.FC = () => {
 
   const handleGameRestart = () => {
     setGame(new Chess());
-  }
+  };
 
   return (
     <>
-      <Chessboard 
-        position={game.fen()} 
-        onPieceDrop={handleMove} 
-        customNotationStyle={{color: '#000', fontWeight: 'bold'}}
-        boardWidth={450} 
-      />
-
+      <div className="flex flex-col justify-center items-center w-full h-full">
+        <div>
+          <Chessboard
+            position={game.fen()}
+            onPieceDrop={handleMove}
+            customNotationStyle={{ color: "#000", fontWeight: "bold" }}
+            boardWidth={400}
+          />
+        </div>
       <Button onClick={handleGameRestart}>Restart</Button>
+      </div>
+
     </>
   );
 };
-
