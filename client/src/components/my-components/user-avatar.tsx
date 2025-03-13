@@ -9,15 +9,33 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import useUser from "@/hooks/queryHooks/useUser";
+import { queryClient } from "@/lib/providers/QueryProvider";
 import { User, Settings, LogOut } from "lucide-react";
 import Link from "next/link";
 
 export function UserAvatar() {
-
   const { data: user } = useUser();
 
   const handleLogout = () => {
     localStorage.removeItem("userToken");
+
+    queryClient.resetQueries(["user"], { exact: true });
+
+    const persistedData = localStorage.getItem("REACT_QUERY_OFFLINE_CACHE");
+
+    if (persistedData) {
+      const parsedData = JSON.parse(persistedData);
+
+      // Delete only the "user" query data while keeping others
+      parsedData.clientState.queries = parsedData.clientState.queries.filter(
+        (query: any) => query.queryKey[0] !== "user"
+      );
+
+      localStorage.setItem(
+        "REACT_QUERY_OFFLINE_CACHE",
+        JSON.stringify(parsedData)
+      );
+    }
   };
 
   return (
@@ -39,7 +57,7 @@ export function UserAvatar() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <Link href={'/profile'}>
+          <Link href={"/profile"}>
             <DropdownMenuItem className="cursor-pointer">
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>

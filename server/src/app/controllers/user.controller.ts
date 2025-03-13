@@ -273,4 +273,18 @@ export default class UserController {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
     }
   }
+
+  //GET_USER
+  async getUser(req: Request, res: Response): Promise<Response> {
+    try {
+      const {username} = req.params;
+      const user = await this.userService.findByUsername(username as string);
+      if(!user) {
+        return res.status(HttpStatus.BAD_REQUEST).json({message: "User not found"});
+      }
+      return res.status(HttpStatus.OK).json(user);
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+    }
+  }
 }

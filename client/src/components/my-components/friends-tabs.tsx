@@ -14,20 +14,28 @@ import { useCallback, useState } from "react";
 import {debounce} from "lodash";
 import { useQuery } from "@tanstack/react-query";
 import { searchFriend } from "@/lib/api/user";
+import { useRouter } from "next/navigation";
+import useUser from "@/hooks/queryHooks/useUser";
 
 export function FriendsTabs() {
-  const [query, setQuery] = useState("");
+  const {data: mainUser} = useUser();
 
+  const router = useRouter();
+  const [query, setQuery] = useState<string>("");
 
   const debouncedSetQuery = useCallback(debounce((val) => setQuery(val), 500), []);
 
-  const {data: users, isLoading} = useQuery({
+  const { data: users = [], isLoading } = useQuery({
     queryKey: ['searchFriend', query],
     queryFn: () => searchFriend(query),
     enabled: !!query,
-  })
+  });
+  
+  const filteredUsers = users?.filter((user) => user._id !== mainUser?._id) || [];
 
-  console.log(users);
+  const handleUserPage = (username: string) => {
+    router.push(`/${username}`)
+  }
 
   return (
     <Tabs defaultValue="friends" className="w-full">
@@ -142,9 +150,10 @@ export function FriendsTabs() {
               <Button>Search</Button>
             </div>
 
-            {users && users.map((user: object) => (
+            {filteredUsers && filteredUsers.map((user: object) => (
 
-              <div key={user._id} className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group">
+              <div key={user._id} className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group" 
+              onClick={() => handleUserPage(user.username)}>
                 <div className="relative">
                   <img
                     src="/placeholder.svg?height=40&width=40"

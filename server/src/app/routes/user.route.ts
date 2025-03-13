@@ -39,4 +39,9 @@ router.get("/search", async (req: Request, res: Response) => {
   await userController.searchUser(req, res);
 })
 
+//GET_USER
+router.get("/username/:username", async (req: Request, res: Response) => {
+  await userController.getUser(req, res);
+})
+
 export default router;

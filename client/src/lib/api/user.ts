@@ -108,8 +108,20 @@ export const searchFriend = async (query: string) => {
   try {
     if (!query) return [];
     const response = await apiClient.get(`${API_URL}/search?query=${query}`);
-    return response.data;
+    return response.data || []
   } catch (error) {
     handleApiError(error);
+    return [];
+  }
+};
+
+//GET_USER
+export const getUser = async (username: string) => {
+  try {
+    const response = await apiClient.get(`${API_URL}/username/${username}`)
+    return response.data;
+  } catch (error) {
+    console.error(error);
+    return null;
   }
 }

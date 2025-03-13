@@ -54,4 +54,8 @@ export default class UserService extends BaseService<IUser> {
     async searchUser(query: string) {
         return await this.userRepository.searchUserByUsername(query);
     }
+
+    async findByUsername(name: string) {
+        return await this.userRepository.findOneByUsername(name);
+    }
 }
