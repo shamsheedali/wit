@@ -50,4 +50,8 @@ export default class UserService extends BaseService<IUser> {
     async getUserByEmail(email: string): Promise<IUser | null> {
         return await this.userRepository.findOneByEmail(email);
     }
+
+    async searchUser(query: string) {
+        return await this.userRepository.searchUserByUsername(query);
+    }
 }

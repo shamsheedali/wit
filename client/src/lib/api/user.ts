@@ -102,3 +102,14 @@ export const verifyOtp = async (otpValue: string, email: string) => {
     handleApiError(error)
   }
 }
+
+//SEARCH_FRIENDS
+export const searchFriend = async (query: string) => {
+  try {
+    if (!query) return [];
+    const response = await apiClient.get(`${API_URL}/search?query=${query}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+}

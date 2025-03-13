@@ -258,4 +258,19 @@ export default class UserController {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Error While matching OTP" });
     }
   }
+
+  //SEARCH_USER_BY_USERNAME
+  async searchUser(req: Request, res: Response): Promise<Response> {
+    try {
+      const {query} = req.query;
+      if(!query || typeof query !== 'string') {
+        return res.status(HttpStatus.BAD_REQUEST).json({message: "Invalid search query"});
+      }
+
+      const users = await this.userService.searchUser(query);
+      return res.status(HttpStatus.OK).json(users);
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+    }
+  }
 }

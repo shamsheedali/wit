@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { UserAvatar } from "./ui/user-avatar";
+import { UserAvatar } from "./user-avatar";
 import { Bell, UsersRound } from "lucide-react";
 import { GrGroup } from "react-icons/gr";
 import {
@@ -10,8 +10,8 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "./ui/tooltip";
-import { Button } from "./ui/button";
+} from "../ui/tooltip";
+import { Button } from "../ui/button";
 
 export default function UserNavbar() {
   const [user, setUser] = useState(false);
@@ -46,7 +46,9 @@ export default function UserNavbar() {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger>
-              <UsersRound className="h-5 w-5" />
+              <Link href={'/friends'}>
+                <UsersRound className="h-5 w-5" />
+              </Link>
             </TooltipTrigger>
             <TooltipContent>
               <p>Friends</p>

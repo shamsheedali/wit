@@ -34,4 +34,10 @@ export default class UserRepository extends BaseRepository<IUser> {
     async countUsers() {
         return await this.model.countDocuments();
     }
+
+    async searchUserByUsername(query: string) {
+        return await this.model.find({
+            username: {$regex: `^${query}`, $options: "i"}
+        });
+    }
 }

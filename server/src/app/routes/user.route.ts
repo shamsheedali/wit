@@ -34,4 +34,9 @@ router.post("/verify-otp", async (req: Request, res: Response) => {
   await userController.verifyOtp(req, res);
 })
 
+//SEARCH_USER
+router.get("/search", async (req: Request, res: Response) => {
+  await userController.searchUser(req, res);
+})
+
 export default router;
