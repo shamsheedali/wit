@@ -2,6 +2,8 @@ import express, { Request, Response } from "express";
 import TYPES from "../../config/types";
 import container from "../../config/inversify.config";
 import UserController from "../controllers/user.controller";
+import { authenticateToken } from "../../middleware/auth.middleware";
+import upload from "../../middleware/upload.middleware";
 
 const router = express.Router();
 const userController = container.get<UserController>(TYPES.UserController);
@@ -42,6 +44,11 @@ router.get("/search", async (req: Request, res: Response) => {
 //GET_USER
 router.get("/username/:username", async (req: Request, res: Response) => {
   await userController.getUser(req, res);
+})
+
+//UPDATE USER
+router.put("/profile/:id", upload.single("profileImage"), async (req: Request, res: Response) => {
+  await userController.updateProfile(req, res);
 })
 
 export default router;

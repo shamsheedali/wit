@@ -1,17 +1,27 @@
 import mongoose, { Document, Schema, model } from "mongoose";
 
 export interface IUser extends Document {
+    firstName?: string;
+    lastName?: string;
     username: string;
     email: string;
     password?: string;
+    bio?:string;
     googleId?: string;
-    profileImage?: string;
+    profileImageUrl?: string;
+    profileImageId?: string;
     otp?: string;
     isBanned: boolean;
 }
 
 const UserSchema = new Schema<IUser>(
 {
+    firstName: {
+        type: String,
+    },
+    lastName: {
+        type: String,
+    },
     username: {
         type: String,
         required: true,
@@ -31,11 +41,17 @@ const UserSchema = new Schema<IUser>(
             message: "Password is required for non-Google users.",
         },
     },
+    bio: {
+        type: String,
+    },
     googleId: {
         type: String,
         default: null,
     },
-    profileImage: {
+    profileImageUrl: {
+        type: String,
+    },
+    profileImageId: {
         type: String,
     },
     otp: {

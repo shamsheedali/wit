@@ -12,9 +12,11 @@ import {
   TooltipTrigger,
 } from "../ui/tooltip";
 import { Button } from "../ui/button";
+import { useAuth } from "@/hooks/queryHooks/useAuth";
 
 export default function UserNavbar() {
   const [user, setUser] = useState(false);
+  const {data: authState} = useAuth();
 
   useEffect(() => {
     const token = localStorage.getItem("userToken");
@@ -22,7 +24,7 @@ export default function UserNavbar() {
   }, []);
 
   return (
-    <div className="flex justify-between items-center px-16 py-5 border-b-[1px] text-[#f0f0f0db] font-bold font-clashDisplay text-[15px]  w-full fixed z-10">
+    <div className="bg-[#09090b] flex justify-between items-center px-16 py-5 border-b-[1px] text-[#f0f0f0db] font-bold font-clashDisplay text-[15px]  w-full fixed z-10">
       <nav className="flex gap-16">
         <Link href={"/home"} className="font-stardom text-xl">
           Wit
@@ -67,7 +69,7 @@ export default function UserNavbar() {
           </Tooltip>
         </TooltipProvider>
 
-        {user ? (
+        {authState ? (
           <UserAvatar />
         ) : (
           <Link href={"/login"}>

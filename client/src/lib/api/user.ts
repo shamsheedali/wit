@@ -125,3 +125,21 @@ export const getUser = async (username: string) => {
     return null;
   }
 }
+
+//UPDATE_USER
+export const updateUserProfile = async ({userData, userId}: {userData: FormData, userId: string}) => {
+  try {
+    const response = await apiClient.put(`${API_URL}/profile/${userId}`, userData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    if (response.status === HttpStatus.OK) {
+      return { success: true, data: response.data };
+    }
+  } catch (error) {
+    handleApiError(error);
+    return { success: false, error };
+  }
+};

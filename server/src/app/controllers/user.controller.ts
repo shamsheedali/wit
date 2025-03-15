@@ -1,4 +1,4 @@
-import { Request, response, Response } from "express";
+import { Request, Response } from "express";
 import { inject, injectable } from "inversify";
 import HttpStatus from "../../constants/httpStatus";
 import UserService from "../services/user.service";
@@ -114,7 +114,7 @@ export default class UserController {
           googleId,
           username,
           email,
-          profileImage,
+          profileImageUrl: profileImage,
         });
       }
 
@@ -285,6 +285,34 @@ export default class UserController {
       return res.status(HttpStatus.OK).json(user);
     } catch (error) {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
+    }
+  }
+
+  //UPDATE_USER_PROFILE
+  async updateProfile(req: Request, res: Response): Promise<Response> {
+    try {
+      const userId = req.params.id;
+
+      if(!userId) {
+        return res.status(HttpStatus.UNAUTHORIZED).json({message: "User not found!"});
+      }
+
+      const profileImage = req.file;
+      const userData = req.body;
+
+      const updatedUser = await this.userService.updateUserProfile(userId, userData, profileImage);
+
+      if(!updatedUser) {
+        return res.status(HttpStatus.UNAUTHORIZED).json({message: "User not found!"});
+      }
+
+      return res.status(HttpStatus.OK).json({ 
+        message: "Profile updated successfully",
+        user: updatedUser 
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
     }
   }
 }

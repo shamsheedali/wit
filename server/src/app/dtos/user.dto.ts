@@ -2,13 +2,16 @@ export interface IUserInput {
     username: string;
     email: string;
     password?: string;
+    bio?: string;
     googleId?: string;
-    profileImage?: string;
+    profileImageUrl?: string;
+    profileImageId?: string;
 }
 
 export interface IGoogleUserInput {
     googleId: string;
     username: string;
     email: string;
-    profileImage?: string;
+    bio?: string;
+    profileImageUrl?: string;
 }

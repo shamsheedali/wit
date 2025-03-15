@@ -8,34 +8,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/queryHooks/useAuth";
 import useUser from "@/hooks/queryHooks/useUser";
-import { queryClient } from "@/lib/providers/QueryProvider";
 import { User, Settings, LogOut } from "lucide-react";
 import Link from "next/link";
 
 export function UserAvatar() {
   const { data: user } = useUser();
+  const { handleLogout } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem("userToken");
-
-    queryClient.resetQueries(["user"], { exact: true });
-
-    const persistedData = localStorage.getItem("REACT_QUERY_OFFLINE_CACHE");
-
-    if (persistedData) {
-      const parsedData = JSON.parse(persistedData);
-
-      // Delete only the "user" query data while keeping others
-      parsedData.clientState.queries = parsedData.clientState.queries.filter(
-        (query: any) => query.queryKey[0] !== "user"
-      );
-
-      localStorage.setItem(
-        "REACT_QUERY_OFFLINE_CACHE",
-        JSON.stringify(parsedData)
-      );
-    }
+  const onLogout = async () => {
+    await handleLogout();
   };
 
   return (
@@ -69,7 +52,7 @@ export function UserAvatar() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
+        <DropdownMenuItem className="cursor-pointer" onClick={onLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>
