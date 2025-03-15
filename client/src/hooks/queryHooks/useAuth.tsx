@@ -13,7 +13,7 @@ export function useAuth() {
         staleTime: Infinity,
     })
 
-    const updateAuthState = (newState) => {
+    const updateAuthState = (newState: {isLoggedIn: boolean}) => {
         queryClient.setQueryData(['authState'], newState);
     }
 

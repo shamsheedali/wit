@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import connectDB from './config/database';
 import userRouter from './app/routes/user.route';
 import adminRouter from './app/routes/admin.route';
+import { connectRedis } from "./config/redis";
 
 const app = express();
 
@@ -36,5 +37,7 @@ app.use('/api/admin', adminRouter);
 
 //DB Connection
 connectDB();
+//Redis Connection
+connectRedis();
 
 export default app;

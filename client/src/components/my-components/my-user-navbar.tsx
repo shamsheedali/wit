@@ -27,7 +27,7 @@ export default function UserNavbar() {
     <div className="bg-[#09090b] flex justify-between items-center px-16 py-5 border-b-[1px] text-[#f0f0f0db] font-bold font-clashDisplay text-[15px]  w-full fixed z-10">
       <nav className="flex gap-16">
         <Link href={"/home"} className="font-stardom text-xl">
-          Wit
+          Wit.
         </Link>
         <h1>About Us</h1>
         <h1>Contact Us</h1>

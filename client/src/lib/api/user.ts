@@ -11,7 +11,7 @@ export const registerUser = async (userData: { username: string; email: string; 
   try {
     const response = await apiClient.post(`${API_URL}/register`, userData);
     if (response.status === HttpStatus.CREATED) {
-      // toast.success(response.data.message); 
+      localStorage.setItem('userToken', response.data.accessToken);
       return {success: true, data: response.data};
     }
   } catch (error) {
@@ -30,6 +30,19 @@ export const login = async(userData: {email: string, password: string}) => {
     }
   } catch (error) {
     handleApiError(error);
+  }
+}
+
+//CHECK_DUPLICATE_USERNAME
+export const checkUsername = async(username: string) => {
+  try {
+    const response = await apiClient.get(`${API_URL}/username/verify`, {
+      params: {username}
+    });
+    return response.status === HttpStatus.OK;
+  } catch (error) {
+    handleApiError(error);
+    return false;
   }
 }
 
@@ -93,7 +106,6 @@ export const verifyOtp = async (otpValue: string, email: string) => {
   try {
     const response = await apiClient.post(`${API_URL}/verify-otp`, {otpValue, email});
     if(response.status === HttpStatus.OK) {
-      localStorage.setItem('userToken', response.data.accessToken);
       toast.success(response.data.message);
       return true;
     }

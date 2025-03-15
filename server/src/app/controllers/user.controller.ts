@@ -8,6 +8,7 @@ import UserRepository from "../repositories/user.repository";
 import TYPES from "../../config/types";
 import { IUserInput } from "../dtos/user.dto";
 import MailService from "../services/mail.service";
+import redisClient from "../../config/redis";
 
 @injectable()
 export default class UserController {
@@ -43,9 +44,16 @@ export default class UserController {
       const user = await this.userService.registerUser(userInput);
 
       if (user.isNewUser) {
+        const accessToken = this.tokenService.generateAccessToken(email, 'user');
+        const refreshToken = this.tokenService.generateRefreshToken(email, 'user');
+        this.tokenService.setRefreshTokenCookie(res, refreshToken);
+
+        const { password, ...userWithoutPassword } = user.user.toObject(); 
+
         return res.status(HttpStatus.CREATED).json({
           message: "Signup Successful",
-          newUser: user?.user,
+          user: userWithoutPassword,
+          accessToken,
         });
       } else if (user.duplicate === "username") {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "Username already exists" });
@@ -99,6 +107,25 @@ export default class UserController {
     } catch (error) {
       console.error("Error while user login:", error);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Error while user login" });
+    }
+  }
+
+
+  //CHECK_USERNAME_EXIST
+  async checkUsername(req: Request, res: Response): Promise<Response> {
+    try {
+      const {username} = req.query;
+
+      const isExistingUsername = await this.userService.findByUsername(username as string);
+
+      if(isExistingUsername) {
+        return res.status(HttpStatus.BAD_REQUEST).json({message: "Username already exist"})
+      }
+
+      return res.status(HttpStatus.OK).json({message: "Username verified"});
+    } catch (error) {
+      console.error(error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({message: "Internal Server Error"});
     }
   }
 
@@ -199,7 +226,12 @@ export default class UserController {
   async sendOtp(req: Request, res: Response): Promise<Response> {
     try {
       const { email } = req.body;
-      console.log("email", email)
+      const user = await this.userService.findByEmail(email);
+
+      if(user) {
+        return res.status(HttpStatus.BAD_REQUEST).json({message: "User already exists"})
+      }
+
       const generatedOtp = Math.floor(100000 + Math. random() * 900000);
       const otp = generatedOtp.toString();
 
@@ -211,14 +243,12 @@ export default class UserController {
       };
 
       this.mailService.sendMail(mailOptions);
-
-      const user = await this.userService.getUserByEmail(email);
-
-      if(!user) {
-        return res.status(HttpStatus.BAD_REQUEST).json({message: "User not available"});
+      //STORING OTP IN REDIS
+      try {
+        await redisClient.set(`otp:${email}`, otp, {EX: 300})//5 min
+      } catch (error) {
+        console.error(error);
       }
-
-      await this.userService.update(user._id as string, {otp});
       console.log("SHARED OTP : ", otp);
 
       return res.status(HttpStatus.OK).json({message: "OTP mail shared"});
@@ -233,26 +263,21 @@ export default class UserController {
     try {
       const { otpValue, email } = req.body;
 
-      const user = await this.userService.getUserByEmail(email);
+      const storedOtp = await redisClient.get(`otp:${email}`);
 
-      if(!user) {
-        return res.status(HttpStatus.BAD_REQUEST).json({message: "User not found"});
+      if(!storedOtp) {
+        return res.status(HttpStatus.BAD_REQUEST).json({message: "OTP expired"});
       }
 
-      if(otpValue === user.otp) {
-
-        const accessToken = this.tokenService.generateAccessToken(user?.email, "user");
-        const refreshToken = this.tokenService.generateRefreshToken(user?.email, "user");
-
-        this.tokenService.setRefreshTokenCookie(res, refreshToken);
-
-        // Removing password before sending response
-        const { password, ...userWithoutPassword } = user.toObject(); 
-
-        return res.status(HttpStatus.OK).json({ message: "OTP Verified", user: userWithoutPassword, accessToken });
+      if(otpValue !== storedOtp) {
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: "Invalid OTP" });
       }
 
-      return res.status(HttpStatus.BAD_REQUEST).json({ message: "Invalid OTP" });
+      //OTP matched, removing from redis
+      await redisClient.del(`otp:${email}`);
+
+      return res.status(HttpStatus.OK).json({ message: "OTP Verified"});
+
     } catch (error) {
       console.error(error);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Error While matching OTP" });

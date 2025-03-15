@@ -16,6 +16,11 @@ router.post("/login", async (req: Request, res: Response) => {
   await userController.login(req, res);
 });
 
+//CHECK_DUPLICATE_USERNAME
+router.get("/username/verify", async (req: Request, res: Response) => {
+  await userController.checkUsername(req, res);
+})
+
 router.post("/google-auth", async (req: Request, res: Response) => {
   await userController.googleUser(req, res);
 });

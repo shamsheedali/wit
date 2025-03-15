@@ -59,6 +59,10 @@ export default class UserService extends BaseService<IUser> {
         return await this.userRepository.findOneByUsername(name);
     }
 
+    async findByEmail(email: string) {
+        return await this.userRepository.findOneByEmail(email);
+    }
+
     async updateUserProfile(userId: string, userData: Partial<IUser>, profileImage?: Express.Multer.File) {
         return await this.userRepository.updateUserProfile(userId, userData, profileImage);
     }
