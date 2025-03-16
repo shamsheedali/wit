@@ -134,7 +134,7 @@ export default class UserController {
     try {
       const { googleId, username, email, profileImage } = req.body;
 
-      let user = await this.userRepository.findOneByEmail(email);
+      let user = await this.userService.findByEmail(email);
 
       if (!user) {
         user = await this.userRepository.createGoogleUser({

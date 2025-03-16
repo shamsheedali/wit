@@ -50,7 +50,12 @@ export const checkUsername = async(username: string) => {
 export const googleUser = async (userData: { googleId: string; username: string; email: string; profileImage: string }) => {
   try {
     const response = await axios.post(`${API_URL}/google-auth`, userData);
-    if (response.status === HttpStatus.CREATED || response.status === HttpStatus.OK) {
+    console.log("google response", response);
+    if (response.status === HttpStatus.CREATED) {
+      // Only set localStorage on client side
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("userToken", response.data.accessToken);
+      }
       return { success: true, data: response.data };
     } else {
       console.error("Unexpected API response:", response);

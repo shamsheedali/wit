@@ -7,11 +7,3 @@ export interface IUserInput {
     profileImageUrl?: string;
     profileImageId?: string;
 }
-
-export interface IGoogleUserInput {
-    googleId: string;
-    username: string;
-    email: string;
-    bio?: string;
-    profileImageUrl?: string;
-}

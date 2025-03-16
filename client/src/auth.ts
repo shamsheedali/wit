@@ -1,13 +1,7 @@
+import { cookies } from 'next/headers';
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { googleUser } from "./lib/api/user";
-
-type userDataType = {
-    googleId: string;
-    username: string;
-    email: string;
-    profileImage: string; 
-};
 
 export const { handlers, signIn, signOut } = NextAuth({
   providers: [
@@ -25,23 +19,26 @@ export const { handlers, signIn, signOut } = NextAuth({
             return false;
           }
 
-          const userData: userDataType = {
+          const userData = {
             googleId: account.providerAccountId,
             username: user.name,
             email: user.email,
             profileImage: user.image,
           };
 
-          console.log("Sending User Data to Backend:", userData);
-          const response = await googleUser(userData);
-
-          if (response.success) {
-            if (typeof window !== "undefined") {
-              localStorage.setItem("userToken", response.data.accessToken);
-            }
-            return true;
-          } else {
-            return false;
+          const result = await googleUser(userData);
+          
+          // Storing token in a cookie
+          if (result?.success && result?.data?.accessToken) {
+            // Set a cookie with the token
+            const cookieStore = await cookies();
+            cookieStore.set('google_auth_token', result.data.accessToken, {
+              maxAge: 60 * 60 * 24 * 7, // 1 week
+              path: '/',
+              httpOnly: false, // Make it accessible from JavaScript
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax'
+            });
           }
         } catch (error) {
           console.error("Error storing google-user:", error);
@@ -55,5 +52,4 @@ export const { handlers, signIn, signOut } = NextAuth({
     }
   },
   secret: process.env.AUTH_SECRET,
-  // debug: true, // debug logs for troubleshooting
 });

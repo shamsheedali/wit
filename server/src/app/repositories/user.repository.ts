@@ -2,7 +2,7 @@ import { inject, injectable } from "inversify";
 import { Model } from "mongoose";
 import BaseRepository from "../../core/base.repository";
 import { IUser } from "../models/user.model";
-import { IGoogleUserInput, IUserInput } from "../dtos/user.dto";
+import { IUserInput } from "../dtos/user.dto";
 import TYPES from "../../config/types";
 import { cloudinary } from "../../config/cloudinary.config";
 
@@ -16,7 +16,7 @@ export default class UserRepository extends BaseRepository<IUser> {
     return await this.create(userData);
   }
 
-  async createGoogleUser(userData: IGoogleUserInput) {
+  async createGoogleUser(userData: IUserInput) {
     return await this.model.create(userData);
   }
 
