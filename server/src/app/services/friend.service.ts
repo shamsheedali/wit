@@ -4,6 +4,7 @@ import TYPES from "../../config/types";
 import FriendRepository from "../repositories/friend.repository";
 import { IFriendRequest } from "../models/friendRequest.model";
 import { Server } from "socket.io";
+import { IUser } from "../models/user.model";
 
 @injectable()
 export default class FriendService {
@@ -16,6 +17,12 @@ export default class FriendService {
   ) {
     this.userRepository = userRepository;
     this.friendRepository = friendRepository;
+  }
+
+  async getFriends(userId: string): Promise<IUser[]> {
+    const user = await this.friendRepository.findUserById(userId);
+    if (!user) throw new Error('User not found');
+    return user.friends as IUser[];
   }
 
   async sendFriendRequest(senderId: string, receiverId: string, io: Server): Promise<IFriendRequest> {

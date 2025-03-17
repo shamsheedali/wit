@@ -8,7 +8,7 @@ export interface IUser extends Document {
     password?: string;
     bio?:string;
     googleId?: string;
-    friends: mongoose.Types.ObjectId[];
+    friends: mongoose.Types.ObjectId[]| IUser[];
     profileImageUrl?: string;
     profileImageId?: string;
     otp?: string;

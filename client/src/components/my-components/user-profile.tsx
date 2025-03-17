@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "../ui/button";
 import {
   Calendar1,
@@ -14,10 +14,28 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/stores";
+import { useFriendStore } from "@/stores/useFriendStore";
+import { User } from "@/types/auth";
 
-const UserProfile = ({ user }) => {
+const UserProfile = ({ user }: { user: User }) => {
   const { user: mainUser } = useAuthStore();
+  const { sendFriendRequest } = useFriendStore();
   const isCurrentUser = mainUser?._id === user?._id;
+  const [isRequestSent, setIsRequestSent] = useState(false);
+
+  const handleAddFriend = async () => {
+    try {
+      if (!mainUser?._id) {
+        alert('You must be logged in to send a friend request');
+        return;
+      }
+      await sendFriendRequest(user._id); // Only pass receiverId
+      setIsRequestSent(true); // Disable button and show feedback
+    } catch (error) {
+      console.error('Failed to send friend request:', error);
+      alert('Failed to send friend request');
+    }
+  };
 
   return (
     <div className="border-2 rounded-lg flex justify-center items-center p-8 gap-20">
@@ -68,9 +86,13 @@ const UserProfile = ({ user }) => {
 
         {!isCurrentUser && (
           <div className="flex gap-5">
-            <Button className="bg-gray-300">
+            <Button
+              className="bg-gray-300"
+              onClick={handleAddFriend}
+              disabled={isRequestSent}
+            >
               <Handshake />
-              Add Friend
+              {isRequestSent ? 'Request Sent' : 'Add Friend'}
             </Button>
             <Button className="bg-gray-300">
               <Sword />

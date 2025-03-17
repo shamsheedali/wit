@@ -4,6 +4,7 @@ import { IFriendRequest } from '../models/friendRequest.model';
 import { Model } from 'mongoose';
 import TYPES from '../../config/types';
 import mongoose from 'mongoose';
+import User, { IUser } from '../models/user.model';
 
 @injectable()
 export default class FriendRepository extends BaseRepository<IFriendRequest> {
@@ -21,6 +22,10 @@ export default class FriendRepository extends BaseRepository<IFriendRequest> {
       receiverId: new mongoose.Types.ObjectId(receiverId),
     };
     return this.create(request);
+  }
+
+  async findUserById(userId: string): Promise<IUser | null> {
+    return User.findById(userId).populate('friends', 'username').exec();
   }
 
   async findPending(senderId: string, receiverId: string): Promise<IFriendRequest | null> {

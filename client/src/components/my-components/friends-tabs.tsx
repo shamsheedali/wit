@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -10,33 +10,66 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCallback, useState } from "react";
-import {debounce} from "lodash";
+import { useCallback, useEffect, useState } from "react";
+import { debounce } from "lodash";
 import { useQuery } from "@tanstack/react-query";
 import { searchFriend } from "@/lib/api/user";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores";
 import { User } from "@/types/auth";
+import { useFriendStore } from "@/stores/useFriendStore";
 
 export function FriendsTabs() {
-  const {user: mainUser} = useAuthStore();
-
+  const { user: mainUser } = useAuthStore();
+  const {
+    friendRequests,
+    fetchFriendRequests,
+    updateFriendRequest,
+    fetchFriends,
+    friends,
+  } = useFriendStore();
   const router = useRouter();
   const [query, setQuery] = useState<string>("");
 
-  const debouncedSetQuery = useCallback(debounce((val) => setQuery(val), 500), []);
+  const debouncedSetQuery = useCallback(
+    debounce((val) => setQuery(val), 500),
+    []
+  );
 
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ['searchFriend', query],
+    queryKey: ["searchFriend", query],
     queryFn: () => searchFriend(query),
     enabled: !!query,
   });
-  
-  const filteredUsers = users?.filter((user: User) => user._id !== mainUser?._id) || [];
+
+  const filteredUsers =
+    users?.filter((user: User) => user._id !== mainUser?._id) || [];
+
+  // Fetch friend requests when the component mounts
+  useEffect(() => {
+    if (mainUser?._id) {
+      fetchFriendRequests();
+      fetchFriends(); // Fetch friends on mount
+    }
+  }, [mainUser?._id, fetchFriendRequests, fetchFriends]);
 
   const handleUserPage = (username: string) => {
-    router.push(`/${username}`)
-  }
+    router.push(`/${username}`);
+  };
+
+  console.log("friendRequests:", friendRequests); // Add this
+  const receivedRequests = friendRequests.filter(
+    (req) => req.receiverId === mainUser?._id && req.status === "pending"
+  );
+  console.log("receivedRequests:", receivedRequests); // Add this
+
+  const handleAccept = (requestId: string) => {
+    updateFriendRequest(requestId, "accepted");
+  };
+
+  const handleIgnore = (requestId: string) => {
+    updateFriendRequest(requestId, "ignored");
+  };
 
   return (
     <Tabs defaultValue="friends" className="w-full">
@@ -52,89 +85,41 @@ export function FriendsTabs() {
             <CardDescription>Your friends list</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Friend 1 */}
-            <div className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group">
-              <div className="relative">
-                <img
-                  src="/placeholder.svg?height=40&width=40"
-                  alt="User avatar"
-                  className="rounded-full w-10 h-10 object-cover"
-                  width={40}
-                  height={40}
-                />
-                <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">Alex Johnson</p>
-                <p className="text-xs text-muted-foreground flex items-center">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                  Online
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary hover:text-primary-foreground"
-              >
-                View
-              </Button>
-            </div>
-
-            {/* Friend 2 */}
-            <div className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group">
-              <div className="relative">
-                <img
-                  src="/placeholder.svg?height=40&width=40"
-                  alt="User avatar"
-                  className="rounded-full w-10 h-10 object-cover"
-                  width={40}
-                  height={40}
-                />
-                <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">Sam Taylor</p>
-                <p className="text-xs text-muted-foreground flex items-center">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                  Online
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary hover:text-primary-foreground"
-              >
-                View
-              </Button>
-            </div>
-
-            {/* Friend 3 */}
-            <div className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group">
-              <div className="relative">
-                <img
-                  src="/placeholder.svg?height=40&width=40"
-                  alt="User avatar"
-                  className="rounded-full w-10 h-10 object-cover"
-                  width={40}
-                  height={40}
-                />
-                <span className="absolute bottom-0 right-0 w-3 h-3 bg-gray-400 rounded-full border-2 border-white"></span>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">Jamie Smith</p>
-                <p className="text-xs text-muted-foreground flex items-center">
-                  <span className="w-2 h-2 bg-gray-400 rounded-full mr-1"></span>
-                  Offline
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary hover:text-primary-foreground"
-              >
-                View
-              </Button>
-            </div>
+            {friends.length === 0 ? (
+              <p>No friends yet</p>
+            ) : (
+              friends.map((friend) => (
+                <div
+                  key={friend._id}
+                  className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
+                >
+                  <div className="relative">
+                    <img
+                      src="/placeholder.svg?height=40&width=40"
+                      alt="User avatar"
+                      className="rounded-full w-10 h-10 object-cover"
+                      width={40}
+                      height={40}
+                    />
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{friend.username}</p>
+                    <p className="text-xs text-muted-foreground flex items-center">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                      Online
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary hover:text-primary-foreground"
+                  >
+                    View
+                  </Button>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </TabsContent>
@@ -147,34 +132,40 @@ export function FriendsTabs() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex space-x-2">
-              <Input placeholder="Search by username" className="flex-1" onChange={(e) => debouncedSetQuery(e.target.value)} />
+              <Input
+                placeholder="Search by username"
+                className="flex-1"
+                onChange={(e) => debouncedSetQuery(e.target.value)}
+              />
               <Button>Search</Button>
             </div>
 
-            {filteredUsers && filteredUsers.map((user: User) => (
-
-              <div key={user._id} className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group" 
-              onClick={() => handleUserPage(user.username)}>
-                <div className="relative">
-                  <img
-                    src="/placeholder.svg?height=40&width=40"
-                    alt="User avatar"
-                    className="rounded-full w-10 h-10 object-cover"
-                    width={40}
-                    height={40}
-                  />
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+            {filteredUsers &&
+              filteredUsers.map((user: User) => (
+                <div
+                  key={user._id}
+                  className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
+                  onClick={() => handleUserPage(user.username)}
+                >
+                  <div className="relative">
+                    <img
+                      src="/placeholder.svg?height=40&width=40"
+                      alt="User avatar"
+                      className="rounded-full w-10 h-10 object-cover"
+                      width={40}
+                      height={40}
+                    />
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{user.username}</p>
+                    <p className="text-xs text-muted-foreground flex items-center">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                      Online
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{user.username}</p>
-                  <p className="text-xs text-muted-foreground flex items-center">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                    Online
-                  </p>
-                </div>
-              </div>
-            ))}
-            
+              ))}
           </CardContent>
         </Card>
       </TabsContent>
@@ -188,36 +179,52 @@ export function FriendsTabs() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group">
-              <div className="relative">
-                <img
-                  src="/placeholder.svg?height=40&width=40"
-                  alt="User avatar"
-                  className="rounded-full w-10 h-10 object-cover"
-                  width={40}
-                  height={40}
-                />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">Riley Cooper</p>
-                <p className="text-xs text-muted-foreground flex items-center">
-                  <span className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>
-                  Pending
-                </p>
-              </div>
-              <div className="flex space-x-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="transition-all duration-200 hover:bg-destructive hover:text-destructive-foreground"
+            {receivedRequests.length === 0 ? (
+              <p>No pending requests</p>
+            ) : (
+              receivedRequests.map((req) => (
+                <div
+                  key={req._id}
+                  className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
                 >
-                  Ignore
-                </Button>
-                <Button size="sm" className="transition-all duration-200">
-                  Accept
-                </Button>
-              </div>
-            </div>
+                  <div className="relative">
+                    <img
+                      src="/placeholder.svg?height=40&width=40"
+                      alt="User avatar"
+                      className="rounded-full w-10 h-10 object-cover"
+                      width={40}
+                      height={40}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">
+                      {req.senderId.username}
+                    </p>
+                    <p className="text-xs text-muted-foreground flex items-center">
+                      <span className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>
+                      Pending
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="transition-all duration-200 hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={() => handleIgnore(req._id)}
+                    >
+                      Ignore
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="transition-all duration-200"
+                      onClick={() => handleAccept(req._id)}
+                    >
+                      Accept
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </TabsContent>

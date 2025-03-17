@@ -13,6 +13,21 @@ export default class FriendController {
     this.friendService = friendService;
   }
 
+  async getFriends(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId } = req.query;
+      if (!userId) {
+        res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: 'User ID required' });
+        return;
+      }
+      const friends = await this.friendService.getFriends(userId as string);
+      res.status(HttpStatus.OK).json(friends);
+    } catch (error: any) {
+      console.error('Get friends error:', error);
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
+    }
+  }
+
   async sendFriendRequest(req: Request, res: Response): Promise<void> {
     try {
       const { senderId, receiverId } = req.body;
@@ -28,8 +43,9 @@ export default class FriendController {
 
   async getFriendRequests(req: Request, res: Response): Promise<void> {
     try {
-      const { userId } = req.body;
-      const requests = await this.friendService.getFriendRequests(userId);
+      const { userId } = req.query;
+      if (!userId)  res.status(400).json({ success: false, message: 'User ID required' });
+      const requests = await this.friendService.getFriendRequests(userId as string);
       res.json(requests);
     } catch (error: any) {
       console.error(error);
