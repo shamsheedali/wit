@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { checkUsername, getOtp, registerUser, verifyOtp } from "@/lib/api/user";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/stores";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { debounce } from "lodash";
 import { CircleCheck, CircleX, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -20,8 +21,7 @@ type FormData = {
 };
 
 export default function SignupFormDetailsPage() {
-  const queryClient = useQueryClient();
-
+  const { setUser } = useAuthStore();
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -181,7 +181,7 @@ export default function SignupFormDetailsPage() {
       if (response?.success) {
         localStorage.removeItem("userEmail");
         //saving in global state
-        queryClient.setQueryData(["user"], response.data.user);
+        setUser(response.data.user);
         router.push("/home");
       }
     },

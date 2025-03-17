@@ -8,24 +8,29 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/hooks/queryHooks/useAuth";
-import useUser from "@/hooks/queryHooks/useUser";
+import { userLogout } from "@/lib/api/user";
+import { useAuthStore } from "@/stores";
 import { User, Settings, LogOut } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function UserAvatar() {
-  const { data: user } = useUser();
-  const { handleLogout } = useAuth();
+  const router = useRouter();
 
-  const onLogout = async () => {
-    await handleLogout();
+  const { user, logout } = useAuthStore();
+  console.log("user from zustand", user)
+
+  const onLogout = () => {
+    userLogout();
+    logout();
+    router.push('/home');
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="cursor-pointer w-8 h-8">
-          <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+          <AvatarImage src={user?.profileImageUrl || "/placeholder.svg?height=96&width=96"} alt={`@${user?.username}`} />
           <AvatarFallback>CN</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>

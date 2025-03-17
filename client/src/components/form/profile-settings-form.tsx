@@ -29,10 +29,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { toast } from "sonner";
-import useUser from "@/hooks/queryHooks/useUser";
 import { useMutation } from "@tanstack/react-query";
 import { updateUserProfile } from "@/lib/api/user";
-import { queryClient } from "@/lib/providers/QueryProvider";
+import { useAuthStore } from "@/stores";
 
 const profileFormSchema = z.object({
   username: z
@@ -50,7 +49,7 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function ProfileSettingsForm() {
-  const { data: user, isLoading } = useUser();
+  const { user, updateUser } = useAuthStore();
 
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,10 +85,14 @@ export default function ProfileSettingsForm() {
     onSuccess: (result) => {
       if(result?.success) {
         toast.success(result.data.message);
+        //update global zustand state;
+        updateUser(result.data.user);
+        setIsSubmitting(false);
       }
     },
     onError: (err) => {
       console.error("Error updating profile", err);
+      setIsSubmitting(false);
     },
   })
 
@@ -108,17 +111,7 @@ export default function ProfileSettingsForm() {
       }
 
       if(user?._id) {
-        mutate({userData: formData, userId: user._id}, {
-          onSuccess: (updatedUserData) => {
-            queryClient.setQueryData(["user"], (oldUser) => ({
-              ...oldUser,
-              ...updatedUserData,
-            }));
-          },
-          onSettled: () => {
-            setIsSubmitting(false);
-          }
-        });
+        mutate({userData: formData, userId: user._id});
       }else {
         console.error("User ID is missing");
         setIsSubmitting(false);
@@ -137,7 +130,7 @@ export default function ProfileSettingsForm() {
     }
   }
 
-  if (isLoading) return <p>Loading profile...</p>;
+  // if (isLoading) return <p>Loading profile...</p>;
 
   return (
     <Card className="w-full max-w-2xl mx-auto">

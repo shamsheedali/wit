@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { UserAvatar } from "./user-avatar";
 import { Bell, UsersRound } from "lucide-react";
@@ -12,16 +11,11 @@ import {
   TooltipTrigger,
 } from "../ui/tooltip";
 import { Button } from "../ui/button";
-import { useAuth } from "@/hooks/queryHooks/useAuth";
+import { useAuthStore } from "@/stores";
 
 export default function UserNavbar() {
-  const [user, setUser] = useState(false);
-  const {data: authState} = useAuth();
 
-  useEffect(() => {
-    const token = localStorage.getItem("userToken");
-    if (token) setUser(true);
-  }, []);
+  const { isAuthenticated } = useAuthStore();
 
   return (
     <div className="bg-[#09090b] flex justify-between items-center px-16 py-5 border-b-[1px] text-[#f0f0f0db] font-bold font-clashDisplay text-[15px]  w-full fixed z-10">
@@ -69,7 +63,7 @@ export default function UserNavbar() {
           </Tooltip>
         </TooltipProvider>
 
-        {authState ? (
+        {isAuthenticated ? (
           <UserAvatar />
         ) : (
           <Link href={"/login"}>

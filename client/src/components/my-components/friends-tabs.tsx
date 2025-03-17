@@ -15,10 +15,11 @@ import {debounce} from "lodash";
 import { useQuery } from "@tanstack/react-query";
 import { searchFriend } from "@/lib/api/user";
 import { useRouter } from "next/navigation";
-import useUser from "@/hooks/queryHooks/useUser";
+import { useAuthStore } from "@/stores";
+import { User } from "@/types/auth";
 
 export function FriendsTabs() {
-  const {data: mainUser} = useUser();
+  const {user: mainUser} = useAuthStore();
 
   const router = useRouter();
   const [query, setQuery] = useState<string>("");
@@ -31,7 +32,7 @@ export function FriendsTabs() {
     enabled: !!query,
   });
   
-  const filteredUsers = users?.filter((user) => user._id !== mainUser?._id) || [];
+  const filteredUsers = users?.filter((user: User) => user._id !== mainUser?._id) || [];
 
   const handleUserPage = (username: string) => {
     router.push(`/${username}`)
@@ -150,7 +151,7 @@ export function FriendsTabs() {
               <Button>Search</Button>
             </div>
 
-            {filteredUsers && filteredUsers.map((user: object) => (
+            {filteredUsers && filteredUsers.map((user: User) => (
 
               <div key={user._id} className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group" 
               onClick={() => handleUserPage(user.username)}>

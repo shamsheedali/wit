@@ -337,7 +337,7 @@ export default class UserController {
       });
     } catch (error) {
       console.error("Error updating profile:", error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal server error", error });
     }
   }
 }

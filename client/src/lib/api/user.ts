@@ -160,3 +160,8 @@ export const updateUserProfile = async ({userData, userId}: {userData: FormData,
     return { success: false, error };
   }
 };
+
+//USER_LOGOUT
+export const userLogout = () => {
+  localStorage.removeItem('userToken');
+}

@@ -12,18 +12,18 @@ import {
   TrendingUp,
   UsersRound,
 } from "lucide-react";
-import useUser from "@/hooks/queryHooks/useUser";
 import Link from "next/link";
+import { useAuthStore } from "@/stores";
 
 const UserProfile = ({ user }) => {
-  const { data: mainUser } = useUser();
+  const { user: mainUser } = useAuthStore();
   const isCurrentUser = mainUser?._id === user?._id;
 
   return (
     <div className="border-2 rounded-lg flex justify-center items-center p-8 gap-20">
       <Avatar className="cursor-pointer w-40 h-40">
         <AvatarImage
-          src={isCurrentUser ? mainUser?.profileImageUrl : "https://github.com/shadcn.png"}
+          src={isCurrentUser ? mainUser?.profileImageUrl : ""}
           alt="@shadcn"
         />
         <AvatarFallback>{user?.username[0].toUpperCase()}</AvatarFallback>
