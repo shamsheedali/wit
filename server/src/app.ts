@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import connectDB from './config/database';
 import userRouter from './app/routes/user.route';
 import adminRouter from './app/routes/admin.route';
+import friendRouter from './app/routes/friend.route';
 import { connectRedis } from "./config/redis";
 
 const app = express();
@@ -34,6 +35,8 @@ app.use(cors({
 app.use('/api/user', userRouter);
 //ADMIN-ROUTE
 app.use('/api/admin', adminRouter);
+//FRIEND-ROUTER
+app.use('/api/friend', friendRouter);
 
 //DB Connection
 connectDB();

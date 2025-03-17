@@ -78,4 +78,12 @@ export default class UserRepository extends BaseRepository<IUser> {
       throw error;
     }
   }
+
+  async addFriend(userId: string, friendId: string): Promise<IUser | null> {
+    return this.model.findByIdAndUpdate(
+      userId,
+      { $addToSet: { friends: friendId } },
+      { new: true }
+    ).exec();
+  }
 }

@@ -8,6 +8,7 @@ export interface IUser extends Document {
     password?: string;
     bio?:string;
     googleId?: string;
+    friends: mongoose.Types.ObjectId[];
     profileImageUrl?: string;
     profileImageId?: string;
     otp?: string;
@@ -48,6 +49,10 @@ const UserSchema = new Schema<IUser>(
         type: String,
         default: null,
     },
+    friends: [{
+        type: mongoose.Types.ObjectId,
+        ref: 'Users'
+    }],
     profileImageUrl: {
         type: String,
     },
