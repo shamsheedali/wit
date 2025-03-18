@@ -1,6 +1,6 @@
 import { FriendsTabs } from "@/components/my-components/friends-tabs";
 
-export default function home() {
+export default function Friends() {
   return (
     <div
       // style={{

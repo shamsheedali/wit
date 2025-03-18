@@ -14,7 +14,6 @@ import { Button } from "../ui/button";
 import { useAuthStore } from "@/stores";
 
 export default function UserNavbar() {
-
   const { isAuthenticated } = useAuthStore();
 
   return (
@@ -31,10 +30,12 @@ export default function UserNavbar() {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger>
-              <GrGroup className="h-5 w-5" />
+              <Link href={"/clubs"}>
+                <GrGroup className="h-5 w-5" />
+              </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Groups</p>
+              <p>Clubs</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -42,7 +43,7 @@ export default function UserNavbar() {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger>
-              <Link href={'/friends'}>
+              <Link href={"/friends"}>
                 <UsersRound className="h-5 w-5" />
               </Link>
             </TooltipTrigger>
