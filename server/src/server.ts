@@ -4,7 +4,7 @@ dotenv.config();
 import { createServer } from 'http';
 import { Server } from 'socket.io'
 import app from './app';
-import socketHandler from './app/sockets';
+import socketHandler from './sockets';
 
 const PORT = process.env.PORT || 5000;
 

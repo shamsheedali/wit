@@ -28,7 +28,7 @@ export const useFriendStore = create<FriendState>((set) => ({
     const result = await fetchFriends(userId);
     if (result.success) {
       console.log('Fetched friends:', result.data);
-      set({ friends: result.data });
+      set({ friends: result.data.map((f: Friend) => ({ ...f, online: false })) }); // Default offline
     } else {
       console.error('Failed to fetch friends:', result.error || result.message);
     }
@@ -115,9 +115,18 @@ export const useFriendStore = create<FriendState>((set) => ({
         });
       }
     });
-    socket.on('friendshipCreated', (data: { userId: string }) => {
+    socket.on('friendshipCreated', (data: { user: Friend }) => {
+      set((state) => {
+        const exists = state.friends.some((friend) => friend._id === data.user._id);
+        if (exists) return state;
+        return { friends: [...state.friends, { ...data.user, online: false }] };
+      });
+    });
+    socket.on('friendStatus', (data: { userId: string; online: boolean }) => {
       set((state) => ({
-        friends: [...state.friends, { _id: data.userId, username: 'Unknown' }],
+        friends: state.friends.map((friend) =>
+          friend._id === data.userId ? { ...friend, online: data.online } : friend
+        ),
       }));
     });
     socket.on('friendRequestUpdated', (data: { requestId: string; status: string }) => {

@@ -31,7 +31,7 @@ export function UserAvatar() {
       <DropdownMenuTrigger asChild>
         <Avatar className="cursor-pointer w-8 h-8">
           <AvatarImage src={user?.profileImageUrl || "/placeholder.svg?height=96&width=96"} alt={`@${user?.username}`} />
-          <AvatarFallback>CN</AvatarFallback>
+          <AvatarFallback>{user?.username[0].toUpperCase()}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>

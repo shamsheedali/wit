@@ -10,4 +10,5 @@ export interface FriendRequest {
 export interface Friend {
   _id: string;
   username: string;
+  online?: boolean;
 }

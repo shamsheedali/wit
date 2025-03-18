@@ -101,13 +101,21 @@ export function FriendsTabs() {
                       width={40}
                       height={40}
                     />
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+                    <span
+                      className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+                        friend.online ? "bg-green-500" : "bg-gray-500"
+                      }`}
+                    ></span>
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">{friend.username}</p>
                     <p className="text-xs text-muted-foreground flex items-center">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                      Online
+                      <span
+                        className={`w-2 h-2 rounded-full mr-1 ${
+                          friend.online ? "bg-green-500" : "bg-gray-500"
+                        }`}
+                      ></span>
+                      {friend.online ? "Online" : "Offline"}
                     </p>
                   </div>
                   <Button

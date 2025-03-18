@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import dynamic from 'next/dynamic';
 
-// Import type only
 import type { AvailableBots } from "@/components/chess/bots";
 
 // Dynamically import bot data

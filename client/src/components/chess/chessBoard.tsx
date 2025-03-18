@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 
 export const ChessBoard: React.FC = () => {
   const [game, setGame] = useState<Chess>(new Chess());
