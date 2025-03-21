@@ -22,7 +22,7 @@ export const adminLogin = async(adminData: {email: string, password: string}) =>
 //GET_ALL_USERS
 export const getUsers = async(page: number, limit: number) => {
   try {
-    const response = await apiClient.get(`${API_URL}/get-users`, {
+    const response = await apiClient.get(`${API_URL}/users`, {
       params : {page, limit},
     });
     console.log(response);
@@ -35,7 +35,7 @@ export const getUsers = async(page: number, limit: number) => {
 //BAN_UNBAN_USERS
 export const toggleBan = async(userId: string) => {
   try {
-    const response = await apiClient.get(`${API_URL}/toggle-ban/${userId}`);
+    const response = await apiClient.patch(`${API_URL}/toggle-ban/${userId}`);
     if(response.status === HttpStatus.OK) {
       toast.success(response.data.message);
       return true;

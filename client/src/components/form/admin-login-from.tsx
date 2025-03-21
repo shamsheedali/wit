@@ -71,6 +71,7 @@ export function AdminLoginForm({
   return (
     <form className={cn("flex flex-col gap-6", className)} {...props} onSubmit={handleSubmit}>
       <div className="flex flex-col items-center gap-2 text-center">
+        <h1 className="font-bold font-stardom text-4xl">Wit.</h1>
         <h1 className="text-2xl font-bold">Admin Login</h1>
       </div>
       <div className="grid gap-6">

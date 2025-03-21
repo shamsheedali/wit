@@ -6,6 +6,7 @@ import userRouter from './app/routes/user.route';
 import adminRouter from './app/routes/admin.route';
 import friendRouter from './app/routes/friend.route';
 import clubRouter from './app/routes/club.route';
+import gameRoutes from "./app/routes/game.route";
 import { connectRedis } from "./config/redis";
 
 const app = express();
@@ -40,6 +41,8 @@ app.use('/api/admin', adminRouter);
 app.use('/api/friend', friendRouter);
 //CLUB-ROUTER
 app.use('/api/club', clubRouter);
+//GAME-ROUTER
+app.use("/api/game", gameRoutes);
 
 //DB Connection
 connectDB();

@@ -3,7 +3,7 @@ import TYPES from "../../config/types";
 import container from "../../config/inversify.config"; 
 import AdminController from "../controllers/admin.controller"; 
 import { authenticateToken } from "../../middleware/auth.middleware";
-import requireRole from "../../middleware/admin.middleware";
+import isAdmin from "../../middleware/admin.middleware";
 
 const router = express.Router();
 const adminController = container.get<AdminController>(TYPES.AdminController);
@@ -14,12 +14,12 @@ router.post("/login", async (req: Request, res: Response) => {
 });
 
 // GET ALL USERS
-router.get("/get-users", authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.get("/users", authenticateToken, isAdmin(), async (req: Request, res: Response) => {
     await adminController.getUsers(req, res);
 });
 
 //TOGGLE_BAN-USER
-router.get("/toggle-ban/:id", authenticateToken, requireRole('admin'), async (req: Request, res: Response) => {
+router.patch("/toggle-ban/:id", authenticateToken, isAdmin(), async (req: Request, res: Response) => {
     await adminController.toggleBan(req, res);
 })
 

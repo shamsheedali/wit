@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores";
 import { User } from "@/types/auth";
 import { useFriendStore } from "@/stores/useFriendStore";
+import { Sword } from "lucide-react";
 
 export function FriendsTabs() {
   const { user: mainUser } = useAuthStore();
@@ -45,11 +46,10 @@ export function FriendsTabs() {
   const filteredUsers =
     users?.filter((user: User) => user._id !== mainUser?._id) || [];
 
-  // Fetch friend requests when the component mounts
   useEffect(() => {
     if (mainUser?._id) {
       fetchFriendRequests();
-      fetchFriends(); // Fetch friends on mount
+      fetchFriends();
     }
   }, [mainUser?._id, fetchFriendRequests, fetchFriends]);
 
@@ -57,11 +57,11 @@ export function FriendsTabs() {
     router.push(`/${username}`);
   };
 
-  console.log("friendRequests:", friendRequests); // Add this
+  console.log("friendRequests:", friendRequests); 
   const receivedRequests = friendRequests.filter(
     (req) => req.receiverId === mainUser?._id && req.status === "pending"
   );
-  console.log("receivedRequests:", receivedRequests); // Add this
+  console.log("receivedRequests:", receivedRequests); 
 
   const handleAccept = (requestId: string) => {
     updateFriendRequest(requestId, "accepted");
@@ -92,10 +92,11 @@ export function FriendsTabs() {
                 <div
                   key={friend._id}
                   className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
+                  onClick={() => handleUserPage(friend.username)}
                 >
                   <div className="relative">
                     <img
-                      src="/placeholder.svg?height=40&width=40"
+                      src={friend?.profileImageUrl || "/placeholder.svg?height=40&width=40"} 
                       alt="User avatar"
                       className="rounded-full w-10 h-10 object-cover"
                       width={40}
@@ -123,7 +124,8 @@ export function FriendsTabs() {
                     variant="ghost"
                     className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary hover:text-primary-foreground"
                   >
-                    View
+                    <Sword />
+                    Challenge
                   </Button>
                 </div>
               ))

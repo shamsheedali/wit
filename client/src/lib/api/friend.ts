@@ -1,9 +1,8 @@
-// src/lib/api/friend.ts
-import HttpStatus from "../constants/httpStatus"; // Adjust path if needed
-import { handleApiError } from "../constants/errorHandler"; // Adjust path if needed
-import apiClient from "../apiClient"; // Adjust path if needed
+import HttpStatus from "../constants/httpStatus";
+import { handleApiError } from "../constants/errorHandler";
+import apiClient from "../apiClient";
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/friend`; // Match your backend base URL
+const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/friend`;
 
 // FETCH FRIENDS
 export const fetchFriends = async (userId: string) => {

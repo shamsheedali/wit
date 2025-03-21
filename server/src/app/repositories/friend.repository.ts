@@ -25,7 +25,7 @@ export default class FriendRepository extends BaseRepository<IFriendRequest> {
   }
 
   async findUserById(userId: string): Promise<IUser | null> {
-    return User.findById(userId).populate('friends', 'username').exec();
+    return User.findById(userId).populate('friends', 'username profileImageUrl').exec();
   }
 
   async findPending(senderId: string, receiverId: string): Promise<IFriendRequest | null> {

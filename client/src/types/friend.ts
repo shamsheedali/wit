@@ -10,5 +10,6 @@ export interface FriendRequest {
 export interface Friend {
   _id: string;
   username: string;
+  profileImageUrl: string;
   online?: boolean;
 }

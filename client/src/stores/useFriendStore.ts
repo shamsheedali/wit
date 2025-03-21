@@ -1,9 +1,8 @@
-// src/lib/friendStore.ts
 import { create } from 'zustand';
 import { getSocket, initSocket } from '@/lib/socket';
 import { fetchFriendRequests, fetchFriends, sendFriendRequest, updateFriendRequest } from '@/lib/api/friend';
 import { FriendRequest, Friend } from '@/types/friend';
-import { useAuthStore } from '@/stores'; // Adjust path if needed
+import { useAuthStore } from '@/stores';
 
 interface FriendState {
   friendRequests: FriendRequest[];
@@ -42,7 +41,7 @@ export const useFriendStore = create<FriendState>((set) => ({
     }
     const result = await fetchFriendRequests(userId);
     if (result.success) {
-      console.log('Fetched requests:', result.data); // Add this
+      console.log('Fetched requests:', result.data);
       set({ friendRequests: result.data });
     } else {
       console.error('Failed to fetch friend requests:', result.error || result.message);
@@ -53,7 +52,7 @@ export const useFriendStore = create<FriendState>((set) => ({
     const senderId = useAuthStore.getState().user?._id;
     if (!senderId) {
       console.error('No authenticated user');
-      throw new Error('No authenticated user'); // Throw to catch in UserProfile
+      throw new Error('No authenticated user');
     }
     const result = await sendFriendRequest(senderId, receiverId);
     if (result.success) {
@@ -95,12 +94,12 @@ export const useFriendStore = create<FriendState>((set) => ({
   initializeSocket: () => {
     const userId = useAuthStore.getState().user?._id;
     if (!userId) {
-      console.error('No authenticated user for socket');
+      console.log('No authenticated user for socket');
       return;
     }
     const socket = getSocket() || initSocket(userId);
     socket.on('friendRequest', (request: FriendRequest) => {
-      console.log('Received friendRequest:', request); // Add this
+      console.log('Received friendRequest:', request);
       set((state) => ({
         friendRequests: [...state.friendRequests, request],
       }));

@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, ChangeEvent } from "react";
+import React, { useState, useEffect, useCallback, ChangeEvent, useRef } from "react";
 import { Chessboard } from "react-chessboard";
 import * as engine from "@/components/chess/engine";
 import type { AvailableBots, InitialisedBot } from "@/components/chess/bots";
 import styles from "./styles.module.scss";
 import { Button } from "../ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { useAuthStore } from "@/stores";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 type SelectedBot = {
   name: string;
@@ -51,6 +51,23 @@ const BotSelector: React.FC<{
   );
 };
 
+const History: React.FC<{ history: Array<engine.Move> }> = ({ history }) => {
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView();
+  }, [history]);
+
+  return (
+    <pre
+      className="bg-gray-800 text-white w-60 h-[425px] p-4 mt-[105px] overflow-y-auto rounded-lg"
+    >
+      {history.map(({ color, piece, from, san }) => `${color}${piece}${from} ${san}`).join("\n")}
+      <div ref={endRef} />
+    </pre>
+  );
+};
+
 const PlayWithBot: React.FC<{
   bots: AvailableBots;
   onGameCompleted: (winner: engine.GameWinner) => void;
@@ -72,23 +89,20 @@ const PlayWithBot: React.FC<{
   const doMove = useCallback(
     (fen: engine.Fen, from: engine.Square, to: engine.Square) => {
       const move = engine.move(fen, from, to);
-      if (!move) return false; // Return false if move is invalid
+      if (!move) return false;
 
       const [newFen, action] = move;
 
-      // Add debug logging
       console.log("Move made:", from, "to", to);
       console.log("New FEN:", newFen);
       console.log("Game over check:", engine.isGameOver(newFen));
 
       if (engine.isGameOver(newFen)) {
-        // Add a slight delay before showing game over to ensure UI updates
         setTimeout(() => {
           onGameCompleted(engine.getGameWinner(newFen));
           newGame();
         }, 500);
 
-        // Still update the UI with the final position
         setFen(newFen);
         setHistory((prev) => [...prev, action]);
         return true;
@@ -109,9 +123,7 @@ const PlayWithBot: React.FC<{
     const playBotMove = async (bot: SelectedBot) => {
       if (bot) {
         try {
-          // Add a small delay to prevent too-rapid moves
           await new Promise((resolve) => setTimeout(resolve, 300));
-
           const { from, to } = await bot.move(fen);
           console.log(`Bot ${bot.name} wants to move from ${from} to ${to}`);
 
@@ -129,13 +141,11 @@ const PlayWithBot: React.FC<{
       }
     };
 
-    // Ensure we're only triggering bot moves when appropriate
     const isBotTurn =
       (whiteBot && engine.isWhiteTurn(fen)) ||
       (blackBot && engine.isBlackTurn(fen));
 
     if (isBotTurn) {
-      // Use requestAnimationFrame to ensure UI has updated
       requestAnimationFrame(() => {
         if (whiteBot && engine.isWhiteTurn(fen)) playBotMove(whiteBot);
         if (blackBot && engine.isBlackTurn(fen)) playBotMove(blackBot);
@@ -153,37 +163,61 @@ const PlayWithBot: React.FC<{
         height: "100vh",
         width: "100%",
         display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
+        padding: "1rem",
       }}
     >
-      <div className="flex gap-4">
-        <BotSelector
-          playerName="White"
-          availableBots={bots}
-          selectedBot={whiteBot}
-          setSelectedBot={setWhiteBot}
-          disabled={isPlaying}
-        />
-        <BotSelector
-          playerName="Black"
-          availableBots={bots}
-          selectedBot={blackBot}
-          setSelectedBot={setBlackBot}
-          disabled={isPlaying}
-        />
-        <Button onClick={() => setPlaying(!isPlaying)}>
-          {isPlaying ? "Pause" : "Play"}
-        </Button>
-        <Button onClick={newGame}>Reset</Button>
-      </div>
-      <div>
-        <Chessboard
-          position={fen}
-          onPieceDrop={(from, to) => doMove(fen, from, to)}
-          customNotationStyle={{color: 'black', fontWeight: 'bold'}}
-          boardWidth={400}
-        />
+      <History history={history} />
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div className="flex gap-4">
+          <BotSelector
+            playerName="White"
+            availableBots={bots}
+            selectedBot={whiteBot}
+            setSelectedBot={setWhiteBot}
+            disabled={isPlaying}
+          />
+          <BotSelector
+            playerName="Black"
+            availableBots={bots}
+            selectedBot={blackBot}
+            setSelectedBot={setBlackBot}
+            disabled={isPlaying}
+          />
+          <Button onClick={() => setPlaying(!isPlaying)}>
+            {isPlaying ? "Pause" : "Play"}
+          </Button>
+          <Button onClick={newGame}>Reset</Button>
+        </div>
+        <div>
+          <Chessboard
+            position={fen}
+            onPieceDrop={(from, to) => doMove(fen, from, to)}
+            customNotationStyle={{ color: "black", fontWeight: "bold" }}
+            boardWidth={400}
+          />
+        </div>
+        <div style={{ width: "400px", marginTop: "10px", textAlign: "left" }}>
+          <div className="flex items-center gap-2">
+            <Avatar className="w-10 h-10">
+              <AvatarImage
+                src={user?.avatar || "/placeholder.svg?height=40&width=40"}
+                alt="User avatar"
+              />
+              <AvatarFallback>{user?.username?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
+            </Avatar>
+            <span className="text-sm font-medium">
+              {user?.username || "Guest"}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,14 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import HttpStatus from "../constants/httpStatus";
 
-const requireRole = (role: string) => {
+const isAdmin = () => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    if (!req.user || req.user.role !== role) {
-      res.status(HttpStatus.FORBIDDEN).json({ message: `Access denied. ${role} role required.` });
+    if (!req.user || req.user.role !== 'admin') {
+      res.status(HttpStatus.FORBIDDEN).json({ message: `Access denied. admin role required.` });
       return;
     }
     next();
   };
 };
 
-export default requireRole;
+export default isAdmin;

@@ -11,7 +11,6 @@ export interface IUser extends Document {
     friends: mongoose.Types.ObjectId[]| IUser[];
     profileImageUrl?: string;
     profileImageId?: string;
-    otp?: string;
     isBanned: boolean;
 }
 
@@ -57,9 +56,6 @@ const UserSchema = new Schema<IUser>(
         type: String,
     },
     profileImageId: {
-        type: String,
-    },
-    otp: {
         type: String,
     },
     isBanned: {

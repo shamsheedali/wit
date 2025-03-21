@@ -90,7 +90,7 @@ const uciWorker = (filePath: string, actions: Array<string>): UninitialisedBot =
 
 // Use the correct file paths that match your directory structure
 const bots: AvailableBots = {
-  Random: () => Promise.resolve({ from: "e2", to: "e4" }),
+  // Random: () => Promise.resolve({ from: "e2", to: "e4" }),
   "stockfish-l1": uciWorker("stockfish.js-10.0.2/stockfish.js", ["go depth 1"]),
   "stockfish-l20": uciWorker("stockfish.js-10.0.2/stockfish.js", ["go depth 20"]),
   "lozza-l1": uciWorker("lozza-1.18/lozza.js", ["go depth 1"]),
