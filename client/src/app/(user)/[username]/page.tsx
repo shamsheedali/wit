@@ -19,7 +19,11 @@ export default function ProfilePage() {
   if (isLoading) return <p>Loading...</p>;
 
   if (isError || !user) {
-    return <p>User not found. <Link href="/">Go back</Link></p>;
+    return (
+      <div className="w-full h-screen flex items-center justify-center">
+        <p>User not found. <Link href="/home">Go back</Link></p>
+      </div>
+    )
   }
 
   return (

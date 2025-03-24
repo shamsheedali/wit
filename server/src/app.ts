@@ -18,11 +18,11 @@ morgan.token("body", (req: Request) => JSON.stringify(req.body || {}));
 morgan.token("query", (req: Request) => JSON.stringify(req.query || {}));
 morgan.token("params", (req: Request) => JSON.stringify(req.params || {}));
 
-app.use(
-  morgan(
-    ':method :url :status :res[content-length] - :response-time ms :remote-addr :user-agent "Body: :body" "Query: :query" "Params: :params"'
-  )
-);
+// app.use(
+//   morgan(
+//     ':method :url :status :res[content-length] - :response-time ms :remote-addr :user-agent "Body: :body" "Query: :query" "Params: :params"'
+//   )
+// );
 
 app.use(cors({
   origin: "http://localhost:3000", //frontend

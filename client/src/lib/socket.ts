@@ -6,6 +6,7 @@ export const initSocket = (userId: string): Socket => {
   if (!socket) {
     socket = io(process.env.BACKEND_URL || 'http://localhost:5000', {
       reconnection: true,
+      transports: ['websocket'],
     });
 
     socket.on('connect', () => {

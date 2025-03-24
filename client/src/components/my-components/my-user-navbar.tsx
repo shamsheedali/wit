@@ -12,14 +12,29 @@ import {
 } from "../ui/tooltip";
 import { Button } from "../ui/button";
 import { useAuthStore } from "@/stores";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import gsap from 'gsap';
 
 export default function UserNavbar() {
   const { isAuthenticated } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
 
+  const navRef = useRef(null);
+
+  useEffect(() => {
+    gsap.fromTo(navRef.current, {
+      y: -100,
+      opacity: 0,
+    }, {
+      y: 0,
+      opacity: 1,
+      delay: 0.5,
+      ease: "power3.out"
+    })
+  }, [])
+
   return (
-    <div className="bg-[#09090b] flex justify-between items-center px-4 sm:px-8 md:px-16 py-5 border-b-[1px] text-[#f0f0f0db] font-bold font-clashDisplay text-[15px] w-full fixed z-10">
+    <div ref={navRef} className="bg-[#09090b] flex justify-between items-center px-4 sm:px-8 md:px-16 py-5 border-b-[1px] text-[#f0f0f0db] font-bold font-clashDisplay text-[15px] w-full fixed z-10">
       {/* Left Section (Logo and Nav) */}
       <div className="flex items-center gap-16">
         <Link href={"/home"} className="font-stardom text-xl">
