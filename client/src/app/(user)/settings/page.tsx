@@ -1,9 +1,5 @@
-import ProfileSettingsForm from "@/components/form/profile-settings-form";
+import { redirect } from "next/navigation"
 
 export default function Settings() {
-  return (
-    <div className="px-56 w-full py-[120px] font-clashDisplay">
-      <ProfileSettingsForm />
-    </div>
-  );
+  redirect("/settings/profile")
 }

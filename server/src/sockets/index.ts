@@ -1,4 +1,3 @@
-// sockets/index.ts
 import { Server, Socket } from "socket.io";
 import User from "../app/models/user.model";
 

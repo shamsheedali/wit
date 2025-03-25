@@ -93,8 +93,17 @@ export default function SignupFormDetailsPage() {
     if (formData.username.length < 4) {
       newErrors.username = "Username must be at least 4 characters.";
     }
+    if(formData.username.trim() === "" || formData.username.includes(" ")) {
+      newErrors.username = "Username should not contain space"
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      newErrors.username = "Username can only contain letters, numbers, and underscores";
+    }
     if (formData.password.length < 8) {
       newErrors.password = "Password must be at least 8 characters.";
+    }
+    if(formData.password.trim() === "" || formData.password.includes(" ")) {
+      newErrors.password = "Password should not contain space"
     }
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match.";

@@ -110,7 +110,6 @@ export default class UserController {
     }
   }
 
-
   //CHECK_USERNAME_EXIST
   async checkUsername(req: Request, res: Response): Promise<Response> {
     try {
@@ -134,12 +133,14 @@ export default class UserController {
     try {
       const { googleId, username, email, profileImage } = req.body;
 
+      let newUsername = username.includes(" ") ? username.replaceAll(" ", "_") : username;
+
       let user = await this.userService.findByEmail(email);
 
       if (!user) {
         user = await this.userRepository.createGoogleUser({
           googleId,
-          username,
+          username: newUsername,
           email,
           profileImageUrl: profileImage,
         });
@@ -155,6 +156,33 @@ export default class UserController {
       return res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
         .json({ message: "Error processing Google auth" });
+    }
+  }
+
+  //VERIFY_PASSWORD
+  async verifyPassword (req: Request, res: Response): Promise<Response> {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: "All fields are required" });
+      }
+
+      const user = await this.userService.findByEmail(email);
+      if (!user) {
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: "User not available" });
+      }
+
+      const passwordValidation = await this.userService.isPasswordValid(password, user.password);
+
+      if (!passwordValidation) {
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: "Invalid password" });
+      }
+
+      return res.status(HttpStatus.OK).json({message: "Password matched"});
+    } catch (error) {
+      console.error(error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 

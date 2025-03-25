@@ -159,20 +159,15 @@ export function FriendsTabs() {
                 >
                   <div className="relative">
                     <img
-                      src="/placeholder.svg?height=40&width=40"
+                      src={user.profileImageUrl}
                       alt="User avatar"
                       className="rounded-full w-10 h-10 object-cover"
                       width={40}
                       height={40}
                     />
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">{user.username}</p>
-                    <p className="text-xs text-muted-foreground flex items-center">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                      Online
-                    </p>
                   </div>
                 </div>
               ))}

@@ -66,7 +66,7 @@ const UserProfile = ({ user }: { user: User }) => {
           <p className="text-sm w-[250px] text-gray-500">{user?.bio}</p>
 
           {isCurrentUser && (
-            <Link href="/settings">
+            <Link href="/settings/profile">
               <Button className="absolute right-0 top-0 bg-gray-300">
                 <Pencil />
                 Edit

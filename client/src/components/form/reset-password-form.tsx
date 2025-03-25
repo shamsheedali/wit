@@ -1,10 +1,9 @@
+"use client";
 
-'use client'
-
-import { z } from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import {
   Form,
@@ -13,61 +12,68 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Button } from '@/components/ui/button'
+} from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { PasswordInput } from '@/components/ui/password-input'
-import { resetPassword } from '@/lib/api/user'
-import { useRouter } from 'next/navigation'
+} from "@/components/ui/card";
+import { PasswordInput } from "@/components/ui/password-input";
+import { resetPassword } from "@/lib/api/user";
+import { useRouter } from "next/navigation";
 
 // Schema for password validation
 const formSchema = z
   .object({
     password: z
       .string()
-      .min(6, { message: 'Password must be at least 6 characters long' })
-      .regex(/[a-zA-Z0-9]/, { message: 'Password must be alphanumeric' }),
+      .min(8, { message: "Password must be at least 8 characters long" })
+      .regex(/^\S+$/, { message: "Password cannot contain spaces" }) // No spaces
+      .regex(/[A-Z]/, { message: "Password must contain at least one uppercase letter" }) // Uppercase
+      .regex(/[a-z]/, { message: "Password must contain at least one lowercase letter" }) // Lowercase
+      .regex(/\d/, { message: "Password must contain at least one number" }) // Number
+      .refine((val) => val.trim() !== "", { message: "Password cannot be empty" }), // Non-empty
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    path: ['confirmPassword'],
-    message: 'Passwords do not match',
-  })
+    path: ["confirmPassword"],
+    message: "Passwords do not match",
+  });
 
 export default function ResetPasswordForm() {
-
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      password: '',
-      confirmPassword: '',
+      password: "",
+      confirmPassword: "",
     },
-  })
+    mode: "onChange", // Validate as the user types
+  });
 
-  //form submission
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const email = localStorage.getItem('userEmail');
-      const result = await resetPassword(email as string, values.password);
-      if(result) {
+      const email = localStorage.getItem("userEmail");
+      if (!email) {
+        toast.error("Email not found. Please start the reset process again.");
+        router.push("/forgot-password"); // Redirect if email is missing
+        return;
+      }
+      const result = await resetPassword(email, values.password);
+      if (result) {
         toast.success(
-          'Password reset successful. You can now log in with your new password.',
-        )
-        localStorage.removeItem('userEmail');
-        //redirect to login
-        router.push('/login');
+          "Password reset successful. You can now log in with your new password."
+        );
+        localStorage.removeItem("userEmail");
+        router.push("/login");
       }
     } catch (error) {
-      console.error('Error resetting password', error)
-      toast.error('Failed to reset the password. Please try again.')
+      console.error("Error resetting password", error);
+      toast.error("Failed to reset the password. Please try again.");
     }
   }
 
@@ -135,5 +141,5 @@ export default function ResetPasswordForm() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

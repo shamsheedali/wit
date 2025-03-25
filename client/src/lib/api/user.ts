@@ -67,6 +67,19 @@ export const googleUser = async (userData: { googleId: string; username: string;
   }
 }
 
+//VERIFY_PASSWORD
+export const verifyPassword = async (userData: {email: string, password: string}) => {
+  try {
+    const response = await apiClient.post(`${API_URL}/verify-password`, userData);
+    if(response.status === HttpStatus.OK) {
+      return true;
+    }
+  } catch (error) {
+    handleApiError(error);
+    return false;
+  }
+}
+
 //FORGOT_PASSWORD
 export const forgotPassword = async (email: string) => {
   try {

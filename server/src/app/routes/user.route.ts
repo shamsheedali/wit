@@ -25,6 +25,10 @@ router.post("/google-auth", async (req: Request, res: Response) => {
   await userController.googleUser(req, res);
 });
 
+router.post("/verify-password", async (req: Request, res: Response) => {
+  await userController.verifyPassword(req, res);
+})
+
 router.post("/forgot-password", async (req: Request, res: Response) => {
   await userController.forgotPassword(req, res);
 })

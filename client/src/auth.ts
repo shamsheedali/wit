@@ -30,7 +30,7 @@ export const { handlers, signIn, signOut } = NextAuth({
           
           // Storing token in a cookie
           if (result?.success && result?.data?.accessToken) {
-            // Set a cookie with the token
+            //cookie with the token
             const cookieStore = await cookies();
             cookieStore.set('google_auth_token', result.data.accessToken, {
               maxAge: 60 * 60 * 24 * 7, // 1 week
@@ -39,6 +39,14 @@ export const { handlers, signIn, signOut } = NextAuth({
               secure: process.env.NODE_ENV === 'production',
               sameSite: 'lax'
             });
+
+            cookieStore.set('google_user_data', JSON.stringify(result.data.user), {
+              maxAge: 60 * 60 * 24 * 7, // 1 week
+              path: '/',
+              httpOnly: false, // Make it accessible from JavaScript
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax'
+            })
           }
         } catch (error) {
           console.error("Error storing google-user:", error);

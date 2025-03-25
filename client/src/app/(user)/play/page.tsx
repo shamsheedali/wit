@@ -1,24 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import Cookies from "js-cookie";
 import Link from "next/link";
 import Image from "next/image";
 
 export default function Play() {
-  useEffect(() => {
-    //Saving google user token from server cookie
-    // Check if there's a Google auth token cookie
-    const googleToken = Cookies.get("google_auth_token");
-
-    if (googleToken) {
-      // Transfer from cookie to localStorage
-      localStorage.setItem("userToken", googleToken);
-
-      // Remove the cookie after transferring
-      Cookies.remove("google_auth_token");
-    }
-  }, []);
 
   return (
     <div className="px-16 w-full h-screen lg:overflow-hidden pt-[80px] font-clashDisplay text-[#f0f0f0db]">

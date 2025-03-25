@@ -18,19 +18,22 @@ export function UserAvatar() {
   const router = useRouter();
 
   const { user, logout } = useAuthStore();
-  console.log("user from zustand", user)
+  console.log("user from zustand", user);
 
   const onLogout = () => {
     userLogout();
     logout();
-    router.push('/home');
+    router.push("/home");
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="cursor-pointer w-8 h-8">
-          <AvatarImage src={user?.profileImageUrl || "/placeholder.svg?height=96&width=96"} alt={`@${user?.username}`} />
+          <AvatarImage
+            src={user?.profileImageUrl || "/placeholder.svg?height=96&width=96"}
+            alt={`@${user?.username}`}
+          />
           <AvatarFallback>{user?.username[0].toUpperCase()}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -51,10 +54,12 @@ export function UserAvatar() {
               <span>Profile</span>
             </DropdownMenuItem>
           </Link>
-          <DropdownMenuItem className="cursor-pointer">
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
-          </DropdownMenuItem>
+          <Link href={'/settings'}>
+            <DropdownMenuItem className="cursor-pointer">
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Settings</span>
+            </DropdownMenuItem>
+          </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="cursor-pointer" onClick={onLogout}>
