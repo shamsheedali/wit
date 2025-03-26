@@ -7,10 +7,15 @@ const router = express.Router();
 const gameController = container.get<GameController>(TYPES.GameController);
 
 router.post("/save", async (req: Request, res: Response) => {
-    await gameController.saveGame(req, res);
+  await gameController.saveGame(req, res);
 });
+
+router.put("/update/:gameId", async (req: Request, res: Response) => {
+  await gameController.updateGame(req, res);
+});
+
 router.get("/user/:userId", async (req: Request, res: Response) => {
-    await gameController.getUserGames(req, res);
+  await gameController.getUserGames(req, res);
 });
 
 export default router;

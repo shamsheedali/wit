@@ -15,6 +15,10 @@ export default class GameRepository extends BaseRepository<IGame> {
     return this.create(gameData);
   }
 
+  async updateGame(id: string, gameData: Partial<IGameInput>): Promise<IGame | null> {
+    return this.update(id, gameData);
+  }
+
   async getGamesByUserId(userId: string): Promise<IGame[]> {
     return this.model
       .find({

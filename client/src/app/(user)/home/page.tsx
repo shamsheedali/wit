@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import Cookies from "js-cookie";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores";
 
 export default function Home() {
@@ -81,7 +80,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-8 cursor-pointer overflow-hidden">
+          <Link href={'/history'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-8 cursor-pointer overflow-hidden">
             <Image
               src="/images/historyImg.webp"
               alt="History"
@@ -93,7 +92,7 @@ export default function Home() {
             <div className="bg-white/5 h-14 w-full absolute bottom-0 rounded-bl-xl rounded-br-xl font-semibold flex items-center justify-end px-10">
               History
             </div>
-          </div>
+          </Link>
         </div>
 
         <h1 className="select-none absolute bottom-0 right-0 font-stardom text-[150px] tracking-wider leading-none hidden lg:block">

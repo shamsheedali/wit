@@ -6,12 +6,14 @@ import { Chessboard } from "react-chessboard";
 import { useFriendStore } from "@/stores/useFriendStore";
 
 interface ChessBoardProps {
-  gameId?: string; // Unique identifier for the game
-  playerColor: "w" | "b"; // "w" for white, "b" for black
-  opponentId?: string; // ID of the opponent
+  gameId?: string;
+  playerColor: "w" | "b";
+  opponentId?: string;
+  onMove?: (move: any, fen: string) => void;
+  onGameEnd?: (result: "whiteWin" | "blackWin" | "draw", lossType: "checkmate" | "resignation" | "timeout", fen: string) => void;
 }
 
-export const ChessBoard: React.FC<ChessBoardProps> = ({ gameId, playerColor, opponentId }) => {
+export const ChessBoard: React.FC<ChessBoardProps> = ({ gameId, playerColor, opponentId, onMove, onGameEnd }) => {
   const [game, setGame] = useState<Chess>(new Chess());
   const boardContainerRef = useRef<HTMLDivElement>(null);
   const [boardSize, setBoardSize] = useState(500);
@@ -20,19 +22,16 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({ gameId, playerColor, opp
   useEffect(() => {
     const socket = initializeSocket();
     if (socket && gameId) {
-      // Join the game room
       socket.emit("joinGame", { gameId });
 
-      // Listen for opponent moves
       socket.on("moveMade", (data) => {
         if (data.gameId === gameId && data.playerId !== opponentId) {
           const newGame = new Chess(data.fen);
           setGame(newGame);
-          if (newGame.isCheckmate()) {
-            alert("Checkmate! Game Over");
-          } else if (newGame.isCheck()) {
-            alert("Check!");
+          if (onMove) {
+            onMove(data.move, data.fen);
           }
+          checkGameEnd(newGame);
         }
       });
 
@@ -40,12 +39,11 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({ gameId, playerColor, opp
         socket.off("moveMade");
       };
     }
-  }, [gameId, opponentId, initializeSocket]);
+  }, [gameId, opponentId, initializeSocket, onMove]);
 
-  // Handle local player moves
   const handleMove = (sourceSquare: string, targetSquare: string) => {
     if (game.turn() !== playerColor) {
-      return false; // Prevent move if not player's turn
+      return false;
     }
 
     const newGame = new Chess(game.fen());
@@ -55,23 +53,46 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({ gameId, playerColor, opp
       setGame(newGame);
       const socket = initializeSocket();
       if (socket && gameId) {
+        const moveData = {
+          from: move.from,
+          to: move.to,
+          piece: move.piece,
+          san: move.san,
+          timestamp: new Date().toISOString(),
+        };
         socket.emit("makeMove", {
           gameId,
           playerId: opponentId,
           fen: newGame.fen(),
+          move: moveData,
         });
+        if (onMove) {
+          onMove(moveData, newGame.fen());
+        }
       }
-      if (newGame.isCheckmate()) {
-        alert("Checkmate! Game Over");
-      } else if (newGame.isCheck()) {
-        alert("Check!");
-      }
+      checkGameEnd(newGame);
       return true;
     }
     return false;
   };
 
-  // Dynamically resize the board
+  const checkGameEnd = (currentGame: Chess) => {
+    if (currentGame.isCheckmate()) {
+      const result = currentGame.turn() === "w" ? "blackWin" : "whiteWin";
+      alert("Checkmate! Game Over");
+      if (onGameEnd) {
+        onGameEnd(result, "checkmate", currentGame.fen());
+      }
+    } else if (currentGame.isDraw()) {
+      alert("Draw! Game Over");
+      if (onGameEnd) {
+        onGameEnd("draw", "checkmate", currentGame.fen()); // Using "checkmate" as placeholder; could refine for stalemate
+      }
+    } else if (currentGame.isCheck()) {
+      alert("Check!");
+    }
+  };
+
   useEffect(() => {
     const updateSize = () => {
       if (boardContainerRef.current) {
@@ -93,7 +114,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({ gameId, playerColor, opp
     <div ref={boardContainerRef} className="flex justify-center items-center w-full h-full">
       <Chessboard
         position={game.fen()}
-        onPieceDrop={handleMove}
+        onPieceDrop={(sourceSquare, targetSquare) => handleMove(sourceSquare, targetSquare)}
         customBoardStyle={{ borderRadius: "4px" }}
         customDarkSquareStyle={{ backgroundColor: "#779952" }}
         customLightSquareStyle={{ backgroundColor: "#edeed1" }}

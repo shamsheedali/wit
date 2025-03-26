@@ -6,12 +6,14 @@ import {
   Bot,
   Command,
   Frame,
+  Gamepad,
   LifeBuoy,
   Map,
   PieChart,
   Send,
   Settings2,
   SquareTerminal,
+  User,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -58,41 +60,25 @@ const data = {
     {
       title: "User Management",
       url: "/dashboard/user-management",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
+      icon: User,
+      // items: [
+      //   {
+      //     title: "Genesis",
+      //     url: "#",
+      //   },
+      // ],
     },
     {
       title: "Games",
       url: "#",
-      icon: BookOpen,
+      icon: Gamepad,
       items: [
         {
-          title: "Introduction",
+          title: "Live Games",
           url: "#",
         },
         {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
+          title: "Game History",
           url: "#",
         },
       ],

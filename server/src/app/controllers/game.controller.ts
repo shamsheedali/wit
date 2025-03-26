@@ -14,13 +14,15 @@ export default class GameController {
 
   async saveGame(req: Request, res: Response): Promise<Response> {
     try {
-      const { playerOne, playerTwo, result, playerAt, fen } = req.body;
+      const { playerOne, playerTwo, playerAt, fen, gameType, timeControl, moves } = req.body;
       const game = await this.gameService.saveGame(
         playerOne,
         playerTwo,
-        result,
         playerAt,
-        fen
+        fen,
+        gameType,
+        timeControl,
+        moves
       );
       return res.status(HttpStatus.CREATED).json({ game });
     } catch (error) {
@@ -28,6 +30,30 @@ export default class GameController {
       return res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
         .json({ message: "Failed to save game" });
+    }
+  }
+
+  async updateGame(req: Request, res: Response): Promise<Response> {
+    try {
+      const { gameId } = req.params;
+      const { result, fen, moves, lossType, gameDuration, gameStatus } = req.body;
+      const updatedGame = await this.gameService.updateGame(gameId, {
+        result,
+        fen,
+        moves,
+        lossType,
+        gameDuration,
+        gameStatus,
+      });
+      if (!updatedGame) {
+        return res.status(HttpStatus.NOT_FOUND).json({ message: "Game not found" });
+      }
+      return res.status(HttpStatus.OK).json({ game: updatedGame });
+    } catch (error) {
+      console.error("Error updating game:", error);
+      return res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ message: "Failed to update game" });
     }
   }
 

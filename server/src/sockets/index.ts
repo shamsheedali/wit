@@ -23,25 +23,42 @@ export default function socketHandler(io: Server) {
       }
     });
 
-    socket.on("playRequest", (data: { senderId: string; receiverId: string }) => {
-      const { senderId, receiverId } = data;
-      console.log(`Play request from ${senderId} to ${receiverId}`);
-      io.to(receiverId).emit("playRequestReceived", {
-        senderId,
-        receiverId,
-        timestamp: Date.now(),
-      });
-    });
+    socket.on(
+      "playRequest",
+      (data: { senderId: string; receiverId: string; time: string }) => {
+        const { senderId, receiverId, time } = data;
+        console.log(
+          `Play request from ${senderId} to ${receiverId} with time ${time}`
+        );
+        io.to(receiverId).emit("playRequestReceived", {
+          senderId,
+          receiverId,
+          time,
+          timestamp: Date.now(),
+        });
+      }
+    );
 
-    socket.on("acceptPlayRequest", (data: { senderId: string; receiverId: string; gameId: string }) => {
-      const { senderId, receiverId, gameId } = data;
-      console.log(`Play request accepted by ${receiverId} for ${senderId}, gameId: ${gameId}`);
-      io.to(senderId).emit("playRequestAccepted", {
-        opponentId: receiverId,
-        gameId,
-        timestamp: Date.now(),
-      });
-    });
+    socket.on(
+      "acceptPlayRequest",
+      (data: {
+        senderId: string;
+        receiverId: string;
+        gameId: string;
+        time: string;
+      }) => {
+        const { senderId, receiverId, gameId, time } = data;
+        console.log(
+          `Play request accepted by ${receiverId} for ${senderId}, gameId: ${gameId}, time: ${time}`
+        );
+        io.to(senderId).emit("playRequestAccepted", {
+          opponentId: receiverId,
+          gameId,
+          time,
+          timestamp: Date.now(),
+        });
+      }
+    );
 
     socket.on("joinGame", (data: { gameId: string }) => {
       const { gameId } = data;
@@ -49,18 +66,26 @@ export default function socketHandler(io: Server) {
       console.log(`User joined game room: ${gameId}`);
     });
 
-    socket.on("makeMove", (data: { gameId: string; playerId: string; fen: string }) => {
-      const { gameId, playerId, fen } = data;
-      console.log(`Move made in game ${gameId} by player ${playerId}`);
-      io.to(gameId).emit("moveMade", { gameId, playerId, fen });
-    });
+    socket.on(
+      "makeMove",
+      (data: { gameId: string; playerId: string; fen: string }) => {
+        const { gameId, playerId, fen } = data;
+        console.log(`Move made in game ${gameId} by player ${playerId}`);
+        io.to(gameId).emit("moveMade", { gameId, playerId, fen });
+      }
+    );
 
     socket.on("disconnect", async () => {
       console.log("User disconnected:", socket.id);
-      const userId = [...onlineUsers.entries()].find(([, sId]) => sId === socket.id)?.[0];
+      const userId = [...onlineUsers.entries()].find(
+        ([, sId]) => sId === socket.id
+      )?.[0];
       if (userId) {
         onlineUsers.delete(userId);
-        const user = await User.findById(userId).populate("friends", "username");
+        const user = await User.findById(userId).populate(
+          "friends",
+          "username"
+        );
         if (user && user.friends) {
           user.friends.forEach((friend: any) => {
             io.to(friend._id.toString()).emit("friendStatus", {

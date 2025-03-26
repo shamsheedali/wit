@@ -1,5 +1,5 @@
 "use client";
-import { ChevronDown, MoveUpRight, Timer, Zap } from "lucide-react";
+import { MoveUpRight, Timer, Zap } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -10,9 +10,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function TimeDropdown() {
+interface TimeDropdownProps {
+  onValueChange?: (value: string) => void;
+}
+
+export function TimeDropdown({ onValueChange }: TimeDropdownProps) {
   return (
-    <Select defaultValue="10min">
+    <Select defaultValue="10min" onValueChange={onValueChange}>
       <SelectTrigger className="w-[200px]">
         <SelectValue placeholder="Select time control" />
       </SelectTrigger>
