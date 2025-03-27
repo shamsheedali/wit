@@ -1,7 +1,7 @@
 import { inject, injectable } from "inversify";
 import { Model } from "mongoose";
 import BaseRepository from "../../core/base.repository";
-import { IGame } from "../models/game.model";
+import { GameStatus, IGame } from "../models/game.model";
 import { IGameInput } from "../dtos/game.dto";
 import TYPES from "../../config/types";
 
@@ -48,5 +48,14 @@ export default class GameRepository extends BaseRepository<IGame> {
 
   async terminateGame(id: string): Promise<IGame | null> {
     return this.model.findByIdAndUpdate(id, {gameStatus: 'terminated'}).exec();
+  }
+
+  async findOngoingGameByUserId(userId: string): Promise<IGame | null> {
+    return this.model
+      .findOne({
+        $or: [{ playerOne: userId }, { playerTwo: userId }],
+        gameStatus: GameStatus.Ongoing,
+      })
+      .exec();
   }
 }

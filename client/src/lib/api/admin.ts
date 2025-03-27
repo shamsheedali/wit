@@ -39,7 +39,7 @@ export const toggleBan = async(userId: string) => {
     const response = await apiClient.patch(`${API_URL}/toggle-ban/${userId}`);
     if(response.status === HttpStatus.OK) {
       toast.success(response.data.message);
-      return true;
+      return {success: true, user: response.data.user};
     }
     return false;
   } catch (error) {

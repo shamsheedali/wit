@@ -72,4 +72,8 @@ export default class GameService extends BaseService<IGame> {
   async getTotalGames(): Promise<number> {
     return await this.gameRepository.countGames();
   }
+
+  async findOngoingGameByUserId(userId: string) {
+    return await this.gameRepository.findOngoingGameByUserId(userId)
+  }
 }

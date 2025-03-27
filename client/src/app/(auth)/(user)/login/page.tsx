@@ -3,12 +3,13 @@
 import { useLayoutEffect } from 'react'
 import { LoginForm } from "@/components/form/login-form";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from '@/stores';
 
 export default function LoginPage() {
+  const { isAuthenticated } = useAuthStore();
   const router = useRouter();
   useLayoutEffect(() => {
-    const token = localStorage.getItem('userToken');
-    if(token) {
+    if(isAuthenticated) {
       router.push('/home')
     }
   }, [router])

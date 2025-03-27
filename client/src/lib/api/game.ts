@@ -72,3 +72,13 @@ export const getTotalGames = async () => {
     return 0;
   }
 };
+
+export const getOngoingGame = async (userId: string) => {
+  try {
+    const response = await apiClient.get(`${GAME_API_URL}/ongoing/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching ongoing game:", error);
+    throw error;
+  }
+};

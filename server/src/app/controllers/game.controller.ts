@@ -79,4 +79,18 @@ export default class GameController {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Error fetching total games" });
     }
   }
+
+  async getOngoingGameByUserId(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      const game = await this.gameService.findOngoingGameByUserId(userId);
+      if (!game) {
+        return res.status(HttpStatus.NOT_FOUND).json({ message: "No ongoing game found for this user" });
+      }
+      return res.status(HttpStatus.OK).json(game);
+    } catch (error) {
+      console.error("Error fetching ongoing game:", error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+    }
+  }
 }

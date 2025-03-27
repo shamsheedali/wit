@@ -23,4 +23,8 @@ router.get("/total", async (req: Request, res: Response) => {
   await gameController.getTotalGames(req, res);
 });
 
+router.get("/ongoing/:userId", async (req: Request, res: Response) => {
+  await gameController.getOngoingGameByUserId(req, res);
+})
+
 export default router;

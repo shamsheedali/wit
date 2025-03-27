@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toggleBan } from "@/lib/api/admin";
 import { QueryClient } from "@tanstack/react-query";
+import { getSocket } from "@/lib/socket";
+import { getOngoingGame } from "@/lib/api/game";
 
 // Define the shape of UserData
 export type UserData = {
@@ -70,10 +72,37 @@ export const userColumns = (queryClient: QueryClient): ColumnDef<UserData>[] => 
       const user = row.original;
 
       const handleBanUser = async (userId: string) => {
-        await toggleBan(userId);
-        await queryClient.invalidateQueries({queryKey: ["users"]});
+        const response = await toggleBan(userId);
+        if (response && response.success && response.user.isBanned) {
+
+          const socket = getSocket();
+          if (socket) {
+            socket.emit("userBanned", { userId });
+
+            // if user is in an ongoing game
+            try {
+              const ongoingGameResponse = await getOngoingGame(userId);
+              console.log("ongoing game response", ongoingGameResponse)
+              const ongoingGame = ongoingGameResponse;
+              if (ongoingGame) {
+                const opponentId = ongoingGame.playerOne === userId ? ongoingGame.playerTwo : ongoingGame.playerOne;
+                socket.emit("opponentBanned", {
+                  gameId: ongoingGame._id,
+                  bannedUserId: userId,
+                  opponentId,
+                });
+              }
+            } catch (error) {
+              console.error("No ongoing game found or error fetching:", error);
+            }
+          } else {
+            console.error("Socket not initialized");
+          }
+        }
+        await queryClient.invalidateQueries({ queryKey: ["users"] });
       };
 
+      
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

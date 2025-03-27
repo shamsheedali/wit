@@ -81,6 +81,16 @@ export default function socketHandler(io: Server) {
       console.log(`Terminated game ${gameId} for ${playerOne} and ${playerTwo}`);
     })
 
+    socket.on("userBanned", (data) => {
+      const { userId } = data;
+      io.to(userId).emit("userBanned", { userId });
+    });
+
+    socket.on("opponentBanned", (data) => {
+      const { gameId, bannedUserId, opponentId } = data;
+      io.to(opponentId).emit("opponentBanned", { gameId, bannedUserId });
+    });
+
     socket.on("disconnect", async () => {
       console.log("User disconnected:", socket.id);
       const userId = [...onlineUsers.entries()].find(

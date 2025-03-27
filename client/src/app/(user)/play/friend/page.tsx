@@ -56,6 +56,15 @@ export default function PlayFriend() {
           // }
         });
 
+        // listener for opponentBanned
+        socketInstance.on("opponentBanned", (data) => {
+          console.log("game terminated", data.gameId, gameId)
+          // if (data.gameId === gameId) {
+            toast.info("Admin banned your opponent.");
+            router.push("/home");
+          // }
+        });
+
         socketInstance.on("playRequestReceived", (data) => {
           console.log("Received play request:", data);
           setOpponentId(data.senderId);
@@ -171,6 +180,7 @@ export default function PlayFriend() {
           socketInstance.off("playRequestAccepted");
           socketInstance.off("moveMade");
           socketInstance.off("gameTerminated");
+          socketInstance.off("opponentBanned");
           if (timerRef.current) clearInterval(timerRef.current);
         };
       } else {
