@@ -19,6 +19,7 @@ import { useAuthStore } from "@/stores";
 import { User } from "@/types/auth";
 import { useFriendStore } from "@/stores/useFriendStore";
 import { Sword } from "lucide-react";
+import { getUsers } from "@/lib/api/admin";
 
 export function FriendsTabs() {
   const { user: mainUser } = useAuthStore();
@@ -31,6 +32,7 @@ export function FriendsTabs() {
   } = useFriendStore();
   const router = useRouter();
   const [query, setQuery] = useState<string>("");
+  const [playerNames, setPlayerNames] = useState<{ [key: string]: string }>({}); // Map userId to username
 
   const debouncedSetQuery = useCallback(
     debounce((val) => setQuery(val), 500),
@@ -46,7 +48,42 @@ export function FriendsTabs() {
   const filteredUsers =
     users?.filter((user: User) => user._id !== mainUser?._id) || [];
 
+  // Fetch usernames for mapping
   useEffect(() => {
+    const fetchUserNames = async () => {
+      try {
+        const limit = 100;
+        let page = 1;
+        let allUsers: { _id: string; username: string }[] = [];
+        let hasMore = true;
+
+        while (hasMore) {
+          const response = await getUsers(page, limit);
+          if (response && response.users && response.users.length > 0) {
+            allUsers = [...allUsers, ...response.users];
+            page += 1;
+            hasMore = response.users.length === limit;
+          } else {
+            hasMore = false;
+          }
+        }
+
+        const namesMap: { [key: string]: string } = {};
+        allUsers.forEach((u) => {
+          namesMap[u._id] = u.username;
+        });
+        setPlayerNames(namesMap);
+      } catch (error) {
+        console.error("Failed to fetch users:", error);
+      }
+    };
+
+    fetchUserNames();
+  }, []);
+
+  // Fetch friend requests and friends
+  useEffect(() => {
+    console.log("mainUser in useEffect:", mainUser); // Ensure this logs
     if (mainUser?._id) {
       fetchFriendRequests();
       fetchFriends();
@@ -57,11 +94,11 @@ export function FriendsTabs() {
     router.push(`/${username}`);
   };
 
-  console.log("friendRequests:", friendRequests); 
+  console.log("friendRequests:", friendRequests);
   const receivedRequests = friendRequests.filter(
     (req) => req.receiverId === mainUser?._id && req.status === "pending"
   );
-  console.log("receivedRequests:", receivedRequests); 
+  console.log("receivedRequests:", receivedRequests);
 
   const handleAccept = (requestId: string) => {
     updateFriendRequest(requestId, "accepted");
@@ -96,7 +133,7 @@ export function FriendsTabs() {
                 >
                   <div className="relative">
                     <img
-                      src={friend?.profileImageUrl || "/placeholder.svg?height=40&width=40"} 
+                      src={friend?.profileImageUrl || "/placeholder.svg?height=40&width=40"}
                       alt="User avatar"
                       className="rounded-full w-10 h-10 object-cover"
                       width={40}
@@ -159,7 +196,7 @@ export function FriendsTabs() {
                 >
                   <div className="relative">
                     <img
-                      src={user.profileImageUrl}
+                      src={user.profileImageUrl || "/placeholder.svg?height=40&width=40"}
                       alt="User avatar"
                       className="rounded-full w-10 h-10 object-cover"
                       width={40}
@@ -179,9 +216,7 @@ export function FriendsTabs() {
         <Card>
           <CardHeader>
             <CardTitle>Received</CardTitle>
-            <CardDescription>
-              Friend requests you&apos;ve received
-            </CardDescription>
+            <CardDescription>Friend requests you've received</CardDescription>
           </CardHeader>
           <CardContent>
             {receivedRequests.length === 0 ? (
@@ -194,7 +229,7 @@ export function FriendsTabs() {
                 >
                   <div className="relative">
                     <img
-                      src="/placeholder.svg?height=40&width=40"
+                      src={req.senderId.profileImageUrl ||  "/placeholder.svg?height=40&width=40"}
                       alt="User avatar"
                       className="rounded-full w-10 h-10 object-cover"
                       width={40}
@@ -203,7 +238,9 @@ export function FriendsTabs() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">
-                      {req.senderId.username}
+                      {typeof req.senderId === "string"
+                        ? playerNames[req.senderId] || req.senderId
+                        : req.senderId.username || "Unknown"}
                     </p>
                     <p className="text-xs text-muted-foreground flex items-center">
                       <span className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>

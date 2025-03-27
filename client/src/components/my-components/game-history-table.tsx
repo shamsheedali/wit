@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronDown, ChevronUp, Award, User } from "lucide-react";
+import { ChevronDown, ChevronUp, User, Zap, MoveUpRight, Timer } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getUserGames } from "@/lib/api/game";
 import { getUsers } from "@/lib/api/admin";
@@ -157,7 +157,15 @@ export default function GameHistoryTable({ initialGames = [], playerNames: initi
                   <TableCell>
                     <div className="flex items-center px-3 gap-3 space-y-2 py-1 sm:space-y-0 sm:py-0">
                       <div className="text-center">
-                        <Award className="h-5 w-5 text-amber-500" />
+                        {game.gameType === 'blitz' ? (
+                          <Zap />
+                        ) : (
+                          game.gameType === 'bullet' ? (
+                            <MoveUpRight />
+                          ) : (
+                            <Timer />
+                          )
+                        )}
                         <h1>{game.gameType}</h1>
                       </div>
                       <div className="flex flex-col gap-3">

@@ -46,7 +46,7 @@ export default class FriendRepository extends BaseRepository<IFriendRequest> {
           { receiverId: new mongoose.Types.ObjectId(userId) },
         ],
       })
-      .populate('senderId', 'username')
+      .populate('senderId', 'username profileImageUrl')
       .exec();
   }
 

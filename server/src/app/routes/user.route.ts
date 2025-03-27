@@ -60,4 +60,12 @@ router.put("/profile/:id", upload.single("profileImage"), async (req: Request, r
   await userController.updateProfile(req, res);
 })
 
+router.get("/growth", authenticateToken, async (req: Request, res: Response) => {
+  await userController.getUserGrowth(req, res);
+});
+
+router.get("/total", authenticateToken, async (req: Request, res: Response) => {
+  await userController.getTotalUsers(req, res);
+});
+
 export default router;

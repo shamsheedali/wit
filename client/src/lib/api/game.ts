@@ -62,3 +62,13 @@ export const getUserGames = async (userId: string) => {
     handleApiError(error);
   }
 };
+
+export const getTotalGames = async () => {
+  try {
+    const response = await apiClient.get(`${GAME_API_URL}/total`);
+    return response.data.total;
+  } catch (error) {
+    handleApiError(error);
+    return 0;
+  }
+};

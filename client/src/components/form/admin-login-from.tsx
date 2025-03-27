@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { adminLogin } from "@/lib/api/admin";
+import { useAuthStore } from "@/stores";
 
 type FormData = {
   email: string;
@@ -19,6 +20,7 @@ export function AdminLoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"form">) {
+  const { setAdmin } = useAuthStore();
 
   const router = useRouter();
 
@@ -53,7 +55,8 @@ export function AdminLoginForm({
     mutationFn: adminLogin,
     onSuccess: (result) => {
       if(result?.success) {
-        router.push("/dashboard")
+        setAdmin(result.data.admin);
+        router.push("/dashboard/overview");
         resetForm();
       }
     },

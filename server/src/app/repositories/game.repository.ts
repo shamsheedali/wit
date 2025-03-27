@@ -28,4 +28,25 @@ export default class GameRepository extends BaseRepository<IGame> {
       .limit(10)
       .exec();
   }
+
+  async findAllPaginated(skip: number, limit: number): Promise<IGame[]> {
+    return this.model
+      .find()
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
+  async countGames(): Promise<number> {
+    return this.model.countDocuments().exec();
+  }
+
+  async deleteGame(id: string): Promise<IGame | null> {
+    return this.model.findByIdAndDelete(id).exec();
+  }
+
+  async terminateGame(id: string): Promise<IGame | null> {
+    return this.model.findByIdAndUpdate(id, {gameStatus: 'terminated'}).exec();
+  }
 }

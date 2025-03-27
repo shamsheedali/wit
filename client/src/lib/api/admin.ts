@@ -25,10 +25,11 @@ export const getUsers = async(page: number, limit: number) => {
     const response = await apiClient.get(`${API_URL}/users`, {
       params : {page, limit},
     });
-    console.log(response);
+    // console.log(response);
     return response.data;
   } catch (error) {
     console.log(error);
+    return [];
   }
 }
 
@@ -45,3 +46,38 @@ export const toggleBan = async(userId: string) => {
     handleApiError(error);
   }
 }
+
+// GET_ALL_GAMES
+export const getAllGames = async (page: number, limit: number) => {
+  try {
+    const response = await apiClient.get(`${API_URL}/games`, {
+      params: { page, limit },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching games:", error);
+    throw error;
+  }
+};
+
+// DELETE_GAME
+export const deleteGame = async (gameId: string) => {
+  try {
+    const response = await apiClient.delete(`${API_URL}/games/${gameId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting game:", error);
+    throw error;
+  }
+};
+
+// TERMINATE_GAME
+export const terminateGame = async (gameId: string) => {
+  try {
+    const response = await apiClient.patch(`${API_URL}/games/${gameId}/terminate`);
+    return response.data;
+  } catch (error) {
+    console.error("Error terminating game:", error);
+    throw error;
+  }
+};

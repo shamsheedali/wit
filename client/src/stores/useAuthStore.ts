@@ -6,6 +6,7 @@ export const useAuthStore = create<AuthState>()(
     persist(
         (set) => ({
             user: null,
+            admin: null,
             isAuthenticated: false,
             setUser: (userData: User) => 
                 set({user: userData, isAuthenticated: true}),
@@ -15,6 +16,9 @@ export const useAuthStore = create<AuthState>()(
                 }))
             },
             logout: () => set({user: null, isAuthenticated: false}),
+            //Admin
+            setAdmin: (adminData) => 
+                set({admin: adminData}),
         }),
         {
             name: 'auth-storage', // Key for localStorage to persist state       

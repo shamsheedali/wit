@@ -53,6 +53,7 @@ const UserProfile = ({ user }: { user: User }) => {
         <AvatarImage
           src={isCurrentUser ? mainUser?.profileImageUrl : user?.profileImageUrl}
           alt="@shadcn"
+          className="object-cover"
         />
         <AvatarFallback>{user?.username[0].toUpperCase()}</AvatarFallback>
       </Avatar>

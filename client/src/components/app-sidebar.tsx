@@ -39,7 +39,7 @@ const data = {
   navMain: [
     {
       title: "Overview",
-      url: "#",
+      url: "/dashboard/overview",
       icon: SquareTerminal,
       isActive: true,
       items: [
@@ -75,11 +75,11 @@ const data = {
       items: [
         {
           title: "Live Games",
-          url: "#",
+          url: "/dashboard/game-management/live-games",
         },
         {
           title: "Game History",
-          url: "#",
+          url: "/dashboard/game-management/game-history",
         },
       ],
     },

@@ -10,7 +10,7 @@ export default function socketHandler(io: Server) {
     socket.on("join", async (userId: string) => {
       onlineUsers.set(userId, socket.id);
       socket.join(userId);
-      console.log(`${userId} joined their room`);
+      // console.log(`${userId} joined their room`);
 
       const user = await User.findById(userId).populate("friends", "username");
       if (user && user.friends) {
@@ -63,7 +63,7 @@ export default function socketHandler(io: Server) {
     socket.on("joinGame", (data: { gameId: string }) => {
       const { gameId } = data;
       socket.join(gameId);
-      console.log(`User joined game room: ${gameId}`);
+      // console.log(`User joined game room: ${gameId}`);
     });
 
     socket.on(
@@ -74,6 +74,12 @@ export default function socketHandler(io: Server) {
         io.to(gameId).emit("moveMade", { gameId, playerId, fen });
       }
     );
+
+    socket.on("gameTerminated", (data) => {
+      const {gameId, playerOne, playerTwo} = data;
+      io.to(playerOne).to(playerTwo).emit("gameTerminated", {gameId});
+      console.log(`Terminated game ${gameId} for ${playerOne} and ${playerTwo}`);
+    })
 
     socket.on("disconnect", async () => {
       console.log("User disconnected:", socket.id);

@@ -66,4 +66,26 @@ export default class UserService extends BaseService<IUser> {
     async updateUserProfile(userId: string, userData: Partial<IUser>, profileImage?: Express.Multer.File) {
         return await this.userRepository.updateUserProfile(userId, userData, profileImage);
     }
+
+    async getUserGrowth(period: string): Promise<any> {
+        let groupByFormat: string;
+        switch (period) {
+          case "weekly":
+            groupByFormat = "%Y-%U";
+            break;
+          case "monthly":
+            groupByFormat = "%Y-%m";
+            break;
+          case "daily":
+          default:
+            groupByFormat = "%Y-%m-%d";
+        }
+      
+        const growthData = await this.userRepository.getUserGrowth(groupByFormat);
+        return growthData;
+      }
+      
+      async getTotalUsers(): Promise<number> {
+        return await this.userRepository.countUsers();
+      }
 }

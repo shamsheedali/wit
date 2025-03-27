@@ -116,6 +116,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({ gameId, playerColor, opp
         position={game.fen()}
         onPieceDrop={(sourceSquare, targetSquare) => handleMove(sourceSquare, targetSquare)}
         customBoardStyle={{ borderRadius: "4px" }}
+        customNotationStyle={{color: "black", fontWeight: "bold"}}
         customDarkSquareStyle={{ backgroundColor: "#779952" }}
         customLightSquareStyle={{ backgroundColor: "#edeed1" }}
         boardWidth={boardSize}

@@ -368,4 +368,25 @@ export default class UserController {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal server error", error });
     }
   }
+
+  async getUserGrowth(req: Request, res: Response): Promise<Response> {
+    try {
+      const { period = "daily" } = req.query; // daily, weekly, monthly
+      const growthData = await this.userService.getUserGrowth(period as string);
+      return res.status(HttpStatus.OK).json(growthData);
+    } catch (error) {
+      console.error("Error fetching user growth:", error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Error fetching user growth" });
+    }
+  }
+  
+  async getTotalUsers(req: Request, res: Response): Promise<Response> {
+    try {
+      const totalUsers = await this.userService.getTotalUsers();
+      return res.status(HttpStatus.OK).json({ total: totalUsers });
+    } catch (error) {
+      console.error("Error fetching total users:", error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Error fetching total users" });
+    }
+  }
 }

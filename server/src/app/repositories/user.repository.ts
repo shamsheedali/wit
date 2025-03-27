@@ -86,4 +86,24 @@ export default class UserRepository extends BaseRepository<IUser> {
       { new: true }
     ).exec();
   }
+
+  async getUserGrowth(dateFormat: string): Promise<any> {
+    const growthData = await this.model.aggregate([
+      {
+        $group: {
+          _id: { $dateToString: { format: dateFormat, date: "$createdAt" } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+      {
+        $project: {
+          date: "$_id",
+          count: 1,
+          _id: 0,
+        },
+      },
+    ]);
+    return growthData;
+  }
 }

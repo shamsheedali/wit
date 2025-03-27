@@ -44,7 +44,7 @@ export default class FriendController {
   async getFriendRequests(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.query;
-      if (!userId)  res.status(400).json({ success: false, message: 'User ID required' });
+      if (!userId)  res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: 'User ID required' });
       const requests = await this.friendService.getFriendRequests(userId as string);
       res.json(requests);
     } catch (error: any) {

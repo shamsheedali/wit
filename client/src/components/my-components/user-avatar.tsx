@@ -33,6 +33,7 @@ export function UserAvatar() {
           <AvatarImage
             src={user?.profileImageUrl || "/placeholder.svg?height=96&width=96"}
             alt={`@${user?.username}`}
+            className="object-cover"
           />
           <AvatarFallback>{user?.username[0].toUpperCase()}</AvatarFallback>
         </Avatar>

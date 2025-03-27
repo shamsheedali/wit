@@ -10,7 +10,7 @@ export default function LoginPage() {
   useLayoutEffect(() => {
     const token = localStorage.getItem('adminToken');
     if(token) {
-      router.push('/dashboard')
+      router.push('/dashboard/overview')
     }
   }, [router])
 

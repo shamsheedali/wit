@@ -69,4 +69,14 @@ export default class GameController {
         .json({ message: "Failed to fetch games" });
     }
   }
+
+  async getTotalGames(req: Request, res: Response): Promise<Response> {
+    try {
+      const totalGames = await this.gameService.getTotalGames();
+      return res.status(HttpStatus.OK).json({ total: totalGames });
+    } catch (error) {
+      console.error("Error fetching total games:", error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Error fetching total games" });
+    }
+  }
 }

@@ -12,9 +12,11 @@ import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
 import { saveGame, updateGame, getUserGames } from "@/lib/api/game";
 import { getUsers } from "@/lib/api/admin";
+import { useRouter } from "next/navigation";
 
 export default function PlayFriend() {
   const { user } = useAuthStore();
+  const router = useRouter();
   const { fetchFriends, friends, sendPlayRequest } = useFriendStore();
   const [playAs, setPlayAs] = useState<boolean>(false);
   const [selectedFriend, setSelectedFriend] = useState<Friend | undefined>();
@@ -45,62 +47,90 @@ export default function PlayFriend() {
           console.log(`Socket connected for user ${user._id}`);
         });
 
+        // Handle game termination
+        socketInstance.on("gameTerminated", (data) => {
+          console.log("game terminated", data.gameId, gameId)
+          // if (data.gameId === gameId) {
+            toast.info("This game has been terminated by an admin.");
+            router.push("/play");
+          // }
+        });
+
         socketInstance.on("playRequestReceived", (data) => {
           console.log("Received play request:", data);
           setOpponentId(data.senderId);
-          toast(`Game request from ${playerNames[data.senderId] || data.senderId} (${data.time})`, {
-            description: (
-              <div className="flex gap-2 mt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => toast.info("Play request declined")}
-                >
-                  Decline
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={async () => {
-                    if (!socketInstance || !user?._id) {
-                      console.log("Socket or user ID missing:", { socket: socketInstance, userId: user._id });
-                      return;
-                    }
-                    const newGameId = `${data.senderId}-${user._id}-${Date.now()}`;
-                    console.log("Emitting acceptPlayRequest:", { senderId: data.senderId, receiverId: user._id, gameId: newGameId, time: data.time });
-                    socketInstance.emit("acceptPlayRequest", {
-                      senderId: data.senderId,
-                      receiverId: user._id,
-                      gameId: newGameId,
-                      time: data.time,
-                    });
-                    setGameId(newGameId);
-                    setPlayerColor("b");
-                    const initialTime = timeToSeconds(data.time);
-                    setWhiteTime(initialTime);
-                    setBlackTime(initialTime);
-                    setGameStarted(true);
-                    setActivePlayer("w");
-                    setGameStartTime(Date.now());
+          toast(
+            `Game request from ${
+              playerNames[data.senderId] || data.senderId
+            } (${data.time})`,
+            {
+              description: (
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => toast.info("Play request declined")}
+                  >
+                    Decline
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      if (!socketInstance || !user?._id) {
+                        console.log("Socket or user ID missing:", {
+                          socket: socketInstance,
+                          userId: user._id,
+                        });
+                        return;
+                      }
+                      const newGameId = `${data.senderId}-${
+                        user._id
+                      }-${Date.now()}`;
+                      console.log("Emitting acceptPlayRequest:", {
+                        senderId: data.senderId,
+                        receiverId: user._id,
+                        gameId: newGameId,
+                        time: data.time,
+                      });
+                      socketInstance.emit("acceptPlayRequest", {
+                        senderId: data.senderId,
+                        receiverId: user._id,
+                        gameId: newGameId,
+                        time: data.time,
+                      });
+                      setGameId(newGameId);
+                      setPlayerColor("b");
+                      const initialTime = timeToSeconds(data.time);
+                      setWhiteTime(initialTime);
+                      setBlackTime(initialTime);
+                      setGameStarted(true);
+                      setActivePlayer("w");
+                      setGameStartTime(Date.now());
 
-                    const gameType = getGameType(data.time);
-                    const savedGame = await saveGame(
-                      data.senderId,
-                      user._id,
-                      "w",
-                      "rnbqkbnr/pppppppp/5n5/8/8/5N5/PPPPPPPP/RNBQKB1R w KQkq - 1 1",
-                      gameType,
-                      data.time
-                    );
-                    setDbGameId(savedGame?._id);
-                    toast.success(`Game started with ${playerNames[data.senderId] || data.senderId}`);
-                  }}
-                >
-                  Accept
-                </Button>
-              </div>
-            ),
-            duration: 10000,
-          });
+                      const gameType = getGameType(data.time);
+                      const savedGame = await saveGame(
+                        data.senderId,
+                        user._id,
+                        "w",
+                        "rnbqkbnr/pppppppp/5n5/8/8/5N5/PPPPPPPP/RNBQKB1R w KQkq - 1 1",
+                        gameType,
+                        data.time
+                      );
+                      setDbGameId(savedGame?._id);
+                      toast.success(
+                        `Game started with ${
+                          playerNames[data.senderId] || data.senderId
+                        }`
+                      );
+                    }}
+                  >
+                    Accept
+                  </Button>
+                </div>
+              ),
+              duration: 10000,
+            }
+          );
         });
 
         socketInstance.on("playRequestAccepted", (data) => {
@@ -114,12 +144,23 @@ export default function PlayFriend() {
           setGameStarted(true);
           setActivePlayer("w");
           setGameStartTime(Date.now());
-          toast.success(`Game started with ${playerNames[data.opponentId] || data.opponentId}`);
+          toast.success(
+            `Game started with ${
+              playerNames[data.opponentId] || data.opponentId
+            }`
+          );
         });
 
         socketInstance.on("moveMade", (data) => {
           console.log("Move made:", data);
-          const newActivePlayer = data.playerId === user?._id ? (playerColor === "w" ? "b" : "w") : (playerColor === "w" ? "w" : "b");
+          const newActivePlayer =
+            data.playerId === user?._id
+              ? playerColor === "w"
+                ? "b"
+                : "w"
+              : playerColor === "w"
+              ? "w"
+              : "b";
           setActivePlayer(newActivePlayer);
           console.log(`Active player switched to: ${newActivePlayer}`);
         });
@@ -129,6 +170,7 @@ export default function PlayFriend() {
           socketInstance.off("playRequestReceived");
           socketInstance.off("playRequestAccepted");
           socketInstance.off("moveMade");
+          socketInstance.off("gameTerminated");
           if (timerRef.current) clearInterval(timerRef.current);
         };
       } else {
@@ -200,7 +242,11 @@ export default function PlayFriend() {
     }
   }, [gameStarted, gameId, activePlayer]);
 
-  const endGame = async (result: "whiteWin" | "blackWin" | "draw", lossType: "checkmate" | "resignation" | "timeout", fen: string) => {
+  const endGame = async (
+    result: "whiteWin" | "blackWin" | "draw",
+    lossType: "checkmate" | "resignation" | "timeout",
+    fen: string
+  ) => {
     if (dbGameId && gameStartTime) {
       const gameDuration = Math.floor((Date.now() - gameStartTime) / 1000);
       await updateGame(dbGameId, {
@@ -209,7 +255,8 @@ export default function PlayFriend() {
         lossType,
         gameDuration,
         gameStatus: "completed",
-        fen: fen || "rnbqkbnr/pppppppp/5n5/8/8/5N5/PPPPPPPP/RNBQKB1R w KQkq - 1 1",
+        fen:
+          fen || "rnbqkbnr/pppppppp/5n5/8/8/5N5/PPPPPPPP/RNBQKB1R w KQkq - 1 1",
       });
       setGameStarted(false);
       setGameId(undefined);
@@ -246,7 +293,9 @@ export default function PlayFriend() {
       return;
     }
     sendPlayRequest(selectedFriend._id, selectedTime);
-    toast.success(`Play request sent to ${selectedFriend.username} (${selectedTime})`);
+    toast.success(
+      `Play request sent to ${selectedFriend.username} (${selectedTime})`
+    );
   };
 
   const handleTimeChange = (value: string) => {
@@ -255,14 +304,22 @@ export default function PlayFriend() {
 
   const timeToSeconds = (time: string): number => {
     switch (time) {
-      case "30sec": return 30;
-      case "1min": return 60;
-      case "3min": return 180;
-      case "5min": return 300;
-      case "10min": return 600;
-      case "15min": return 900;
-      case "30min": return 1800;
-      default: return 600;
+      case "30sec":
+        return 30;
+      case "1min":
+        return 60;
+      case "3min":
+        return 180;
+      case "5min":
+        return 300;
+      case "10min":
+        return 600;
+      case "15min":
+        return 900;
+      case "30min":
+        return 1800;
+      default:
+        return 600;
     }
   };
 
@@ -296,17 +353,27 @@ export default function PlayFriend() {
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 bg-[#262522] rounded-full flex items-center justify-center">
               {selectedFriend?.profileImageUrl ? (
-                <img src={selectedFriend.profileImageUrl} alt="opponent profile image" className="w-10 h-10 rounded-full" />
+                <img
+                  src={selectedFriend.profileImageUrl}
+                  alt="opponent profile image"
+                  className="w-10 h-10 rounded-full"
+                />
               ) : (
                 <UserRound />
               )}
             </div>
             <h1 className="text-md font-semibold">
-              {gameStarted && selectedFriend ? selectedFriend.username : "Opponent"}
+              {gameStarted && selectedFriend
+                ? selectedFriend.username
+                : "Opponent"}
             </h1>
           </div>
           <div className="bg-[#262522] px-8 py-3 rounded-sm">
-            <h1 className="text-md font-bold">{playerColor === "w" ? formatTime(blackTime) : formatTime(whiteTime)}</h1>
+            <h1 className="text-md font-bold">
+              {playerColor === "w"
+                ? formatTime(blackTime)
+                : formatTime(whiteTime)}
+            </h1>
           </div>
         </div>
 
@@ -324,15 +391,25 @@ export default function PlayFriend() {
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 bg-[#262522] rounded-full flex items-center justify-center">
               {user?.profileImageUrl ? (
-                <img src={user?.profileImageUrl} alt="user profile image" className="w-10 h-10 rounded-full" />
+                <img
+                  src={user?.profileImageUrl}
+                  alt="user profile image"
+                  className="w-10 h-10 rounded-full"
+                />
               ) : (
                 <UserRound />
               )}
             </div>
-            <h1 className="text-md font-semibold">{user?.username || "Guest"}</h1>
+            <h1 className="text-md font-semibold">
+              {user?.username || "Guest"}
+            </h1>
           </div>
           <div className="bg-[#262522] px-8 py-3 rounded-sm">
-            <h1 className="text-md font-bold">{playerColor === "w" ? formatTime(whiteTime) : formatTime(blackTime)}</h1>
+            <h1 className="text-md font-bold">
+              {playerColor === "w"
+                ? formatTime(whiteTime)
+                : formatTime(blackTime)}
+            </h1>
           </div>
         </div>
       </div>
@@ -347,9 +424,17 @@ export default function PlayFriend() {
             <h1 className="text-xl font-bold">Friends</h1>
             {friends && friends.length > 0 ? (
               friends.map((friend) => (
-                <div key={friend._id} className="flex items-center gap-2 mt-5 cursor-pointer" onClick={() => handleClick(friend._id)}>
+                <div
+                  key={friend._id}
+                  className="flex items-center gap-2 mt-5 cursor-pointer"
+                  onClick={() => handleClick(friend._id)}
+                >
                   <div className="h-10 w-10 bg-white rounded-full">
-                    <img src={friend.profileImageUrl || "/placeholder.svg"} alt={`${friend.username}`} className="h-10 w-10 rounded-full" />
+                    <img
+                      src={friend.profileImageUrl || "/placeholder.svg"}
+                      alt={`${friend.username}`}
+                      className="h-10 w-10 rounded-full"
+                    />
                   </div>
                   <h1>{friend.username}</h1>
                 </div>
@@ -367,7 +452,10 @@ export default function PlayFriend() {
       {playAs && !gameStarted && !showHistory && (
         <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col items-center gap-10 rounded-md">
           <div className="w-full flex justify-center items-center gap-2 relative">
-            <div className="absolute left-0 cursor-pointer" onClick={() => setPlayAs(false)}>
+            <div
+              className="absolute left-0 cursor-pointer"
+              onClick={() => setPlayAs(false)}
+            >
               <CircleArrowLeft />
             </div>
             <div className="flex justify-center items-center gap-2">
@@ -378,7 +466,11 @@ export default function PlayFriend() {
           <div>
             <div className="flex flex-col items-center gap-2 mt-5">
               <div className="h-32 w-32 bg-white rounded-full">
-                <img src={selectedFriend?.profileImageUrl || "/placeholder.svg"} alt={selectedFriend?.username} className="h-32 w-32 rounded-full" />
+                <img
+                  src={selectedFriend?.profileImageUrl || "/placeholder.svg"}
+                  alt={selectedFriend?.username}
+                  className="h-32 w-32 rounded-full"
+                />
               </div>
               <h1>{selectedFriend?.username}</h1>
             </div>
@@ -402,7 +494,12 @@ export default function PlayFriend() {
             {gameHistory.length > 0 ? (
               gameHistory.map((game) => (
                 <div key={game._id} className="mb-4 p-2 bg-[#3a3a3a] rounded">
-                  <p>Opponent: {game.playerOne === user?._id ? playerNames[game.playerTwo] || game.playerTwo : playerNames[game.playerOne] || game.playerOne}</p>
+                  <p>
+                    Opponent:{" "}
+                    {game.playerOne === user?._id
+                      ? playerNames[game.playerTwo] || game.playerTwo
+                      : playerNames[game.playerOne] || game.playerOne}
+                  </p>
                   <p>Result: {game.result || "Ongoing"}</p>
                   <p>Type: {game.gameType}</p>
                   <p>Time: {game.timeControl}</p>
@@ -414,7 +511,10 @@ export default function PlayFriend() {
               <p>No games found</p>
             )}
           </div>
-          <Button onClick={() => setShowHistory(false)} className="w-full h-11 font-bold">
+          <Button
+            onClick={() => setShowHistory(false)}
+            className="w-full h-11 font-bold"
+          >
             Back to Play
           </Button>
         </div>

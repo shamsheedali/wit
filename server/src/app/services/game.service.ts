@@ -17,11 +17,11 @@ export default class GameService extends BaseService<IGame> {
   async saveGame(
     playerOne: string,
     playerTwo: string,
-    playerAt: string, // "w" or "b"
+    playerAt: string,
     fen: string,
     gameType: GameType,
     timeControl: string,
-    moves: IMove[] = [] // Default to empty array
+    moves: IMove[] = []
   ): Promise<IGame> {
     const gameData: IGameInput = {
       playerOne,
@@ -51,5 +51,25 @@ export default class GameService extends BaseService<IGame> {
 
   async getUserGames(userId: string): Promise<IGame[]> {
     return this.gameRepository.getGamesByUserId(userId);
+  }
+
+  async getAllGames(page: number, limit: number): Promise<{ games: IGame[]; totalGames: number; totalPages: number }> {
+    const skip = (page - 1) * limit;
+    const games = await this.gameRepository.findAllPaginated(skip, limit);
+    const totalGames = await this.gameRepository.countGames();
+    const totalPages = Math.ceil(totalGames / limit);
+    return { games, totalGames, totalPages };
+  }
+
+  async deleteGame(gameId: string): Promise<IGame | null> {
+    return this.gameRepository.deleteGame(gameId);
+  }
+
+  async terminateGame(gameId: string): Promise<IGame | null> {
+    return this.gameRepository.terminateGame(gameId);
+  }
+
+  async getTotalGames(): Promise<number> {
+    return await this.gameRepository.countGames();
   }
 }

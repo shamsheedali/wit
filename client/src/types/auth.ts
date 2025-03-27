@@ -10,10 +10,17 @@ export interface User {
     profileImageUrl?: string;
 }
 
+export interface Admin {
+    _id: string;
+    email: string;
+}
+
 export interface AuthState {
     user: User | null;
+    admin: Admin | null;
     isAuthenticated: boolean;
     setUser: (userData: User) => void;
     updateUser: (updatedData: Partial<User>) => void;
     logout: () => void;
+    setAdmin: (adminData: Admin) => void;
 }
