@@ -3,30 +3,26 @@ import { inject, injectable } from "inversify";
 import HttpStatus from "../../constants/httpStatus";
 import UserService from "../services/user.service";
 import TokenService from "../services/token.service";
-import AdminRepository from "../repositories/admin.repository";
-import UserRepository from "../repositories/user.repository";
 import GameService from "../services/game.service";
 import TYPES from "../../config/types";
+import AdminService from "../services/admin.service";
 
 @injectable()
 export default class AdminController {
+  private _adminService: AdminService;
   private userService: UserService;
   private tokenService: TokenService;
-  private userRepository: UserRepository;
-  private adminRepository: AdminRepository;
   private gameService: GameService;
 
   constructor(
+    @inject(TYPES.AdminService) adminService: AdminService,
     @inject(TYPES.UserService) userService: UserService,
     @inject(TYPES.TokenService) tokenService: TokenService,
-    @inject(TYPES.UserRepository) userRepository: UserRepository,
-    @inject(TYPES.AdminRepository) adminRepository: AdminRepository,
     @inject(TYPES.GameService) gameService: GameService
   ) {
+    this._adminService = adminService;
     this.userService = userService;
     this.tokenService = tokenService;
-    this.userRepository = userRepository;
-    this.adminRepository = adminRepository;
     this.gameService = gameService;
   }
 
@@ -41,7 +37,7 @@ export default class AdminController {
           .json({ message: "All fields are required" });
       }
 
-      const admin = await this.adminRepository.findOneByEmail(email);
+      const admin = await this._adminService.findByEmail(email);
 
       if (!admin) {
         return res.status(HttpStatus.UNAUTHORIZED).json({ message: "Invalid credentials" });
@@ -69,8 +65,8 @@ export default class AdminController {
       const limit = parseInt(req.query.limit as string) || 7;
       const skip = (page - 1) * limit;
 
-      const users = await this.userRepository.findAllPaginated(skip, limit);
-      const totalUsers = await this.userRepository.countUsers();
+      const users = await this.userService.findAllPaginated(skip, limit);
+      const totalUsers = await this.userService.getTotalUsers();
 
       return res.status(HttpStatus.OK).json({
         users,

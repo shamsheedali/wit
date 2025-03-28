@@ -5,9 +5,10 @@ import { IUser } from "../models/user.model";
 import { IUserInput } from "../dtos/user.dto";
 import TYPES from "../../config/types";
 import { cloudinary } from "../../config/cloudinary.config";
+import { IUserRepository } from "./interface/IUserRepository";
 
 @injectable()
-export default class UserRepository extends BaseRepository<IUser> {
+export default class UserRepository extends BaseRepository<IUser> implements IUserRepository {
   constructor(@inject(TYPES.UserModel) userModel: Model<IUser>) {
     super(userModel);
   }

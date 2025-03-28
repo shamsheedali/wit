@@ -22,6 +22,7 @@ import friendRequestModel, { IFriendRequest } from "../app/models/friendRequest.
 import clubModel, { IClub } from "../app/models/club.model";
 import gameModel, { IGame } from "../app/models/game.model";
 import { Model } from "mongoose";
+import AdminService from "../app/services/admin.service";
 
 const container = new Container();
 
@@ -41,6 +42,7 @@ container.bind<GameRepository>(TYPES.GameRepository).to(GameRepository);
 
 // Bind Services
 container.bind<UserService>(TYPES.UserService).to(UserService);
+container.bind<AdminService>(TYPES.AdminService).to(AdminService);
 container.bind<FriendService>(TYPES.FriendService).to(FriendService);
 container.bind<ClubService>(TYPES.ClubService).to(ClubService);
 container.bind<GameService>(TYPES.GameService).to(GameService);

@@ -4,9 +4,10 @@ import ClubRepository from "../repositories/club.repository";
 import UserRepository from "../repositories/user.repository";
 import { IClub } from "../models/club.model";
 import { Schema, Types } from "mongoose";
+import { IClubService } from "./interface/IClubService";
 
 @injectable()
-export default class ClubService {
+export default class ClubService implements IClubService {
   private clubRepository: ClubRepository;
   private userRepository: UserRepository;
 

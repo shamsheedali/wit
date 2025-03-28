@@ -1,9 +1,10 @@
 import jwt from "jsonwebtoken";
 import { injectable } from "inversify";
 import { Response } from "express";
+import { ITokenService } from "./interface/ITokenService";
 
 @injectable()
-export default class TokenService {
+export default class TokenService implements ITokenService {
     generateAccessToken(email: string, role: string): string {
         if (!process.env.JWT_SECRET) {
             throw new Error("JWT_SECRET is not defined in environment variables");

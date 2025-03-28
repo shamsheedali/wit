@@ -4,7 +4,6 @@ import HttpStatus from "../../constants/httpStatus";
 import UserService from "../services/user.service";
 import TokenService from "../services/token.service";
 import { IUser } from "../models/user.model";
-import UserRepository from "../repositories/user.repository";
 import TYPES from "../../config/types";
 import { IUserInput } from "../dtos/user.dto";
 import MailService from "../services/mail.service";
@@ -15,18 +14,15 @@ export default class UserController {
   private userService: UserService;
   private tokenService: TokenService;
   private mailService: MailService;
-  private userRepository: UserRepository;
 
   constructor(
     @inject(TYPES.UserService) userService: UserService,
     @inject(TYPES.TokenService) tokenService: TokenService,
     @inject(TYPES.MailService) mailService: MailService,
-    @inject(TYPES.UserRepository) userRepository: UserRepository
   ) {
     this.userService = userService;
     this.tokenService = tokenService;
     this.mailService = mailService;
-    this.userRepository = userRepository;
   }
 
   // USER_SIGN_UP
@@ -77,7 +73,7 @@ export default class UserController {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "All fields are required" });
       }
 
-      const user = await this.userRepository.findOneByEmail(email);
+      const user = await this.userService.findByEmail(email);
       if (!user) {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "User not available" });
       }
@@ -132,25 +128,28 @@ export default class UserController {
   async googleUser(req: Request, res: Response): Promise<Response> {
     try {
       const { googleId, username, email, profileImage } = req.body;
-
+  
       let newUsername = username.includes(" ") ? username.replaceAll(" ", "_") : username;
-
+  
       let user = await this.userService.findByEmail(email);
-
+  
       if (!user) {
-        user = await this.userRepository.createGoogleUser({
+        user = await this.userService.createGoogleUser({
           googleId,
           username: newUsername,
           email,
           profileImageUrl: profileImage,
         });
       }
-
+  
       const accessToken = this.tokenService.generateAccessToken(email, "user");
-
+  
+      // Mongoose Document to plain object
+      const userPlain = user.toObject();
+  
       return res
         .status(HttpStatus.CREATED)
-        .json({ message: "Google auth successful", accessToken, user });
+        .json({ message: "Google auth successful", accessToken, user: userPlain });
     } catch (error) {
       console.error("Google Auth Error:", error);
       return res
@@ -195,7 +194,7 @@ export default class UserController {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "Email is required" });
       }
 
-      const user = await this.userService.getUserByEmail(email);
+      const user = await this.userService.findByEmail(email);
 
       if (!user) {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "User not available" });
@@ -228,7 +227,7 @@ export default class UserController {
         return res.status(HttpStatus.BAD_REQUEST).json({message: "All fields are required"});
       }
 
-      const user = await this.userService.getUserByEmail(email);
+      const user = await this.userService.findByEmail(email);
 
       if(!user) {
         return res.status(HttpStatus.BAD_REQUEST).json({message: "User not available"});

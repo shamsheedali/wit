@@ -15,8 +15,6 @@ export default class ClubController {
   async createClub(req: Request, res: Response): Promise<Response> {
     try {
       const { name, description, clubType, adminIds, memberIds, userId } = req.body;
-      // console.log('---------------data,,', name, description, clubType, adminIds, memberIds, userId)
-
 
       if (!name || !clubType) {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "Name and clubType are required" });

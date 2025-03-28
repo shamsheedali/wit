@@ -1,9 +1,9 @@
 import { inject, injectable } from 'inversify';
-import { Request, Response } from 'express'; // Correct import
+import { Request, Response } from 'express';
 import FriendService from '../services/friend.service';
 import TYPES from '../../config/types';
 import HttpStatus from '../../constants/httpStatus';
-import { Server } from 'socket.io'; // Import Server type
+import { Server } from 'socket.io';
 
 @injectable()
 export default class FriendController {

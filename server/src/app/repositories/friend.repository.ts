@@ -5,9 +5,10 @@ import { Model } from 'mongoose';
 import TYPES from '../../config/types';
 import mongoose from 'mongoose';
 import User, { IUser } from '../models/user.model';
+import { IFriendRepository } from './interface/IFriendRepository';
 
 @injectable()
-export default class FriendRepository extends BaseRepository<IFriendRequest> {
+export default class FriendRepository extends BaseRepository<IFriendRequest> implements IFriendRepository {
   constructor(@inject(TYPES.FriendRequestModel) friendRequestModel: Model<IFriendRequest>) {
     super(friendRequestModel);
   }

@@ -5,9 +5,10 @@ import FriendRepository from "../repositories/friend.repository";
 import { IFriendRequest } from "../models/friendRequest.model";
 import { Server } from "socket.io";
 import { IUser } from "../models/user.model";
+import { IFriendService } from "./interface/IFriendService";
 
 @injectable()
-export default class FriendService {
+export default class FriendService implements IFriendService {
   private userRepository: UserRepository;
   private friendRepository: FriendRepository;
 

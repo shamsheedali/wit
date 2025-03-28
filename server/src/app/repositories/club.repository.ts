@@ -3,9 +3,10 @@ import { Model, Types } from "mongoose";
 import BaseRepository from "../../core/base.repository";
 import { IClub } from "../models/club.model";
 import TYPES from "../../config/types";
+import { IClubRepository } from "./interface/IClubRepository";
 
 @injectable()
-export default class ClubRepository extends BaseRepository<IClub> {
+export default class ClubRepository extends BaseRepository<IClub> implements IClubRepository {
   constructor(@inject(TYPES.ClubModel) clubModel: Model<IClub>) {
     super(clubModel);
   }

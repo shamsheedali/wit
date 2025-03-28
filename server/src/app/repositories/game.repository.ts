@@ -4,9 +4,10 @@ import BaseRepository from "../../core/base.repository";
 import { GameStatus, IGame } from "../models/game.model";
 import { IGameInput } from "../dtos/game.dto";
 import TYPES from "../../config/types";
+import { IGameRepository } from "./interface/IGameRepository";
 
 @injectable()
-export default class GameRepository extends BaseRepository<IGame> {
+export default class GameRepository extends BaseRepository<IGame> implements IGameRepository {
   constructor(@inject(TYPES.GameModel) gameModel: Model<IGame>) {
     super(gameModel);
   }
