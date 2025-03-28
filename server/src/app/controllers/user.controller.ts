@@ -11,18 +11,18 @@ import redisClient from "../../config/redis";
 
 @injectable()
 export default class UserController {
-  private userService: UserService;
-  private tokenService: TokenService;
-  private mailService: MailService;
+  private _userService: UserService;
+  private _tokenService: TokenService;
+  private _mailService: MailService;
 
   constructor(
     @inject(TYPES.UserService) userService: UserService,
     @inject(TYPES.TokenService) tokenService: TokenService,
     @inject(TYPES.MailService) mailService: MailService,
   ) {
-    this.userService = userService;
-    this.tokenService = tokenService;
-    this.mailService = mailService;
+    this._userService = userService;
+    this._tokenService = tokenService;
+    this._mailService = mailService;
   }
 
   // USER_SIGN_UP
@@ -37,12 +37,12 @@ export default class UserController {
       }
 
       const userInput: IUserInput = { username, email, password };
-      const user = await this.userService.registerUser(userInput);
+      const user = await this._userService.registerUser(userInput);
 
       if (user.isNewUser) {
-        const accessToken = this.tokenService.generateAccessToken(email, 'user');
-        const refreshToken = this.tokenService.generateRefreshToken(email, 'user');
-        this.tokenService.setRefreshTokenCookie(res, refreshToken);
+        const accessToken = this._tokenService.generateAccessToken(email, 'user');
+        const refreshToken = this._tokenService.generateRefreshToken(email, 'user');
+        this._tokenService.setRefreshTokenCookie(res, refreshToken);
 
         const { password, ...userWithoutPassword } = user.user.toObject(); 
 
@@ -73,7 +73,7 @@ export default class UserController {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "All fields are required" });
       }
 
-      const user = await this.userService.findByEmail(email);
+      const user = await this._userService.findByEmail(email);
       if (!user) {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "User not available" });
       }
@@ -82,16 +82,16 @@ export default class UserController {
         return res.status(HttpStatus.FORBIDDEN).json({message: "This account is banned!"});
       }
 
-      const passwordValidation = await this.userService.isPasswordValid(password, user.password);
+      const passwordValidation = await this._userService.isPasswordValid(password, user.password);
 
       if (!passwordValidation) {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "Invalid password" });
       }
 
-      const accessToken = this.tokenService.generateAccessToken(email, "user");
-      const refreshToken = this.tokenService.generateRefreshToken(email, "user");
+      const accessToken = this._tokenService.generateAccessToken(email, "user");
+      const refreshToken = this._tokenService.generateRefreshToken(email, "user");
 
-      this.tokenService.setRefreshTokenCookie(res, refreshToken);
+      this._tokenService.setRefreshTokenCookie(res, refreshToken);
 
       const { password: dbPassword, ...userWithoutPassword } = user.toObject(); 
 
@@ -111,7 +111,7 @@ export default class UserController {
     try {
       const {username} = req.query;
 
-      const isExistingUsername = await this.userService.findByUsername(username as string);
+      const isExistingUsername = await this._userService.findByUsername(username as string);
 
       if(isExistingUsername) {
         return res.status(HttpStatus.BAD_REQUEST).json({message: "Username already exist"})
@@ -131,10 +131,10 @@ export default class UserController {
   
       let newUsername = username.includes(" ") ? username.replaceAll(" ", "_") : username;
   
-      let user = await this.userService.findByEmail(email);
+      let user = await this._userService.findByEmail(email);
   
       if (!user) {
-        user = await this.userService.createGoogleUser({
+        user = await this._userService.createGoogleUser({
           googleId,
           username: newUsername,
           email,
@@ -142,7 +142,7 @@ export default class UserController {
         });
       }
   
-      const accessToken = this.tokenService.generateAccessToken(email, "user");
+      const accessToken = this._tokenService.generateAccessToken(email, "user");
   
       // Mongoose Document to plain object
       const userPlain = user.toObject();
@@ -167,12 +167,12 @@ export default class UserController {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "All fields are required" });
       }
 
-      const user = await this.userService.findByEmail(email);
+      const user = await this._userService.findByEmail(email);
       if (!user) {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "User not available" });
       }
 
-      const passwordValidation = await this.userService.isPasswordValid(password, user.password);
+      const passwordValidation = await this._userService.isPasswordValid(password, user.password);
 
       if (!passwordValidation) {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "Invalid password" });
@@ -194,7 +194,7 @@ export default class UserController {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "Email is required" });
       }
 
-      const user = await this.userService.findByEmail(email);
+      const user = await this._userService.findByEmail(email);
 
       if (!user) {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "User not available" });
@@ -207,7 +207,7 @@ export default class UserController {
         text: `Click this link to reset your password ${process.env.RESET_PASSWORD_LINK}`,
       };
 
-      this.mailService.sendMail(mailOptions);
+      this._mailService.sendMail(mailOptions);
 
       return res.status(HttpStatus.OK).json({ message: "Password reset email sent" });
     } catch (error) {
@@ -227,17 +227,17 @@ export default class UserController {
         return res.status(HttpStatus.BAD_REQUEST).json({message: "All fields are required"});
       }
 
-      const user = await this.userService.findByEmail(email);
+      const user = await this._userService.findByEmail(email);
 
       if(!user) {
         return res.status(HttpStatus.BAD_REQUEST).json({message: "User not available"});
       }
 
-      const hashedPassword = await this.userService.hashPassword(newPassword);
+      const hashedPassword = await this._userService.hashPassword(newPassword);
       const updateData = {
         password: hashedPassword
       }
-      await this.userService.update(user._id as string, updateData);
+      await this._userService.update(user._id as string, updateData);
 
       return res.status(HttpStatus.OK).json({ message: "Password reset successfully" });
       
@@ -253,7 +253,7 @@ export default class UserController {
   async sendOtp(req: Request, res: Response): Promise<Response> {
     try {
       const { email } = req.body;
-      const user = await this.userService.findByEmail(email);
+      const user = await this._userService.findByEmail(email);
 
       if(user) {
         return res.status(HttpStatus.BAD_REQUEST).json({message: "User already exists"})
@@ -269,7 +269,7 @@ export default class UserController {
         text: `Your OTP code is ${otp}.`,
       };
 
-      this.mailService.sendMail(mailOptions);
+      this._mailService.sendMail(mailOptions);
       //STORING OTP IN REDIS
       try {
         await redisClient.set(`otp:${email}`, otp, {EX: 300})//5 min
@@ -319,7 +319,7 @@ export default class UserController {
         return res.status(HttpStatus.BAD_REQUEST).json({message: "Invalid search query"});
       }
 
-      const users = await this.userService.searchUser(query);
+      const users = await this._userService.searchUser(query);
       return res.status(HttpStatus.OK).json(users);
     } catch (error) {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal Server Error" });
@@ -330,7 +330,7 @@ export default class UserController {
   async getUser(req: Request, res: Response): Promise<Response> {
     try {
       const {username} = req.params;
-      const user = await this.userService.findByUsername(username as string);
+      const user = await this._userService.findByUsername(username as string);
       if(!user) {
         return res.status(HttpStatus.BAD_REQUEST).json({message: "User not found"});
       }
@@ -352,7 +352,7 @@ export default class UserController {
       const profileImage = req.file;
       const userData = req.body;
 
-      const updatedUser = await this.userService.updateUserProfile(userId, userData, profileImage);
+      const updatedUser = await this._userService.updateUserProfile(userId, userData, profileImage);
 
       if(!updatedUser) {
         return res.status(HttpStatus.UNAUTHORIZED).json({message: "User not found!"});
@@ -371,7 +371,7 @@ export default class UserController {
   async getUserGrowth(req: Request, res: Response): Promise<Response> {
     try {
       const { period = "daily" } = req.query; // daily, weekly, monthly
-      const growthData = await this.userService.getUserGrowth(period as string);
+      const growthData = await this._userService.getUserGrowth(period as string);
       return res.status(HttpStatus.OK).json(growthData);
     } catch (error) {
       console.error("Error fetching user growth:", error);
@@ -381,7 +381,7 @@ export default class UserController {
   
   async getTotalUsers(req: Request, res: Response): Promise<Response> {
     try {
-      const totalUsers = await this.userService.getTotalUsers();
+      const totalUsers = await this._userService.getTotalUsers();
       return res.status(HttpStatus.OK).json({ total: totalUsers });
     } catch (error) {
       console.error("Error fetching total users:", error);

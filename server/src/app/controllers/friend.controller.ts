@@ -7,10 +7,10 @@ import { Server } from 'socket.io';
 
 @injectable()
 export default class FriendController {
-  private friendService: FriendService;
+  private _friendService: FriendService;
 
   constructor(@inject(TYPES.FriendService) friendService: FriendService) {
-    this.friendService = friendService;
+    this._friendService = friendService;
   }
 
   async getFriends(req: Request, res: Response): Promise<void> {
@@ -20,7 +20,7 @@ export default class FriendController {
         res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: 'User ID required' });
         return;
       }
-      const friends = await this.friendService.getFriends(userId as string);
+      const friends = await this._friendService.getFriends(userId as string);
       res.status(HttpStatus.OK).json(friends);
     } catch (error: any) {
       console.error('Get friends error:', error);
@@ -33,7 +33,7 @@ export default class FriendController {
       const { senderId, receiverId } = req.body;
       const io = req.app.get('io') as Server;
 
-      const request = await this.friendService.sendFriendRequest(senderId, receiverId, io);
+      const request = await this._friendService.sendFriendRequest(senderId, receiverId, io);
       res.status(HttpStatus.CREATED).json({ success: true, data: request });
     } catch (error: any) {
       console.error(error);
@@ -45,7 +45,7 @@ export default class FriendController {
     try {
       const { userId } = req.query;
       if (!userId)  res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: 'User ID required' });
-      const requests = await this.friendService.getFriendRequests(userId as string);
+      const requests = await this._friendService.getFriendRequests(userId as string);
       res.json(requests);
     } catch (error: any) {
       console.error(error);
@@ -59,7 +59,7 @@ export default class FriendController {
       const { status, userId } = req.body;
       const io = req.app.get('io') as Server;
 
-      const updatedRequest = await this.friendService.updateFriendRequest(requestId, userId, status, io);
+      const updatedRequest = await this._friendService.updateFriendRequest(requestId, userId, status, io);
       res.json({ success: true, data: updatedRequest });
     } catch (error: any) {
       console.error(error);
@@ -70,14 +70,14 @@ export default class FriendController {
   async removeFriend(req: Request, res: Response): Promise<void> {
     try {
       const {userId, friendId} = req.body;
-      const updatedUser = await this.friendService.removeFriend(userId, friendId);
+      const updatedUser = await this._friendService.removeFriend(userId, friendId);
 
       if (!updatedUser) {
         res.status(HttpStatus.NOT_FOUND).json({ message: "User not found" });
       }
 
       //also remove from other user as-well
-      await this.friendService.removeFriend(friendId, userId);
+      await this._friendService.removeFriend(friendId, userId);
 
       res.status(HttpStatus.OK).json({message: "Removed user as friend", updatedUser});
     } catch (error) {

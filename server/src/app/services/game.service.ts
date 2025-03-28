@@ -8,11 +8,11 @@ import { IGameService } from "./interface/IGameService";
 
 @injectable()
 export default class GameService extends BaseService<IGame> implements IGameService {
-  private gameRepository: GameRepository;
+  private _gameRepository: GameRepository;
 
   constructor(@inject(TYPES.GameRepository) gameRepository: GameRepository) {
     super(gameRepository);
-    this.gameRepository = gameRepository;
+    this._gameRepository = gameRepository;
   }
 
   async saveGame(
@@ -33,7 +33,7 @@ export default class GameService extends BaseService<IGame> implements IGameServ
       timeControl,
       moves,
     };
-    return this.gameRepository.saveGame(gameData);
+    return this._gameRepository.saveGame(gameData);
   }
 
   async updateGame(
@@ -47,34 +47,34 @@ export default class GameService extends BaseService<IGame> implements IGameServ
       gameStatus: GameStatus;
     }>
   ): Promise<IGame | null> {
-    return this.gameRepository.updateGame(gameId, updateData);
+    return this._gameRepository.updateGame(gameId, updateData);
   }
 
   async getUserGames(userId: string): Promise<IGame[]> {
-    return this.gameRepository.getGamesByUserId(userId);
+    return this._gameRepository.getGamesByUserId(userId);
   }
 
   async getAllGames(page: number, limit: number): Promise<{ games: IGame[]; totalGames: number; totalPages: number }> {
     const skip = (page - 1) * limit;
-    const games = await this.gameRepository.findAllPaginated(skip, limit);
-    const totalGames = await this.gameRepository.countGames();
+    const games = await this._gameRepository.findAllPaginated(skip, limit);
+    const totalGames = await this._gameRepository.countGames();
     const totalPages = Math.ceil(totalGames / limit);
     return { games, totalGames, totalPages };
   }
 
   async deleteGame(gameId: string): Promise<IGame | null> {
-    return this.gameRepository.deleteGame(gameId);
+    return this._gameRepository.deleteGame(gameId);
   }
 
   async terminateGame(gameId: string): Promise<IGame | null> {
-    return this.gameRepository.terminateGame(gameId);
+    return this._gameRepository.terminateGame(gameId);
   }
 
   async getTotalGames(): Promise<number> {
-    return await this.gameRepository.countGames();
+    return await this._gameRepository.countGames();
   }
 
   async findOngoingGameByUserId(userId: string) {
-    return await this.gameRepository.findOngoingGameByUserId(userId)
+    return await this._gameRepository.findOngoingGameByUserId(userId)
   }
 }

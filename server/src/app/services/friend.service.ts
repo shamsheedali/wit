@@ -9,19 +9,19 @@ import { IFriendService } from "./interface/IFriendService";
 
 @injectable()
 export default class FriendService implements IFriendService {
-  private userRepository: UserRepository;
-  private friendRepository: FriendRepository;
+  private _userRepository: UserRepository;
+  private _friendRepository: FriendRepository;
 
   constructor(
     @inject(TYPES.UserRepository) userRepository: UserRepository,
     @inject(TYPES.FriendRepository) friendRepository: FriendRepository
   ) {
-    this.userRepository = userRepository;
-    this.friendRepository = friendRepository;
+    this._userRepository = userRepository;
+    this._friendRepository = friendRepository;
   }
 
   async getFriends(userId: string): Promise<IUser[]> {
-    const user = await this.friendRepository.findUserById(userId);
+    const user = await this._friendRepository.findUserById(userId);
     if (!user) throw new Error('User not found');
     return user.friends as IUser[];
   }
@@ -31,12 +31,12 @@ export default class FriendService implements IFriendService {
       throw new Error('Cannot send friend request to yourself');
     }
   
-    const existingRequest = await this.friendRepository.findPending(senderId, receiverId);
+    const existingRequest = await this._friendRepository.findPending(senderId, receiverId);
     if (existingRequest) {
       throw new Error('Friend request already sent');
     }
   
-    const request = await this.friendRepository.createFriendRequest(senderId, receiverId); 
+    const request = await this._friendRepository.createFriendRequest(senderId, receiverId); 
     io.to(receiverId).emit('friendRequest', {
       _id: request._id,
       senderId,
@@ -49,7 +49,7 @@ export default class FriendService implements IFriendService {
   }
 
   async getFriendRequests(userId: string): Promise<IFriendRequest[]> {
-    return this.friendRepository.findRequestsForUser(userId);
+    return this._friendRepository.findRequestsForUser(userId);
   }
 
   async updateFriendRequest(
@@ -58,12 +58,12 @@ export default class FriendService implements IFriendService {
     status: "accepted" | "ignored",
     io: Server
   ): Promise<IFriendRequest> {
-    const request = await this.friendRepository.findById(requestId);
+    const request = await this._friendRepository.findById(requestId);
     if (!request || request.receiverId.toString() !== userId) {
       throw new Error("Friend request not found or unauthorized");
     }
 
-    const updatedRequest = await this.friendRepository.updateStatus(
+    const updatedRequest = await this._friendRepository.updateStatus(
       requestId,
       status
     );
@@ -74,11 +74,11 @@ export default class FriendService implements IFriendService {
 
     if (status === "accepted") {
       // Add each user to the other's friends list
-      await this.userRepository.addFriend(
+      await this._userRepository.addFriend(
         request.senderId.toString(),
         request.receiverId.toString()
       );
-      await this.userRepository.addFriend(
+      await this._userRepository.addFriend(
         request.receiverId.toString(),
         request.senderId.toString()
       );
@@ -102,6 +102,6 @@ export default class FriendService implements IFriendService {
   }
 
   async removeFriend(userId: string, friendId: string) {
-    return await this.userRepository.removeFriend(userId, friendId);
+    return await this._userRepository.removeFriend(userId, friendId);
   }
 }

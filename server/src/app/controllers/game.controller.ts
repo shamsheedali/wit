@@ -6,16 +6,16 @@ import TYPES from "../../config/types";
 
 @injectable()
 export default class GameController {
-  private gameService: GameService;
+  private _gameService: GameService;
 
   constructor(@inject(TYPES.GameService) gameService: GameService) {
-    this.gameService = gameService;
+    this._gameService = gameService;
   }
 
   async saveGame(req: Request, res: Response): Promise<Response> {
     try {
       const { playerOne, playerTwo, playerAt, fen, gameType, timeControl, moves } = req.body;
-      const game = await this.gameService.saveGame(
+      const game = await this._gameService.saveGame(
         playerOne,
         playerTwo,
         playerAt,
@@ -37,7 +37,7 @@ export default class GameController {
     try {
       const { gameId } = req.params;
       const { result, fen, moves, lossType, gameDuration, gameStatus } = req.body;
-      const updatedGame = await this.gameService.updateGame(gameId, {
+      const updatedGame = await this._gameService.updateGame(gameId, {
         result,
         fen,
         moves,
@@ -60,7 +60,7 @@ export default class GameController {
   async getUserGames(req: Request, res: Response): Promise<Response> {
     try {
       const { userId } = req.params;
-      const games = await this.gameService.getUserGames(userId);
+      const games = await this._gameService.getUserGames(userId);
       return res.status(HttpStatus.OK).json({ games });
     } catch (error) {
       console.error("Error fetching games:", error);
@@ -72,7 +72,7 @@ export default class GameController {
 
   async getTotalGames(req: Request, res: Response): Promise<Response> {
     try {
-      const totalGames = await this.gameService.getTotalGames();
+      const totalGames = await this._gameService.getTotalGames();
       return res.status(HttpStatus.OK).json({ total: totalGames });
     } catch (error) {
       console.error("Error fetching total games:", error);
@@ -83,7 +83,7 @@ export default class GameController {
   async getOngoingGameByUserId(req: Request, res: Response) {
     try {
       const { userId } = req.params;
-      const game = await this.gameService.findOngoingGameByUserId(userId);
+      const game = await this._gameService.findOngoingGameByUserId(userId);
       if (!game) {
         return res.status(HttpStatus.NOT_FOUND).json({ message: "No ongoing game found for this user" });
       }

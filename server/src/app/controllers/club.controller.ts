@@ -6,10 +6,10 @@ import HttpStatus from "../../constants/httpStatus";
 
 @injectable()
 export default class ClubController {
-  private clubService: ClubService;
+  private _clubService: ClubService;
 
   constructor(@inject(TYPES.ClubService) clubService: ClubService) {
-    this.clubService = clubService;
+    this._clubService = clubService;
   }
 
   async createClub(req: Request, res: Response): Promise<Response> {
@@ -27,7 +27,7 @@ export default class ClubController {
       // Ensure the requesting user is included in adminIds if not provided
       const admins = adminIds && adminIds.length ? adminIds : [userId];
 
-      const club = await this.clubService.createClub(
+      const club = await this._clubService.createClub(
         name,
         description,
         clubType,
@@ -49,7 +49,7 @@ export default class ClubController {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: "Club ID is required" });
       }
 
-      const updatedClub = await this.clubService.joinClub(clubId, userId);
+      const updatedClub = await this._clubService.joinClub(clubId, userId);
       return res.status(HttpStatus.OK).json({ message: "Joined club successfully", club: updatedClub });
     } catch (error) {
       console.error("Error joining club:", error);
@@ -60,7 +60,7 @@ export default class ClubController {
   async getPublicClubs(req: Request, res: Response): Promise<Response> {
     try {
       const { search } = req.query;
-      const clubs = await this.clubService.getPublicClubs(search as string || '');
+      const clubs = await this._clubService.getPublicClubs(search as string || '');
       return res.status(HttpStatus.OK).json({ clubs });
     } catch (error) {
       console.error('Error fetching public clubs:', error);
@@ -76,7 +76,7 @@ export default class ClubController {
         return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID is required' });
       }
   
-      const clubs = await this.clubService.getUserClubs(userId);
+      const clubs = await this._clubService.getUserClubs(userId);
       return res.status(HttpStatus.OK).json({ clubs });
     } catch (error) {
       console.error('Error fetching user clubs:', error);

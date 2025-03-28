@@ -8,15 +8,15 @@ import { IClubService } from "./interface/IClubService";
 
 @injectable()
 export default class ClubService implements IClubService {
-  private clubRepository: ClubRepository;
-  private userRepository: UserRepository;
+  private _clubRepository: ClubRepository;
+  private _userRepository: UserRepository;
 
   constructor(
     @inject(TYPES.ClubRepository) clubRepository: ClubRepository,
     @inject(TYPES.UserRepository) userRepository: UserRepository
   ) {
-    this.clubRepository = clubRepository;
-    this.userRepository = userRepository;
+    this._clubRepository = clubRepository;
+    this._userRepository = userRepository;
   }
 
   async createClub(
@@ -28,12 +28,12 @@ export default class ClubService implements IClubService {
   ): Promise<IClub> {
     console.log('Service data:', name, description, clubType, adminIds, memberIds);
 
-    const existingClub = await this.clubRepository.findByName(name);
+    const existingClub = await this._clubRepository.findByName(name);
     if (existingClub) throw new Error('Club name already exists');
 
     const validAdmins = await Promise.all(
       adminIds.map(async (id) => {
-        const user = await this.userRepository.findById(id);
+        const user = await this._userRepository.findById(id);
         if (!user) throw new Error(`Admin with ID ${id} not found`);
         return new Types.ObjectId(id); // Use Types.ObjectId
       })
@@ -42,7 +42,7 @@ export default class ClubService implements IClubService {
     const validMembers = memberIds.length
       ? await Promise.all(
           memberIds.map(async (id) => {
-            const user = await this.userRepository.findById(id);
+            const user = await this._userRepository.findById(id);
             if (!user) throw new Error(`User with ID ${id} not found`);
             return new Types.ObjectId(id); // Use Types.ObjectId
           })
@@ -58,16 +58,16 @@ export default class ClubService implements IClubService {
     };
 
     console.log('clubData:', clubData); // Debug
-    return this.clubRepository.create(clubData);
+    return this._clubRepository.create(clubData);
   }
 
   async joinClub(clubId: string, userId: string): Promise<IClub> {
-    const club = await this.clubRepository.findById(clubId);
+    const club = await this._clubRepository.findById(clubId);
     if (!club) {
       throw new Error("Club not found");
     }
 
-    const user = await this.userRepository.findById(userId);
+    const user = await this._userRepository.findById(userId);
     if (!user) {
       throw new Error("User not found");
     }
@@ -76,7 +76,7 @@ export default class ClubService implements IClubService {
       throw new Error("Cannot join private club without invitation");
     }
 
-    const updatedClub = await this.clubRepository.addMember(clubId, userId);
+    const updatedClub = await this._clubRepository.addMember(clubId, userId);
     if (!updatedClub) {
       throw new Error("Failed to join club");
     }
@@ -91,10 +91,10 @@ export default class ClubService implements IClubService {
     if (search) {
       query.name = { $regex: search, $options: 'i' };
     }
-    return this.clubRepository.findPublicClubs(query);
+    return this._clubRepository.findPublicClubs(query);
   }
 
   async getUserClubs(userId: string): Promise<IClub[]> {
-    return this.clubRepository.findByUserId(userId);
+    return this._clubRepository.findByUserId(userId);
   }
 }

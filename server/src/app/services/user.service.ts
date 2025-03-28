@@ -12,11 +12,11 @@ export default class UserService
   extends BaseService<IUser>
   implements IUserService
 {
-  private userRepository: UserRepository;
+  private _userRepository: UserRepository;
 
   constructor(@inject(TYPES.UserRepository) userRepository: UserRepository) {
     super(userRepository);
-    this.userRepository = userRepository;
+    this._userRepository = userRepository;
   }
 
   async registerUser(userData: IUserInput): Promise<{
@@ -26,12 +26,12 @@ export default class UserService
   }> {
     const { username, email, password } = userData;
 
-    const existingUserEmail = await this.userRepository.findOneByEmail(email);
+    const existingUserEmail = await this._userRepository.findOneByEmail(email);
     if (existingUserEmail) {
       return { user: existingUserEmail, isNewUser: false, duplicate: "email" };
     }
 
-    const existingUserUsername = await this.userRepository.findOneByUsername(
+    const existingUserUsername = await this._userRepository.findOneByUsername(
       username
     );
     if (existingUserUsername) {
@@ -47,7 +47,7 @@ export default class UserService
     }
 
     const hashedPassword = await this.hashPassword(password);
-    const newUser = await this.userRepository.createUser({
+    const newUser = await this._userRepository.createUser({
       username,
       email,
       password: hashedPassword,
@@ -57,7 +57,7 @@ export default class UserService
   }
 
   async createGoogleUser(userData: IUserInput) {
-    return await this.userRepository.createGoogleUser(userData);
+    return await this._userRepository.createGoogleUser(userData);
   }
 
   async hashPassword(password: string) {
@@ -70,19 +70,19 @@ export default class UserService
   }
 
   async findAllPaginated(skip: number, limit: number) {
-    return await this.userRepository.findAllPaginated(skip, limit);
+    return await this._userRepository.findAllPaginated(skip, limit);
   }
 
   async searchUser(query: string) {
-    return await this.userRepository.searchUserByUsername(query);
+    return await this._userRepository.searchUserByUsername(query);
   }
 
   async findByUsername(name: string) {
-    return await this.userRepository.findOneByUsername(name);
+    return await this._userRepository.findOneByUsername(name);
   }
 
   async findByEmail(email: string) {
-    return await this.userRepository.findOneByEmail(email);
+    return await this._userRepository.findOneByEmail(email);
   }
 
   async updateUserProfile(
@@ -90,7 +90,7 @@ export default class UserService
     userData: Partial<IUser>,
     profileImage?: Express.Multer.File
   ) {
-    return await this.userRepository.updateUserProfile(
+    return await this._userRepository.updateUserProfile(
       userId,
       userData,
       profileImage
@@ -111,11 +111,11 @@ export default class UserService
         groupByFormat = "%Y-%m-%d";
     }
 
-    const growthData = await this.userRepository.getUserGrowth(groupByFormat);
+    const growthData = await this._userRepository.getUserGrowth(groupByFormat);
     return growthData;
   }
 
   async getTotalUsers(): Promise<number> {
-    return await this.userRepository.countUsers();
+    return await this._userRepository.countUsers();
   }
 }
