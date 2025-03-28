@@ -99,4 +99,8 @@ export default class FriendService {
   
       return updatedRequest;
   }
+
+  async removeFriend(userId: string, friendId: string) {
+    return await this.userRepository.removeFriend(userId, friendId);
+  }
 }

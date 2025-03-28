@@ -66,4 +66,23 @@ export default class FriendController {
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
     }
   }
+
+  async removeFriend(req: Request, res: Response): Promise<void> {
+    try {
+      const {userId, friendId} = req.body;
+      const updatedUser = await this.friendService.removeFriend(userId, friendId);
+
+      if (!updatedUser) {
+        res.status(HttpStatus.NOT_FOUND).json({ message: "User not found" });
+      }
+
+      //also remove from other user as-well
+      await this.friendService.removeFriend(friendId, userId);
+
+      res.status(HttpStatus.OK).json({message: "Removed user as friend", updatedUser});
+    } catch (error) {
+      console.log("Error removing friend:", error);
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+    }
+  }
 }

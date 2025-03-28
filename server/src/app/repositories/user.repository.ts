@@ -87,6 +87,16 @@ export default class UserRepository extends BaseRepository<IUser> {
     ).exec();
   }
 
+  async removeFriend(userId: string, friendId: string): Promise<IUser | null> {
+    return this.model
+      .findByIdAndUpdate(
+        userId,
+        { $pull: { friends: friendId } },
+        { new: true }
+      )
+      .exec();
+  }
+
   async getUserGrowth(dateFormat: string): Promise<any> {
     const growthData = await this.model.aggregate([
       {

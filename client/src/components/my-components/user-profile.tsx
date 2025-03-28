@@ -18,6 +18,7 @@ import { useAuthStore } from "@/stores";
 import { useFriendStore } from "@/stores/useFriendStore";
 import { User } from "@/types/auth";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 const UserProfile = ({ user }: { user: User }) => {
   const { user: mainUser } = useAuthStore();
@@ -36,14 +37,14 @@ const UserProfile = ({ user }: { user: User }) => {
   const handleAddFriend = async () => {
     try {
       if (!mainUser?._id) {
-        alert("You must be logged in to send a friend request");
+        toast.info("You must be logged in to send a friend request");
         return;
       }
-      await sendFriendRequest(user._id); // Only pass receiverId
-      setIsRequestSent(true); // Disable button and show feedback
+      await sendFriendRequest(user._id); 
+      setIsRequestSent(true); 
     } catch (error) {
       console.error("Failed to send friend request:", error);
-      alert("Failed to send friend request");
+      toast.error("Failed to send friend request");
     }
   };
 
@@ -101,7 +102,7 @@ const UserProfile = ({ user }: { user: User }) => {
             {isFriend ? (
               <Button
                 variant="destructive"
-                // onClick={handleAddFriend}
+                // onClick={handleRemoveFriend}
                 // disabled={isRequestSent}
               >
                 <HeartCrack />

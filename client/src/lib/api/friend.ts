@@ -74,3 +74,13 @@ export const updateFriendRequest = async (
     return { success: false, error };
   }
 };
+
+export const removeFriend = async(userId: string, friendId: string) => {
+  try {
+    const response = await apiClient.delete(`${API_URL}/friend`, {data: { userId, friendId },});
+    console.log(response);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+}

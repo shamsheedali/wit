@@ -33,28 +33,28 @@ export default function Overview() {
       </header>
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
         <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-          <div className="aspect-video rounded-xl bg-muted/50 p-4">
-            <h1>Total Users</h1>
-            <h1>{totalUsers}</h1>
+          <div className="aspect-video rounded-xl bg-muted/50 p-10">
+            <h1 className="font-bold text-2xl">Total Users</h1>
+            <h1 className="font-bold text-4xl">{totalUsers}</h1>
             <div className="flex items-center gap-2">
-              <TrendingUp />
-              <h1>80 Users currently online</h1> {/* Replace with real data if available */}
+              {/* <TrendingUp /> */}
+              {/* <h1>80 Users currently online</h1>  */}
             </div>
           </div>
-          <div className="aspect-video rounded-xl bg-muted/50 p-4">
-            <h1>Total Games</h1>
-            <h1>{totalGames}</h1>
+          <div className="aspect-video rounded-xl bg-muted/50 p-10">
+            <h1 className="font-bold text-2xl">Total Games</h1>
+            <h1 className="font-bold text-4xl">{totalGames}</h1>
             <div className="flex items-center gap-2">
-              <TrendingUp />
-              <h1>80 Ongoing games</h1> {/* Replace with real data if available */}
+              {/* <TrendingUp /> */}
+              {/* <h1>80 Ongoing games</h1>  */}
             </div>
           </div>
-          <div className="aspect-video rounded-xl bg-muted/50 p-4">
-            <h1>New Users</h1>
-            <h1>3</h1> {/* Replace with real data */}
+          <div className="aspect-video rounded-xl bg-muted/50 p-10">
+            <h1 className="font-bold text-2xl">New Users</h1>
+            <h1 className="font-bold text-4xl">2</h1>
             <div className="flex items-center gap-2">
-              <TrendingUp />
-              <h1>8.5% From last 7 days</h1> {/* Replace with real data */}
+              {/* <TrendingUp /> */}
+              {/* <h1>8.5% From last 7 days</h1>  */}
             </div>
           </div>
         </div>

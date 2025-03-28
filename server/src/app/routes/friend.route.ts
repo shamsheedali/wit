@@ -10,5 +10,6 @@ router.get('/friends', friendController.getFriends.bind(friendController));
 router.post('/request', friendController.sendFriendRequest.bind(friendController));
 router.get('/requests', friendController.getFriendRequests.bind(friendController));
 router.patch('/request/:requestId', friendController.updateFriendRequest.bind(friendController));
+router.delete('/friend', friendController.removeFriend.bind(friendController));
 
 export default router;

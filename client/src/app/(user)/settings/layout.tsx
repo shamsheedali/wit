@@ -3,14 +3,23 @@
 import { useAuthStore } from "@/stores";
 import { CircleUserRound, SquareAsterisk } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type React from "react";
+import { useEffect } from "react";
 
 export default function SettingsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    if(!isAuthenticated) {
+      redirect('/login')
+    }
+  }, [])
+
   return (
     <div className="lg:px-44 w-full py-[120px] font-clashDisplay flex">
       <div className="flex flex-col px-10 text-lg gap-5">

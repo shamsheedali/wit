@@ -36,7 +36,10 @@ export function ClubsTabs() {
   const queryClient = useQueryClient();
 
   // Debounced search for public clubs
-  const debouncedSetQuery = useCallback(debounce((val) => setSearchQuery(val), 500), []);
+  const debouncedSetQuery = useCallback(
+    debounce((val) => setSearchQuery(val), 500),
+    []
+  );
 
   // Fetch user's clubs (public and private)
   const { data: userClubs = [], isLoading: userClubsLoading } = useQuery({
@@ -71,10 +74,12 @@ export function ClubsTabs() {
 
   return (
     <Tabs defaultValue="clubs" className="w-full flex flex-col items-end">
-      <Button className="mb-3" onClick={() => setDialogOpen(true)}>
-        <CirclePlus />
-        Create Club
-      </Button>
+      {mainUser?._id && (
+        <Button className="mb-3" onClick={() => setDialogOpen(true)}>
+          <CirclePlus />
+          Create Club
+        </Button>
+      )}
       <CreateClubDialog open={dialogOpen} onOpenChange={setDialogOpen} />
 
       <TabsList className="grid w-full grid-cols-2">
@@ -111,7 +116,8 @@ export function ClubsTabs() {
                   <div className="flex-1">
                     <p className="text-sm font-medium">{club.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {club.clubType} • Members: {club.members?.length || "No members"}
+                      {club.clubType} • Members:{" "}
+                      {club.members?.length || "No members"}
                     </p>
                   </div>
                   <Button
