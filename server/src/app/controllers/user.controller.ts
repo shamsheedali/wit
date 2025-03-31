@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { inject, injectable } from "inversify";
 import HttpStatus from "../../constants/httpStatus";
 import UserService from "../services/user.service";
@@ -8,6 +8,8 @@ import TYPES from "../../config/types";
 import { IUserInput } from "../dtos/user.dto";
 import MailService from "../services/mail.service";
 import redisClient from "../../config/redis";
+import { ApplicationError, MissingFieldError } from "../../utils/http-error.util";
+import HttpResponse from "../../constants/response-message.constant";
 
 @injectable()
 export default class UserController {
@@ -26,66 +28,54 @@ export default class UserController {
   }
 
   // USER_SIGN_UP
-  async registerUser(req: Request, res: Response): Promise<Response> {
-    try {
-      const { username, email, password }: IUser = req.body;
+  async registerUser(req: Request, res: Response, next: NextFunction) {
+    const { username, email, password } = req.body;
 
-      if (!username || !email || !password) {
-        return res
-          .status(HttpStatus.BAD_REQUEST)
-          .json({ message: "All fields are required" });
-      }
+    if (!username) throw new MissingFieldError('username');
+    if (!email) throw new MissingFieldError('email');
+    if (!password) throw new MissingFieldError('password');
 
-      const userInput: IUserInput = { username, email, password };
-      const user = await this._userService.registerUser(userInput);
+    const user = await this._userService.registerUser({ username, email, password });
 
-      if (user.isNewUser) {
-        const accessToken = this._tokenService.generateAccessToken(email, 'user');
-        const refreshToken = this._tokenService.generateRefreshToken(email, 'user');
-        this._tokenService.setRefreshTokenCookie(res, refreshToken);
+    if (user.isNewUser) {
+      const accessToken = this._tokenService.generateAccessToken(email, 'user');
+      const refreshToken = this._tokenService.generateRefreshToken(email, 'user');
+      this._tokenService.setRefreshTokenCookie(res, refreshToken);
 
-        const { password, ...userWithoutPassword } = user.user.toObject(); 
+      const { password: _, ...userWithoutPassword } = user.user.toObject();
 
-        return res.status(HttpStatus.CREATED).json({
-          message: "Signup Successful",
-          user: userWithoutPassword,
-          accessToken,
-        });
-      } else if (user.duplicate === "username") {
-        return res.status(HttpStatus.BAD_REQUEST).json({ message: "Username already exists" });
-      } else {
-        return res.status(HttpStatus.BAD_REQUEST).json({ message: "User already exists" });
-      }
-    } catch (error) {
-      console.error("Error Creating User", error);
-      return res
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ message: "Error Creating User", error });
+      res.status(HttpStatus.CREATED).json({
+        message: HttpResponse.USER_CREATION_SUCCESS,
+        user: userWithoutPassword,
+        accessToken,
+      });
+    } else if (user.duplicate === 'username') {
+      throw new ApplicationError(HttpStatus.BAD_REQUEST, HttpResponse.USERNAME_EXIST);
+    } else {
+      throw new ApplicationError(HttpStatus.BAD_REQUEST, HttpResponse.USER_EXIST);
     }
   }
 
   // USER_LOG_IN
-  async login(req: Request, res: Response): Promise<Response> {
-    try {
+  async login(req: Request, res: Response, next: NextFunction) {
       const { email, password } = req.body;
 
-      if (!email || !password) {
-        return res.status(HttpStatus.BAD_REQUEST).json({ message: "All fields are required" });
-      }
+      if (!email) throw new MissingFieldError('email');
+      if (!password) throw new MissingFieldError('password');
 
       const user = await this._userService.findByEmail(email);
       if (!user) {
-        return res.status(HttpStatus.BAD_REQUEST).json({ message: "User not available" });
+        throw new ApplicationError(HttpStatus.BAD_REQUEST, HttpResponse.USER_NOT_FOUND);
       }
 
       if(user.isBanned) {
-        return res.status(HttpStatus.FORBIDDEN).json({message: "This account is banned!"});
+        throw new ApplicationError(HttpStatus.FORBIDDEN, HttpResponse.USER_BANNED);
       }
 
       const passwordValidation = await this._userService.isPasswordValid(password, user.password);
 
       if (!passwordValidation) {
-        return res.status(HttpStatus.BAD_REQUEST).json({ message: "Invalid password" });
+        throw new ApplicationError(HttpStatus.BAD_REQUEST, HttpResponse.PASSWORD_INCORRECT);
       }
 
       const accessToken = this._tokenService.generateAccessToken(email, "user");
@@ -95,15 +85,12 @@ export default class UserController {
 
       const { password: dbPassword, ...userWithoutPassword } = user.toObject(); 
 
-      return res.status(HttpStatus.CREATED).json({
+      res.status(HttpStatus.CREATED).json({
         message: "Login Successful",
         user: userWithoutPassword,
         accessToken,
       });
-    } catch (error) {
-      console.error("Error while user login:", error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Error while user login" });
-    }
+      throw new ApplicationError(HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
   //CHECK_USERNAME_EXIST

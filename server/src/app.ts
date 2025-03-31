@@ -8,6 +8,7 @@ import friendRouter from './app/routes/friend.route';
 import clubRouter from './app/routes/club.route';
 import gameRoutes from "./app/routes/game.route";
 import { connectRedis } from "./config/redis";
+import setupErrorHandling from "./middleware/error.middleware";
 
 const app = express();
 
@@ -25,12 +26,16 @@ morgan.token("params", (req: Request) => JSON.stringify(req.params || {}));
 // );
 
 app.use(cors({
-  origin: ["http://localhost:3000", "http://192.168.43.136:3000"], //frontend
+  origin: "http://localhost:3000", //frontend
   credentials: true,
   methods: "GET,POST,PUT,DELETE,PATCH",
   allowedHeaders: "Content-Type,Authorization",
 }));
 
+//DB Connection
+connectDB();
+//Redis Connection
+connectRedis();
 
 //All Routes
 //USER-ROUTE
@@ -44,9 +49,7 @@ app.use('/api/club', clubRouter);
 //GAME-ROUTER
 app.use("/api/game", gameRoutes);
 
-//DB Connection
-connectDB();
-//Redis Connection
-connectRedis();
+//Error Handler
+setupErrorHandling(app);
 
 export default app;
