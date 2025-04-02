@@ -1,4 +1,4 @@
-import { IAdmin } from "../../models/admin.model";
+import { IAdmin } from '../../models/admin.model';
 
 export interface IAdminService {
   // Find operations

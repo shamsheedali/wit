@@ -1,11 +1,12 @@
-import { Request, Response } from "express";
-import { inject, injectable } from "inversify";
-import HttpStatus from "../../constants/httpStatus";
-import UserService from "../services/user.service";
-import TokenService from "../services/token.service";
-import GameService from "../services/game.service";
-import TYPES from "../../config/types";
-import AdminService from "../services/admin.service";
+import { Request, Response } from 'express';
+import { inject, injectable } from 'inversify';
+import HttpStatus from '../../constants/httpStatus';
+import UserService from '../services/user.service';
+import TokenService from '../services/token.service';
+import GameService from '../services/game.service';
+import TYPES from '../../config/types';
+import AdminService from '../services/admin.service';
+import Role from '../../constants/role';
 
 @injectable()
 export default class AdminController {
@@ -32,29 +33,31 @@ export default class AdminController {
       const { email, password } = req.body;
 
       if (!email || !password) {
-        return res
-          .status(HttpStatus.BAD_REQUEST)
-          .json({ message: "All fields are required" });
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: 'All fields are required' });
       }
 
       const admin = await this._adminService.findByEmail(email);
 
       if (!admin) {
-        return res.status(HttpStatus.UNAUTHORIZED).json({ message: "Invalid credentials" });
+        return res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Invalid credentials' });
       }
 
       const isPasswordValid = await this._userService.isPasswordValid(password, admin.password);
 
       if (!isPasswordValid) {
-        return res.status(HttpStatus.UNAUTHORIZED).json({ message: "Invalid password" });
+        return res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Invalid password' });
       }
 
-      const accessToken = this._tokenService.generateAccessToken(email, "admin");
+      const accessToken = this._tokenService.generateAccessToken(email, Role.ADMIN);
 
-      return res.status(HttpStatus.OK).json({ message: "Admin login successful", accessToken, admin });
+      return res
+        .status(HttpStatus.OK)
+        .json({ message: 'Admin login successful', accessToken, admin });
     } catch (error) {
-      console.error("Admin Login Error:", error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Error while admin login" });
+      console.error('Admin Login Error:', error);
+      return res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ message: 'Error while admin login' });
     }
   }
 
@@ -75,9 +78,9 @@ export default class AdminController {
         currentPage: page,
       });
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error('Error fetching users:', error);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        message: "Error fetching users",
+        message: 'Error fetching users',
         error,
       });
     }
@@ -87,23 +90,22 @@ export default class AdminController {
   async toggleBan(req: Request, res: Response): Promise<Response> {
     try {
       const userId = req.params.id;
-      console.log("userId", userId);
 
       const user = await this._userService.findById(userId);
 
       if (!user) {
-        return res.status(HttpStatus.BAD_REQUEST).json({ message: "User not found" });
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User not found' });
       }
 
       const updatedUser = await this._userService.update(userId, { isBanned: !user.isBanned });
 
       return res.status(HttpStatus.OK).json({
-        message: updatedUser?.isBanned ? "User banned successfully" : "User unbanned successfully",
+        message: updatedUser?.isBanned ? 'User banned successfully' : 'User unbanned successfully',
         user: updatedUser,
       });
     } catch (error) {
-      console.error("Error toggling ban status", error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error" });
+      console.error('Error toggling ban status', error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server Error' });
     }
   }
 
@@ -121,9 +123,9 @@ export default class AdminController {
         currentPage: page,
       });
     } catch (error) {
-      console.error("Error fetching games:", error);
+      console.error('Error fetching games:', error);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        message: "Error fetching games",
+        message: 'Error fetching games',
         error,
       });
     }
@@ -136,13 +138,13 @@ export default class AdminController {
       const game = await this._gameService.deleteGame(gameId);
 
       if (!game) {
-        return res.status(HttpStatus.NOT_FOUND).json({ message: "Game not found" });
+        return res.status(HttpStatus.NOT_FOUND).json({ message: 'Game not found' });
       }
 
-      return res.status(HttpStatus.OK).json({ message: "Game deleted successfully" });
+      return res.status(HttpStatus.OK).json({ message: 'Game deleted successfully' });
     } catch (error) {
-      console.error("Error deleting game:", error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error" });
+      console.error('Error deleting game:', error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server Error' });
     }
   }
 
@@ -153,13 +155,13 @@ export default class AdminController {
       const game = await this._gameService.terminateGame(gameId);
 
       if (!game) {
-        return res.status(HttpStatus.NOT_FOUND).json({ message: "Game not found" });
+        return res.status(HttpStatus.NOT_FOUND).json({ message: 'Game not found' });
       }
 
-      return res.status(HttpStatus.OK).json({ message: "Game terminated successfully", game });
+      return res.status(HttpStatus.OK).json({ message: 'Game terminated successfully', game });
     } catch (error) {
-      console.error("Error deleting game:", error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error" });
+      console.error('Error deleting game:', error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server Error' });
     }
   }
 }

@@ -1,5 +1,5 @@
-import { IUser } from "../../models/user.model";
-import { IUserInput } from "../../dtos/user.dto";
+import { IUser } from '../../models/user.model';
+import { IUserInput } from '../../dtos/user.dto';
 
 export interface IUserRepository {
   // Create operations

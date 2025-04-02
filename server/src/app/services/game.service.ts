@@ -1,10 +1,10 @@
-import { inject, injectable } from "inversify";
-import BaseService from "../../core/base.service";
-import GameRepository from "../repositories/game.repository";
-import { IGame, GameResult, GameType, LossType, GameStatus, IMove } from "../models/game.model";
-import { IGameInput } from "../dtos/game.dto";
-import TYPES from "../../config/types";
-import { IGameService } from "./interface/IGameService";
+import { inject, injectable } from 'inversify';
+import BaseService from '../../core/base.service';
+import GameRepository from '../repositories/game.repository';
+import { IGame, GameResult, GameType, LossType, GameStatus, IMove } from '../models/game.model';
+import { IGameInput } from '../dtos/game.dto';
+import TYPES from '../../config/types';
+import { IGameService } from './interface/IGameService';
 
 @injectable()
 export default class GameService extends BaseService<IGame> implements IGameService {
@@ -54,7 +54,10 @@ export default class GameService extends BaseService<IGame> implements IGameServ
     return this._gameRepository.getGamesByUserId(userId);
   }
 
-  async getAllGames(page: number, limit: number): Promise<{ games: IGame[]; totalGames: number; totalPages: number }> {
+  async getAllGames(
+    page: number,
+    limit: number
+  ): Promise<{ games: IGame[]; totalGames: number; totalPages: number }> {
     const skip = (page - 1) * limit;
     const games = await this._gameRepository.findAllPaginated(skip, limit);
     const totalGames = await this._gameRepository.countGames();
@@ -75,6 +78,6 @@ export default class GameService extends BaseService<IGame> implements IGameServ
   }
 
   async findOngoingGameByUserId(userId: string) {
-    return await this._gameRepository.findOngoingGameByUserId(userId)
+    return await this._gameRepository.findOngoingGameByUserId(userId);
   }
 }

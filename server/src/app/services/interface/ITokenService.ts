@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Response } from 'express';
 
 export interface ITokenService {
   // Token generation

@@ -1,6 +1,6 @@
-import { IFriendRequest } from "../../models/friendRequest.model";
-import { IUser } from "../../models/user.model";
-import { Server } from "socket.io";
+import { IFriendRequest } from '../../models/friendRequest.model';
+import { IUser } from '../../models/user.model';
+import { Server } from 'socket.io';
 
 export interface IFriendService {
   // Friend list operations
@@ -12,7 +12,7 @@ export interface IFriendService {
   updateFriendRequest(
     requestId: string,
     userId: string,
-    status: "accepted" | "ignored",
+    status: 'accepted' | 'ignored',
     io: Server
   ): Promise<IFriendRequest>;
 

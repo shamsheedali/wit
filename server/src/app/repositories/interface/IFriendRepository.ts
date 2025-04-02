@@ -1,5 +1,5 @@
-import { IFriendRequest } from "../../models/friendRequest.model";
-import { IUser } from "../../models/user.model";
+import { IFriendRequest } from '../../models/friendRequest.model';
+import { IUser } from '../../models/user.model';
 
 export interface IFriendRepository {
   // Create operations

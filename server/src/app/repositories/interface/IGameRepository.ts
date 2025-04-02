@@ -1,5 +1,5 @@
-import { IGame } from "../../models/game.model";
-import { IGameInput } from "../../dtos/game.dto";
+import { IGame } from '../../models/game.model';
+import { IGameInput } from '../../dtos/game.dto';
 
 export interface IGameRepository {
   // Create operation

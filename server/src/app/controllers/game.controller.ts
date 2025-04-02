@@ -1,8 +1,8 @@
-import { Request, Response } from "express";
-import { inject, injectable } from "inversify";
-import HttpStatus from "../../constants/httpStatus";
-import GameService from "../services/game.service";
-import TYPES from "../../config/types";
+import { Request, Response } from 'express';
+import { inject, injectable } from 'inversify';
+import HttpStatus from '../../constants/httpStatus';
+import GameService from '../services/game.service';
+import TYPES from '../../config/types';
 
 @injectable()
 export default class GameController {
@@ -26,10 +26,8 @@ export default class GameController {
       );
       return res.status(HttpStatus.CREATED).json({ game });
     } catch (error) {
-      console.error("Error saving game:", error);
-      return res
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ message: "Failed to save game" });
+      console.error('Error saving game:', error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Failed to save game' });
     }
   }
 
@@ -46,14 +44,14 @@ export default class GameController {
         gameStatus,
       });
       if (!updatedGame) {
-        return res.status(HttpStatus.NOT_FOUND).json({ message: "Game not found" });
+        return res.status(HttpStatus.NOT_FOUND).json({ message: 'Game not found' });
       }
       return res.status(HttpStatus.OK).json({ game: updatedGame });
     } catch (error) {
-      console.error("Error updating game:", error);
+      console.error('Error updating game:', error);
       return res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ message: "Failed to update game" });
+        .json({ message: 'Failed to update game' });
     }
   }
 
@@ -63,10 +61,10 @@ export default class GameController {
       const games = await this._gameService.getUserGames(userId);
       return res.status(HttpStatus.OK).json({ games });
     } catch (error) {
-      console.error("Error fetching games:", error);
+      console.error('Error fetching games:', error);
       return res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ message: "Failed to fetch games" });
+        .json({ message: 'Failed to fetch games' });
     }
   }
 
@@ -75,8 +73,10 @@ export default class GameController {
       const totalGames = await this._gameService.getTotalGames();
       return res.status(HttpStatus.OK).json({ total: totalGames });
     } catch (error) {
-      console.error("Error fetching total games:", error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Error fetching total games" });
+      console.error('Error fetching total games:', error);
+      return res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ message: 'Error fetching total games' });
     }
   }
 
@@ -85,12 +85,16 @@ export default class GameController {
       const { userId } = req.params;
       const game = await this._gameService.findOngoingGameByUserId(userId);
       if (!game) {
-        return res.status(HttpStatus.NOT_FOUND).json({ message: "No ongoing game found for this user" });
+        return res
+          .status(HttpStatus.NOT_FOUND)
+          .json({ message: 'No ongoing game found for this user' });
       }
       return res.status(HttpStatus.OK).json(game);
     } catch (error) {
-      console.error("Error fetching ongoing game:", error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+      console.error('Error fetching ongoing game:', error);
+      return res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ message: 'Internal server error' });
     }
   }
 }

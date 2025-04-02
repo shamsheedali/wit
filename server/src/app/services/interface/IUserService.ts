@@ -1,12 +1,12 @@
-import { IUser } from "../../models/user.model";
-import { IUserInput } from "../../dtos/user.dto";
+import { IUser } from '../../models/user.model';
+import { IUserInput } from '../../dtos/user.dto';
 
 export interface IUserService {
   // User registration
   registerUser(userData: IUserInput): Promise<{
     user: IUser;
     isNewUser: boolean;
-    duplicate?: "email" | "username";
+    duplicate?: 'email' | 'username';
   }>;
   createGoogleUser(userData: IUserInput): Promise<IUser>;
 

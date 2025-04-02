@@ -1,4 +1,4 @@
-import { FriendsTabs } from "@/components/my-components/friends-tabs";
+import { FriendsTabs } from "@/components/core/friends-tabs";
 
 export default function Friends() {
   return (

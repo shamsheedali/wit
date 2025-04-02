@@ -1,10 +1,10 @@
-import { inject, injectable } from "inversify";
-import { Model } from "mongoose";
-import BaseRepository from "../../core/base.repository";
-import { GameStatus, IGame } from "../models/game.model";
-import { IGameInput } from "../dtos/game.dto";
-import TYPES from "../../config/types";
-import { IGameRepository } from "./interface/IGameRepository";
+import { inject, injectable } from 'inversify';
+import { Model } from 'mongoose';
+import BaseRepository from '../../core/base.repository';
+import { GameStatus, IGame } from '../models/game.model';
+import { IGameInput } from '../dtos/game.dto';
+import TYPES from '../../config/types';
+import { IGameRepository } from './interface/IGameRepository';
 
 @injectable()
 export default class GameRepository extends BaseRepository<IGame> implements IGameRepository {
@@ -31,12 +31,7 @@ export default class GameRepository extends BaseRepository<IGame> implements IGa
   }
 
   async findAllPaginated(skip: number, limit: number): Promise<IGame[]> {
-    return this.model
-      .find()
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 })
-      .exec();
+    return this.model.find().skip(skip).limit(limit).sort({ createdAt: -1 }).exec();
   }
 
   async countGames(): Promise<number> {
@@ -48,7 +43,7 @@ export default class GameRepository extends BaseRepository<IGame> implements IGa
   }
 
   async terminateGame(id: string): Promise<IGame | null> {
-    return this.model.findByIdAndUpdate(id, {gameStatus: 'terminated'}).exec();
+    return this.model.findByIdAndUpdate(id, { gameStatus: 'terminated' }).exec();
   }
 
   async findOngoingGameByUserId(userId: string): Promise<IGame | null> {

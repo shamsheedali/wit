@@ -1,9 +1,9 @@
-import { inject, injectable } from "inversify";
-import { Model, Types } from "mongoose";
-import BaseRepository from "../../core/base.repository";
-import { IClub } from "../models/club.model";
-import TYPES from "../../config/types";
-import { IClubRepository } from "./interface/IClubRepository";
+import { inject, injectable } from 'inversify';
+import { Model, Types } from 'mongoose';
+import BaseRepository from '../../core/base.repository';
+import { IClub } from '../models/club.model';
+import TYPES from '../../config/types';
+import { IClubRepository } from './interface/IClubRepository';
 
 @injectable()
 export default class ClubRepository extends BaseRepository<IClub> implements IClubRepository {
@@ -21,13 +21,9 @@ export default class ClubRepository extends BaseRepository<IClub> implements ICl
 
   async addMember(clubId: string, userId: string): Promise<IClub | null> {
     return await this.model
-      .findByIdAndUpdate(
-        clubId,
-        { $addToSet: { members: userId } },
-        { new: true }
-      )
-      .populate("admins", "username email")
-      .populate("members", "username email"); // admin and member details
+      .findByIdAndUpdate(clubId, { $addToSet: { members: userId } }, { new: true })
+      .populate('admins', 'username email')
+      .populate('members', 'username email'); // admin and member details
   }
 
   async findPublicClubs(query: any): Promise<IClub[]> {

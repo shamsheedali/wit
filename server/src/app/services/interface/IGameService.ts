@@ -1,4 +1,4 @@
-import { IGame, GameResult, GameType, LossType, GameStatus, IMove } from "../../models/game.model";
+import { IGame, GameResult, GameType, LossType, GameStatus, IMove } from '../../models/game.model';
 
 export interface IGameService {
   // Create operation
@@ -27,7 +27,10 @@ export interface IGameService {
 
   // Read operations
   getUserGames(userId: string): Promise<IGame[]>;
-  getAllGames(page: number, limit: number): Promise<{
+  getAllGames(
+    page: number,
+    limit: number
+  ): Promise<{
     games: IGame[];
     totalGames: number;
     totalPages: number;

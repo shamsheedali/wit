@@ -20,8 +20,20 @@ router.post('/otp', asyncWrap(userController.sendOtp.bind(userController)));
 router.post('/verify-otp', asyncWrap(userController.verifyOtp.bind(userController)));
 router.get('/search', asyncWrap(userController.searchUser.bind(userController)));
 router.get('/username/:username', asyncWrap(userController.getUser.bind(userController)));
-router.put('/profile/:id', upload.single('profileImage'), asyncWrap(userController.updateProfile.bind(userController)));
-router.get('/growth', authenticateToken, asyncWrap(userController.getUserGrowth.bind(userController)));
-router.get('/total', authenticateToken, asyncWrap(userController.getTotalUsers.bind(userController)));
+router.put(
+  '/profile/:id',
+  upload.single('profileImage'),
+  asyncWrap(userController.updateProfile.bind(userController))
+);
+router.get(
+  '/growth',
+  authenticateToken,
+  asyncWrap(userController.getUserGrowth.bind(userController))
+);
+router.get(
+  '/total',
+  authenticateToken,
+  asyncWrap(userController.getTotalUsers.bind(userController))
+);
 
 export default router;

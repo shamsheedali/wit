@@ -1,4 +1,4 @@
-import GameHistoryTable from "@/components/my-components/game-history-table";
+import GameHistoryTable from "@/components/core/game-history-table";
 
 export default function History() {
   return (

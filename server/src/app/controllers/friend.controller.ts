@@ -44,7 +44,8 @@ export default class FriendController {
   async getFriendRequests(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.query;
-      if (!userId)  res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: 'User ID required' });
+      if (!userId)
+        res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: 'User ID required' });
       const requests = await this._friendService.getFriendRequests(userId as string);
       res.json(requests);
     } catch (error: any) {
@@ -59,7 +60,12 @@ export default class FriendController {
       const { status, userId } = req.body;
       const io = req.app.get('io') as Server;
 
-      const updatedRequest = await this._friendService.updateFriendRequest(requestId, userId, status, io);
+      const updatedRequest = await this._friendService.updateFriendRequest(
+        requestId,
+        userId,
+        status,
+        io
+      );
       res.json({ success: true, data: updatedRequest });
     } catch (error: any) {
       console.error(error);
@@ -69,20 +75,20 @@ export default class FriendController {
 
   async removeFriend(req: Request, res: Response): Promise<void> {
     try {
-      const {userId, friendId} = req.body;
+      const { userId, friendId } = req.body;
       const updatedUser = await this._friendService.removeFriend(userId, friendId);
 
       if (!updatedUser) {
-        res.status(HttpStatus.NOT_FOUND).json({ message: "User not found" });
+        res.status(HttpStatus.NOT_FOUND).json({ message: 'User not found' });
       }
 
       //also remove from other user as-well
       await this._friendService.removeFriend(friendId, userId);
 
-      res.status(HttpStatus.OK).json({message: "Removed user as friend", updatedUser});
+      res.status(HttpStatus.OK).json({ message: 'Removed user as friend', updatedUser });
     } catch (error) {
-      console.log("Error removing friend:", error);
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
+      log.info('Error removing friend:', error);
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
     }
   }
 }

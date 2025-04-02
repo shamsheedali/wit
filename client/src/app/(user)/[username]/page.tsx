@@ -1,6 +1,6 @@
 "use client";
 
-import UserProfile from "@/components/my-components/user-profile";
+import UserProfile from "@/components/core/user-profile";
 import { getUser } from "@/lib/api/user";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";

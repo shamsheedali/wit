@@ -1,69 +1,71 @@
-import mongoose, { Document, Schema, model } from "mongoose";
+import mongoose, { Document, Schema, model } from 'mongoose';
 
 export interface IUser extends Document {
-    firstName?: string;
-    lastName?: string;
-    username: string;
-    email: string;
-    password?: string;
-    bio?:string;
-    googleId?: string;
-    friends: mongoose.Types.ObjectId[]| IUser[];
-    profileImageUrl?: string;
-    profileImageId?: string;
-    isBanned: boolean;
+  firstName?: string;
+  lastName?: string;
+  username: string;
+  email: string;
+  password?: string;
+  bio?: string;
+  googleId?: string;
+  friends: mongoose.Types.ObjectId[] | IUser[];
+  profileImageUrl?: string;
+  profileImageId?: string;
+  isBanned: boolean;
 }
 
 const UserSchema = new Schema<IUser>(
-{
+  {
     firstName: {
-        type: String,
+      type: String,
     },
     lastName: {
-        type: String,
+      type: String,
     },
     username: {
-        type: String,
-        required: true,
-        unique: true,
+      type: String,
+      required: true,
+      unique: true,
     },
     email: {
-        type: String,
-        required: true,
-        unique: true,
+      type: String,
+      required: true,
+      unique: true,
     },
     password: {
-        type: String,
-        validate: {
-            validator: function (this: IUser, value: string) {
-                return !!this.googleId || !!value; // Password is required only if no Google ID
-            },
-            message: "Password is required for non-Google users.",
+      type: String,
+      validate: {
+        validator: function (this: IUser, value: string) {
+          return !!this.googleId || !!value; // Password is required only if no Google ID
         },
+        message: 'Password is required for non-Google users.',
+      },
     },
     bio: {
-        type: String,
+      type: String,
     },
     googleId: {
-        type: String,
-        default: null,
+      type: String,
+      default: null,
     },
-    friends: [{
+    friends: [
+      {
         type: mongoose.Types.ObjectId,
-        ref: 'Users'
-    }],
+        ref: 'Users',
+      },
+    ],
     profileImageUrl: {
-        type: String,
+      type: String,
     },
     profileImageId: {
-        type: String,
+      type: String,
     },
     isBanned: {
-        type: Boolean,
-        default: false,
-    }
-},
-{ timestamps: true }
+      type: Boolean,
+      default: false,
+    },
+  },
+  { timestamps: true }
 );
 
-export default model<IUser>("Users", UserSchema);
+export default model<IUser>('Users', UserSchema);

@@ -8,7 +8,10 @@ import User, { IUser } from '../models/user.model';
 import { IFriendRepository } from './interface/IFriendRepository';
 
 @injectable()
-export default class FriendRepository extends BaseRepository<IFriendRequest> implements IFriendRepository {
+export default class FriendRepository
+  extends BaseRepository<IFriendRequest>
+  implements IFriendRepository
+{
   constructor(@inject(TYPES.FriendRequestModel) friendRequestModel: Model<IFriendRequest>) {
     super(friendRequestModel);
   }

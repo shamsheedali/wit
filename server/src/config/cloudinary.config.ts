@@ -1,5 +1,5 @@
-import { v2 as cloudinary } from "cloudinary";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
 // Cloudinary Configuration
 cloudinary.config({
@@ -11,8 +11,8 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req: Request, file: Express.Multer.File) => ({
-    folder: "user-profiles",
-    format: "png",
+    folder: 'user-profiles',
+    format: 'png',
     public_id: `profile-${Date.now()}-${file.originalname}`,
   }),
 });

@@ -1,4 +1,4 @@
-import { ClubsTabs } from "@/components/my-components/clubs-tabs";
+import { ClubsTabs } from "@/components/core/clubs-tabs";
 
 export default function Clubs() {
 

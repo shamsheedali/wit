@@ -1,6 +1,6 @@
 "use client";
 
-import UserNavbar from "@/components/my-components/my-user-navbar";
+import UserNavbar from "@/components/core/my-user-navbar";
 import { useAuthStore } from "@/stores";
 import { useFriendStore } from "@/stores/useFriendStore";
 import { usePathname, useRouter } from "next/navigation"; 

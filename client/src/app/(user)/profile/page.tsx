@@ -1,6 +1,6 @@
 "use client"
 
-import UserProfile from "@/components/my-components/user-profile";
+import UserProfile from "@/components/core/user-profile";
 import { useAuthStore } from "@/stores";
 
 export default function UserProfilePage() {

@@ -1,4 +1,4 @@
-import { IClub } from "../../models/club.model";
+import { IClub } from '../../models/club.model';
 
 export interface IClubService {
   // Create operation

@@ -23,7 +23,7 @@ export const registerUser = async (userData: { username: string; email: string; 
 export const login = async(userData: {email: string, password: string}) => {
   try{
     const response = await apiClient.post(`${API_URL}/login`, userData);
-    if (response.status === HttpStatus.CREATED) {
+    if (response.status === HttpStatus.OK) {
       localStorage.setItem('userToken', response.data.accessToken);
       toast.success(response.data.message); 
       return {success: true, data: response.data};

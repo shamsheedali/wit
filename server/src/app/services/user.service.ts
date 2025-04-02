@@ -1,17 +1,14 @@
-import { inject, injectable } from "inversify";
-import bcrypt from "bcrypt";
-import { IUser } from "../models/user.model";
-import BaseService from "../../core/base.service";
-import UserRepository from "../repositories/user.repository";
-import TYPES from "../../config/types";
-import { IUserInput } from "../dtos/user.dto";
-import { IUserService } from "./interface/IUserService";
+import { inject, injectable } from 'inversify';
+import bcrypt from 'bcrypt';
+import { IUser } from '../models/user.model';
+import BaseService from '../../core/base.service';
+import UserRepository from '../repositories/user.repository';
+import TYPES from '../../config/types';
+import { GoogleUserInput, RegisterUserInput } from '../dtos/user.dto';
+import { IUserService } from './interface/IUserService';
 
 @injectable()
-export default class UserService
-  extends BaseService<IUser>
-  implements IUserService
-{
+export default class UserService extends BaseService<IUser> implements IUserService {
   private _userRepository: UserRepository;
 
   constructor(@inject(TYPES.UserRepository) userRepository: UserRepository) {
@@ -19,31 +16,21 @@ export default class UserService
     this._userRepository = userRepository;
   }
 
-  async registerUser(userData: IUserInput): Promise<{
+  async registerUser(userData: RegisterUserInput): Promise<{
     user: IUser;
     isNewUser: boolean;
-    duplicate?: "email" | "username";
+    duplicate?: 'email' | 'username';
   }> {
     const { username, email, password } = userData;
 
     const existingUserEmail = await this._userRepository.findOneByEmail(email);
     if (existingUserEmail) {
-      return { user: existingUserEmail, isNewUser: false, duplicate: "email" };
+      return { user: existingUserEmail, isNewUser: false, duplicate: 'email' };
     }
 
-    const existingUserUsername = await this._userRepository.findOneByUsername(
-      username
-    );
+    const existingUserUsername = await this._userRepository.findOneByUsername(username);
     if (existingUserUsername) {
-      return {
-        user: existingUserUsername,
-        isNewUser: false,
-        duplicate: "username",
-      };
-    }
-
-    if (!password) {
-      throw new Error("Password is required for user registration.");
+      return { user: existingUserUsername, isNewUser: false, duplicate: 'username' };
     }
 
     const hashedPassword = await this.hashPassword(password);
@@ -56,7 +43,7 @@ export default class UserService
     return { user: newUser, isNewUser: true };
   }
 
-  async createGoogleUser(userData: IUserInput) {
+  async createGoogleUser(userData: GoogleUserInput): Promise<IUser> {
     return await this._userRepository.createGoogleUser(userData);
   }
 
@@ -81,7 +68,7 @@ export default class UserService
     return await this._userRepository.findOneByUsername(name);
   }
 
-  async findByEmail(email: string) {
+  async findByEmail(email: string): Promise<IUser | null> {
     return await this._userRepository.findOneByEmail(email);
   }
 
@@ -90,25 +77,21 @@ export default class UserService
     userData: Partial<IUser>,
     profileImage?: Express.Multer.File
   ) {
-    return await this._userRepository.updateUserProfile(
-      userId,
-      userData,
-      profileImage
-    );
+    return await this._userRepository.updateUserProfile(userId, userData, profileImage);
   }
 
   async getUserGrowth(period: string): Promise<any> {
     let groupByFormat: string;
     switch (period) {
-      case "weekly":
-        groupByFormat = "%Y-%U";
+      case 'weekly':
+        groupByFormat = '%Y-%U';
         break;
-      case "monthly":
-        groupByFormat = "%Y-%m";
+      case 'monthly':
+        groupByFormat = '%Y-%m';
         break;
-      case "daily":
+      case 'daily':
       default:
-        groupByFormat = "%Y-%m-%d";
+        groupByFormat = '%Y-%m-%d';
     }
 
     const growthData = await this._userRepository.getUserGrowth(groupByFormat);

@@ -1,27 +1,27 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document } from 'mongoose';
 
 export enum GameResult {
-  WhiteWin = "whiteWin",
-  BlackWin = "blackWin",
-  Draw = "draw",
+  WhiteWin = 'whiteWin',
+  BlackWin = 'blackWin',
+  Draw = 'draw',
 }
 
 export enum GameType {
-  Blitz = "blitz",
-  Bullet = "bullet",
-  Rapid = "rapid",
+  Blitz = 'blitz',
+  Bullet = 'bullet',
+  Rapid = 'rapid',
 }
 
 export enum LossType {
-  Checkmate = "checkmate",
-  Resignation = "resignation",
-  Timeout = "timeout",
+  Checkmate = 'checkmate',
+  Resignation = 'resignation',
+  Timeout = 'timeout',
 }
 
 export enum GameStatus {
-  Ongoing = "ongoing",
-  Completed = "completed",
-  Terminated = "terminated",
+  Ongoing = 'ongoing',
+  Completed = 'completed',
+  Terminated = 'terminated',
 }
 
 export interface IMove {
@@ -41,7 +41,7 @@ export interface IGame extends Document {
   gameType: GameType;
   timeControl: string; // e.g., "3min"
   moves: IMove[];
-  lossType?: LossType; 
+  lossType?: LossType;
   gameDuration?: number; // Duration in seconds, when game ends
   gameStatus: GameStatus;
   createdAt: Date;
@@ -61,7 +61,7 @@ const GameSchema: Schema = new Schema(
     playerOne: { type: String, required: true },
     playerTwo: { type: String, required: true },
     result: { type: String, enum: Object.values(GameResult) },
-    playerAt: { type: String, enum: ["w", "b"], required: true },
+    playerAt: { type: String, enum: ['w', 'b'], required: true },
     fen: { type: String, required: true },
     gameType: { type: String, enum: Object.values(GameType), required: true },
     timeControl: { type: String, required: true },
@@ -77,4 +77,4 @@ const GameSchema: Schema = new Schema(
   { timestamps: true }
 );
 
-export default mongoose.model<IGame>("Game", GameSchema);
+export default mongoose.model<IGame>('Game', GameSchema);

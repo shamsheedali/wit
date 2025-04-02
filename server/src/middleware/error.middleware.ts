@@ -41,13 +41,17 @@ export default function setupErrorHandling(app: Application) {
       if (err.code === 11000) {
         log.error(`${req.method} ${req.path}: MongoDB duplicate entry from ${userString}`);
       } else {
-        log.error(`${req.method} ${req.path}: Unhandled MongoDB error from ${userString}. ${err.message}`);
+        log.error(
+          `${req.method} ${req.path}: Unhandled MongoDB error from ${userString}. ${err.message}`
+        );
       }
       if (!res.headersSent) {
         res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: HttpResponse.SERVER_ERROR });
       }
     } else {
-      log.error(`${req.method} ${req.path}: Unhandled request error from ${userString}. ${err.message}`);
+      log.error(
+        `${req.method} ${req.path}: Unhandled request error from ${userString}. ${err.message}`
+      );
       next(err);
     }
   };
@@ -58,9 +62,11 @@ export default function setupErrorHandling(app: Application) {
     err: Error,
     req: Request,
     res: Response,
-    next: NextFunction
+    _next: NextFunction
   ) => {
-    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: err.message || HttpResponse.SERVER_ERROR });
+    res
+      .status(HttpStatus.INTERNAL_SERVER_ERROR)
+      .json({ error: err.message || HttpResponse.SERVER_ERROR });
   };
   app.use(finalErrorHandler);
 }

@@ -1,4 +1,4 @@
-import { GameResult, GameType, LossType, GameStatus, IMove } from "../models/game.model";
+import { GameResult, GameType, LossType, GameStatus, IMove } from '../models/game.model';
 
 export interface IGameInput {
   playerOne: string;

@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "nodemon --ext ts --exec ts-node src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "lint": "eslint . --ext .ts,.js",
+    "lint:fix": "eslint . --ext .ts,.js --fix",
+    "format": "prettier --write ."
   },
   "keywords": [],
   "author": "",
@@ -14,6 +17,7 @@
   "type": "commonjs",
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "class-transformer": "^0.5.1",
     "cloudinary": "^1.41.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -32,6 +36,7 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.23.0",
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
@@ -42,7 +47,15 @@
     "@types/node": "^22.13.5",
     "@types/nodemailer": "^6.4.17",
     "@types/redis": "^4.0.10",
+    "@typescript-eslint/eslint-plugin": "^8.29.0",
+    "@typescript-eslint/parser": "^8.29.0",
+    "eslint": "^9.23.0",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-prettier": "^5.2.5",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.29.0"
   }
 }
