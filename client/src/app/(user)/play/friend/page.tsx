@@ -11,8 +11,8 @@ import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
 import { saveGame, updateGame, getUserGames } from "@/lib/api/game";
-import { getUsers } from "@/lib/api/admin";
 import { useRouter } from "next/navigation";
+import { getUsers } from "@/lib/api/user";
 
 export default function PlayFriend() {
   const { user } = useAuthStore();

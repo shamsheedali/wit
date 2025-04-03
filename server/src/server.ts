@@ -5,6 +5,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import app from './app';
 import socketHandler from './sockets';
+import log from './utils/logger';
 
 const PORT = process.env.PORT || 5000;
 

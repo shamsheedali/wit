@@ -7,6 +7,9 @@ import GameService from '../services/game.service';
 import TYPES from '../../config/types';
 import AdminService from '../services/admin.service';
 import Role from '../../constants/role';
+import { ApplicationError } from '../../utils/http-error.util';
+import { plainToClass } from 'class-transformer';
+import { UserOutput } from '../dtos/user.dto';
 
 @injectable()
 export default class AdminController {
@@ -71,8 +74,10 @@ export default class AdminController {
       const users = await this._userService.findAllPaginated(skip, limit);
       const totalUsers = await this._userService.getTotalUsers();
 
+      const usersOutput = plainToClass(UserOutput, users, { excludeExtraneousValues: true });
+
       return res.status(HttpStatus.OK).json({
-        users,
+        users: usersOutput,
         totalUsers,
         totalPages: Math.ceil(totalUsers / limit),
         currentPage: page,
@@ -162,6 +167,30 @@ export default class AdminController {
     } catch (error) {
       console.error('Error deleting game:', error);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server Error' });
+    }
+  }
+
+  async refreshToken(req: Request, res: Response) {
+    try {
+      const refreshToken = req.cookies.adminRefreshToken;
+      if (!refreshToken) {
+        throw new ApplicationError(HttpStatus.UNAUTHORIZED, 'No refresh token provided');
+      }
+
+      const decoded = this._tokenService.verifyToken(refreshToken, process.env.REFRESH_JWT_SECRET!);
+      const { email, role } = decoded as { email: string; role: string };
+
+      const newAccessToken = this._tokenService.generateAccessToken(email, role);
+      const newRefreshToken = this._tokenService.generateRefreshToken(email, role);
+      this._tokenService.setRefreshTokenCookie(res, newRefreshToken, true); // Admin-specific
+
+      res.status(HttpStatus.OK).json({
+        message: 'Token refreshed successfully',
+        accessToken: newAccessToken,
+      });
+    } catch (error) {
+      console.error('Admin Refresh Token Error:', error);
+      res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Invalid or expired refresh token' });
     }
   }
 }

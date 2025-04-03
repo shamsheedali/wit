@@ -44,7 +44,10 @@ export default class UserController {
       const refreshToken = this._tokenService.generateRefreshToken(email, Role.USER);
       this._tokenService.setRefreshTokenCookie(res, refreshToken);
 
-      const userOutput = plainToClass(UserOutput, userResult.user.toObject(), {
+      const plainUser = userResult.user.toObject();
+      plainUser._id = plainUser._id.toString();
+
+      const userOutput = plainToClass(UserOutput, plainUser, {
         excludeExtraneousValues: true,
       });
 
@@ -85,7 +88,10 @@ export default class UserController {
     const refreshToken = this._tokenService.generateRefreshToken(email, Role.USER);
     this._tokenService.setRefreshTokenCookie(res, refreshToken);
 
-    const userOutput = plainToClass(UserOutput, user.toObject(), {
+    const plainUser = user.toObject();
+    plainUser._id = plainUser._id.toString(); // Force _id to string
+
+    const userOutput = plainToClass(UserOutput, plainUser, {
       excludeExtraneousValues: true,
     });
 
@@ -136,7 +142,10 @@ export default class UserController {
 
     const accessToken = this._tokenService.generateAccessToken(email, 'user');
 
-    const userOutput = plainToClass(UserOutput, user.toObject(), {
+    const plainUser = user.toObject();
+    plainUser._id = plainUser._id.toString(); // Force _id to string
+
+    const userOutput = plainToClass(UserOutput, plainUser, {
       excludeExtraneousValues: true,
     });
 
@@ -260,7 +269,7 @@ export default class UserController {
       } catch (error) {
         console.error(error);
       }
-      log.info('SHARED OTP : ', otp);
+      log.info(`SHARED OTP: ${otp}`);
 
       return res.status(HttpStatus.OK).json({ message: 'OTP mail shared' });
     } catch (error) {
@@ -383,6 +392,57 @@ export default class UserController {
       return res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
         .json({ message: 'Error fetching total users' });
+    }
+  }
+
+  async refreshToken(req: Request, res: Response) {
+    try {
+      const refreshToken = req.cookies.refreshToken;
+      if (!refreshToken) {
+        throw new ApplicationError(HttpStatus.UNAUTHORIZED, 'No refresh token provided');
+      }
+
+      const decoded = this._tokenService.verifyToken(refreshToken, process.env.REFRESH_JWT_SECRET!);
+      const { email, role } = decoded as { email: string; role: string };
+
+      const newAccessToken = this._tokenService.generateAccessToken(email, role);
+      const newRefreshToken = this._tokenService.generateRefreshToken(email, role);
+      this._tokenService.setRefreshTokenCookie(res, newRefreshToken, false); // User-specific
+
+      res.status(HttpStatus.OK).json({
+        message: 'Token refreshed successfully',
+        accessToken: newAccessToken,
+      });
+    } catch (error) {
+      console.error('User Refresh Token Error:', error);
+      res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Invalid or expired refresh token' });
+    }
+  }
+
+  // GET ALL USERS
+  async getUsers(req: Request, res: Response): Promise<Response> {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 7;
+      const skip = (page - 1) * limit;
+
+      const users = await this._userService.findAllPaginated(skip, limit);
+      const totalUsers = await this._userService.getTotalUsers();
+
+      const usersOutput = plainToClass(UserOutput, users, { excludeExtraneousValues: true });
+
+      return res.status(HttpStatus.OK).json({
+        users: usersOutput,
+        totalUsers,
+        totalPages: Math.ceil(totalUsers / limit),
+        currentPage: page,
+      });
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        message: 'Error fetching users',
+        error,
+      });
     }
   }
 }

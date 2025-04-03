@@ -30,7 +30,7 @@ export default class UserRepository extends BaseRepository<IUser> implements IUs
   }
 
   async findAllPaginated(skip: number, limit: number) {
-    return await this.model.find().skip(skip).limit(limit);
+    return await this.model.find().skip(skip).limit(limit).select('-password').exec();
   }
 
   async countUsers() {
@@ -49,7 +49,9 @@ export default class UserRepository extends BaseRepository<IUser> implements IUs
     profileImage?: Express.Multer.File
   ) {
     try {
+      console.log('first', userId, userData, profileImage);
       const user = await this.findById(userId);
+      console.log('User found:', user); // Add this
 
       if (!user) {
         return null;

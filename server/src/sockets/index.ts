@@ -1,11 +1,12 @@
 import { Server, Socket } from 'socket.io';
 import User from '../app/models/user.model';
+import log from '../utils/logger';
 
 export default function socketHandler(io: Server) {
   const onlineUsers = new Map<string, string>();
 
   io.on('connection', (socket: Socket) => {
-    log.info('User connected:', socket.id);
+    log.info(`User connected: ${socket.id}`);
 
     socket.on('join', async (userId: string) => {
       onlineUsers.set(userId, socket.id);

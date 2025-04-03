@@ -12,8 +12,8 @@ import {
 import { ChevronDown, ChevronUp, User, Zap, MoveUpRight, Timer } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getUserGames } from "@/lib/api/game";
-import { getUsers } from "@/lib/api/admin";
 import { useAuthStore } from "@/stores";
+import { getUsers } from "@/lib/api/user";
 
 type Game = {
   _id: string;

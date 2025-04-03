@@ -4,6 +4,7 @@ import FriendService from '../services/friend.service';
 import TYPES from '../../config/types';
 import HttpStatus from '../../constants/httpStatus';
 import { Server } from 'socket.io';
+import log from '../../utils/logger';
 
 @injectable()
 export default class FriendController {
@@ -23,7 +24,7 @@ export default class FriendController {
       const friends = await this._friendService.getFriends(userId as string);
       res.status(HttpStatus.OK).json(friends);
     } catch (error: any) {
-      console.error('Get friends error:', error);
+      log.error('Get friends error:', error);
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
     }
   }
@@ -36,7 +37,7 @@ export default class FriendController {
       const request = await this._friendService.sendFriendRequest(senderId, receiverId, io);
       res.status(HttpStatus.CREATED).json({ success: true, data: request });
     } catch (error: any) {
-      console.error(error);
+      log.error(error);
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
     }
   }
@@ -49,7 +50,7 @@ export default class FriendController {
       const requests = await this._friendService.getFriendRequests(userId as string);
       res.json(requests);
     } catch (error: any) {
-      console.error(error);
+      log.error(error);
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
     }
   }
@@ -68,7 +69,7 @@ export default class FriendController {
       );
       res.json({ success: true, data: updatedRequest });
     } catch (error: any) {
-      console.error(error);
+      log.error(error);
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
     }
   }
@@ -87,7 +88,7 @@ export default class FriendController {
 
       res.status(HttpStatus.OK).json({ message: 'Removed user as friend', updatedUser });
     } catch (error) {
-      log.info('Error removing friend:', error);
+      log.error('Error removing friend:', error);
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
     }
   }

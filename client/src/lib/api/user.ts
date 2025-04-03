@@ -10,6 +10,7 @@ const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user`;
 export const registerUser = async (userData: { username: string; email: string; password: string }) => {
   try {
     const response = await apiClient.post(`${API_URL}/register`, userData);
+    console.log("new user", response.data)
     if (response.status === HttpStatus.CREATED) {
       localStorage.setItem('userToken', response.data.accessToken);
       return {success: true, data: response.data};
@@ -51,7 +52,7 @@ export const googleUser = async (userData: { googleId: string; username: string;
   try {
     const response = await axios.post(`${API_URL}/google-auth`, userData);
     console.log("google response", response);
-    if (response.status === HttpStatus.CREATED) {
+    if (response.status === HttpStatus.OK) {
       // Only set localStorage on client side
       if (typeof window !== 'undefined') {
         localStorage.setItem("userToken", response.data.accessToken);
@@ -200,3 +201,16 @@ export const getTotalUsers = async () => {
     return 0;
   }
 };
+
+//GET_ALL_USERS
+export const getUsers = async(page: number, limit: number) => {
+  try {
+    const response = await apiClient.get(`${API_URL}/users`, {
+      params : {page, limit},
+    });
+    return response.data;
+  } catch (error) {
+    console.log(error);
+    return [];
+  }
+}

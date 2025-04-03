@@ -13,13 +13,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCallback, useEffect, useState } from "react";
 import { debounce } from "lodash";
 import { useQuery } from "@tanstack/react-query";
-import { searchFriend } from "@/lib/api/user";
+import { getUsers, searchFriend } from "@/lib/api/user";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores";
 import { User } from "@/types/auth";
 import { useFriendStore } from "@/stores/useFriendStore";
 import { Sword } from "lucide-react";
-import { getUsers } from "@/lib/api/admin";
 
 export function FriendsTabs() {
   const { user: mainUser } = useAuthStore();

@@ -25,7 +25,6 @@ export const getUsers = async(page: number, limit: number) => {
     const response = await apiClient.get(`${API_URL}/users`, {
       params : {page, limit},
     });
-    // console.log(response);
     return response.data;
   } catch (error) {
     console.log(error);

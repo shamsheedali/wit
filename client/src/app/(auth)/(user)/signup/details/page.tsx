@@ -239,6 +239,7 @@ export default function SignupFormDetailsPage() {
                 onChange={handleChange}
                 placeholder="code"
                 className="h-[55px]"
+                autoComplete="off"
               />
               {errors.code && (
                 <p className="text-red-500 text-xs">{errors.code}</p>

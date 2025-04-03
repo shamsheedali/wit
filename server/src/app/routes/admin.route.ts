@@ -15,7 +15,7 @@ router.post('/login', async (req: Request, res: Response) => {
 });
 
 // GET ALL USERS
-router.get('/users', async (req: Request, res: Response) => {
+router.get('/users', authenticateToken, isAdmin(), async (req: Request, res: Response) => {
   await adminController.getUsers(req, res);
 });
 
@@ -53,5 +53,9 @@ router.patch(
     await adminController.terminateGame(req, res);
   }
 );
+
+router.post('/refresh', async (req: Request, res: Response) => {
+  await adminController.refreshToken(req, res);
+});
 
 export default router;

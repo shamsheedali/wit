@@ -35,5 +35,7 @@ router.get(
   authenticateToken,
   asyncWrap(userController.getTotalUsers.bind(userController))
 );
+router.post('/refresh', asyncWrap(userController.refreshToken.bind(userController)));
+router.get('/users', authenticateToken, asyncWrap(userController.getUsers.bind(userController)));
 
 export default router;
