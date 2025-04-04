@@ -6,13 +6,27 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores";
 import { useFriendStore } from "@/stores/useFriendStore";
 import { Friend } from "@/types/friend";
-import { CircleArrowLeft, Handshake, UserRound, Clock } from "lucide-react";
+import {
+  CircleArrowLeft,
+  Handshake,
+  UserRound,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  RotateCcw,
+  Flag,
+  Hand,
+} from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
 import { saveGame, updateGame, getUserGames } from "@/lib/api/game";
 import { useRouter } from "next/navigation";
 import { getUsers } from "@/lib/api/user";
+import { ChessMove } from "@/types/game";
+import { Chess } from "chess.js";
 
 export default function PlayFriend() {
   const { user } = useAuthStore();
@@ -29,14 +43,153 @@ export default function PlayFriend() {
   const [whiteTime, setWhiteTime] = useState<number>(600);
   const [blackTime, setBlackTime] = useState<number>(600);
   const [activePlayer, setActivePlayer] = useState<"w" | "b">("w");
-  const [moves, setMoves] = useState<any[]>([]);
+  const [moves, setMoves] = useState<ChessMove[]>([]);
   const [gameStartTime, setGameStartTime] = useState<number | null>(null);
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const [gameHistory, setGameHistory] = useState<any[]>([]);
   const [playerNames, setPlayerNames] = useState<{ [key: string]: string }>({});
+  const [chess, setChess] = useState<Chess>(new Chess());
+  const [currentOpening, setCurrentOpening] = useState<string>("No moves yet");
+  const [openings, setOpenings] = useState<any[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch friends and users on mount
+  // Helper function to pair moves
+  const getMovePairs = (
+    moves: ChessMove[]
+  ): { white: ChessMove | null; black: ChessMove | null }[] => {
+    const pairs: { white: ChessMove | null; black: ChessMove | null }[] = [];
+    for (let i = 0; i < moves.length; i += 2) {
+      pairs.push({
+        white: moves[i] || null,
+        black: moves[i + 1] || null,
+      });
+    }
+    return pairs;
+  };
+
+  // Helper function to get piece icons
+  const getPieceIcon = (piece: string, color: "w" | "b"): string => {
+    switch (piece) {
+      case "p":
+        return "";
+      case "n":
+        return color === "w" ? "♘" : "♞";
+      case "b":
+        return color === "w" ? "♗" : "♝";
+      case "r":
+        return color === "w" ? "♖" : "♜";
+      case "q":
+        return color === "w" ? "♕" : "♛";
+      case "k":
+        return color === "w" ? "♔" : "♚";
+      default:
+        return "";
+    }
+  };
+
+  // Guess ECO range based on first move
+  const guessEcoPrefixes = (history: string[]): string[] => {
+    if (history.length === 0) return [];
+    const firstMove = history[0];
+    if (firstMove === "e4") return ["b", "c"];
+    if (firstMove === "d4") return ["d", "e"];
+    return ["a"];
+  };
+
+  // Normalize PGN by removing move numbers and dots
+  const normalizePGN = (pgn: string): string => {
+    return pgn.replace(/\d+\./g, "").replace(/\s+/g, " ").trim();
+  };
+
+  // Function to determine opening from PGN
+  const getOpeningFromPGN = (chessInstance: Chess): string => {
+    const history = chessInstance.history();
+    if (history.length === 0) return "No moves yet";
+    if (!openings.length) return "Loading openings...";
+
+    const moveSequence = history.join(" ");
+    console.log("Current move sequence:", moveSequence);
+
+    let bestMatch = "Unknown Opening";
+    let longestMatchLength = 0;
+
+    for (const opening of openings) {
+      const normalizedOpeningPGN = normalizePGN(opening.pgn);
+      console.log(`Checking opening: ${opening.name} - ${normalizedOpeningPGN}`);
+      if (
+        moveSequence.startsWith(normalizedOpeningPGN) &&
+        normalizedOpeningPGN.split(" ").length > longestMatchLength
+      ) {
+        bestMatch = opening.name;
+        longestMatchLength = normalizedOpeningPGN.split(" ").length;
+      }
+    }
+
+    console.log("Best match found:", bestMatch);
+    return bestMatch;
+  };
+
+  // Load relevant openings and sync chess instance
+  useEffect(() => {
+    const loadRelevantOpenings = async () => {
+      const newChess = new Chess();
+      moves.forEach((move) => newChess.move(move.san));
+      setChess(newChess);
+
+      const history = newChess.history();
+      const prefixes = guessEcoPrefixes(history);
+      if (prefixes.length === 0) {
+        setOpenings([]);
+        setCurrentOpening("No moves yet");
+        return;
+      }
+
+      let allOpenings = [];
+      try {
+        for (const prefix of prefixes) {
+          console.log(`Fetching /openings/${prefix}.json`);
+          const response = await fetch(`/openings/${prefix}.json`);
+          if (!response.ok) throw new Error(`Failed to fetch ${prefix}.json`);
+          const data = await response.json();
+          console.log(`Loaded ${data.length} openings from ${prefix}.json`);
+          allOpenings.push(...data);
+        }
+        setOpenings(allOpenings);
+
+        // If no match is found, load all files as a fallback
+        const opening = getOpeningFromPGN(newChess);
+        if (opening === "Unknown Opening" && prefixes.length < 5) {
+          console.log("No match found, loading all files as fallback");
+          const allPrefixes = ["a", "b", "c", "d", "e"];
+          for (const prefix of allPrefixes) {
+            if (!prefixes.includes(prefix)) {
+              const response = await fetch(`/openings/${prefix}.json`);
+              if (response.ok) {
+                const data = await response.json();
+                allOpenings.push(...data);
+              }
+            }
+          }
+          setOpenings(allOpenings);
+        }
+      } catch (error) {
+        console.error("Error loading openings:", error);
+        setOpenings([]);
+        setCurrentOpening("Failed to load openings");
+      }
+    };
+
+    loadRelevantOpenings();
+  }, [moves]);
+
+  // Update opening when chess or openings change
+  useEffect(() => {
+    if (chess) {
+      setCurrentOpening(getOpeningFromPGN(chess));
+    }
+  }, [chess, openings]);
+
+  // Socket and fetch logic
   useEffect(() => {
     if (user?._id) {
       fetchFriends();
@@ -47,31 +200,20 @@ export default function PlayFriend() {
           console.log(`Socket connected for user ${user._id}`);
         });
 
-        // Handle game termination
-        socketInstance.on("gameTerminated", (data) => {
-          console.log("game terminated", data.gameId, gameId)
-          // if (data.gameId === gameId) {
-            toast.info("This game has been terminated by an admin.");
-            router.push("/play");
-          // }
+        socketInstance.on("gameTerminated", () => {
+          toast.info("This game has been terminated by an admin.");
+          router.push("/play");
         });
 
-        // listener for opponentBanned
-        socketInstance.on("opponentBanned", (data) => {
-          console.log("game terminated", data.gameId, gameId)
-          // if (data.gameId === gameId) {
-            toast.info("Admin banned your opponent.");
-            router.push("/home");
-          // }
+        socketInstance.on("opponentBanned", () => {
+          toast.info("Admin banned your opponent.");
+          router.push("/home");
         });
 
         socketInstance.on("playRequestReceived", (data) => {
-          console.log("Received play request:", data);
           setOpponentId(data.senderId);
           toast(
-            `Game request from ${
-              playerNames[data.senderId] || data.senderId
-            } (${data.time})`,
+            `Game request from ${playerNames[data.senderId] || data.senderId} (${data.time})`,
             {
               description: (
                 <div className="flex gap-2 mt-2">
@@ -85,22 +227,8 @@ export default function PlayFriend() {
                   <Button
                     size="sm"
                     onClick={async () => {
-                      if (!socketInstance || !user?._id) {
-                        console.log("Socket or user ID missing:", {
-                          socket: socketInstance,
-                          userId: user._id,
-                        });
-                        return;
-                      }
-                      const newGameId = `${data.senderId}-${
-                        user._id
-                      }-${Date.now()}`;
-                      console.log("Emitting acceptPlayRequest:", {
-                        senderId: data.senderId,
-                        receiverId: user._id,
-                        gameId: newGameId,
-                        time: data.time,
-                      });
+                      if (!socketInstance || !user?._id) return;
+                      const newGameId = `${data.senderId}-${user._id}-${Date.now()}`;
                       socketInstance.emit("acceptPlayRequest", {
                         senderId: data.senderId,
                         receiverId: user._id,
@@ -127,9 +255,7 @@ export default function PlayFriend() {
                       );
                       setDbGameId(savedGame?._id);
                       toast.success(
-                        `Game started with ${
-                          playerNames[data.senderId] || data.senderId
-                        }`
+                        `Game started with ${playerNames[data.senderId] || data.senderId}`
                       );
                     }}
                   >
@@ -143,7 +269,6 @@ export default function PlayFriend() {
         });
 
         socketInstance.on("playRequestAccepted", (data) => {
-          console.log("Play request accepted:", data);
           setGameId(data.gameId);
           setOpponentId(data.opponentId);
           setPlayerColor("w");
@@ -154,25 +279,25 @@ export default function PlayFriend() {
           setActivePlayer("w");
           setGameStartTime(Date.now());
           toast.success(
-            `Game started with ${
-              playerNames[data.opponentId] || data.opponentId
-            }`
+            `Game started with ${playerNames[data.opponentId] || data.opponentId}`
           );
         });
 
-        socketInstance.on("moveMade", (data) => {
-          console.log("Move made:", data);
-          const newActivePlayer =
-            data.playerId === user?._id
-              ? playerColor === "w"
-                ? "b"
-                : "w"
-              : playerColor === "w"
-              ? "w"
-              : "b";
-          setActivePlayer(newActivePlayer);
-          console.log(`Active player switched to: ${newActivePlayer}`);
-        });
+        socketInstance.on(
+          "moveMade",
+          (data: { gameId: string; move: ChessMove; playerId: string; fen: string }) => {
+            if (data.gameId === gameId && data.playerId !== user._id) {
+              setMoves((prev) => {
+                if (prev.some((m) => m.san === data.move.san && m.color === data.move.color)) {
+                  return prev;
+                }
+                return [...prev, data.move];
+              });
+              const newActivePlayer = data.move.color === "w" ? "b" : "w";
+              setActivePlayer(newActivePlayer);
+            }
+          }
+        );
 
         return () => {
           socketInstance.off("connect");
@@ -183,27 +308,23 @@ export default function PlayFriend() {
           socketInstance.off("opponentBanned");
           if (timerRef.current) clearInterval(timerRef.current);
         };
-      } else {
-        console.log("No socket instance available");
       }
     }
-  }, [user?._id, fetchFriends, playerColor]);
+  }, [user?._id, fetchFriends, playerColor, gameId]);
 
-  // Fetch all usernames
   const fetchUserNames = async () => {
     try {
-      const limit = 100; // Adjust based on your needs
+      const limit = 100;
       let page = 1;
       let allUsers: { _id: string; username: string }[] = [];
       let hasMore = true;
 
-      // Fetch all pages of users
       while (hasMore) {
         const response = await getUsers(page, limit);
         if (response && response.users && response.users.length > 0) {
           allUsers = [...allUsers, ...response.users];
           page += 1;
-          hasMore = response.users.length === limit; // If less than limit, assume no more pages
+          hasMore = response.users.length === limit;
         } else {
           hasMore = false;
         }
@@ -265,8 +386,7 @@ export default function PlayFriend() {
         lossType,
         gameDuration,
         gameStatus: "completed",
-        fen:
-          fen || "rnbqkbnr/pppppppp/5n5/8/8/5N5/PPPPPPPP/RNBQKB1R w KQkq - 1 1",
+        fen: fen || "rnbqkbnr/pppppppp/5n5/8/8/5N5/PPPPPPPP/RNBQKB1R w KQkq - 1 1",
       });
       setGameStarted(false);
       setGameId(undefined);
@@ -277,10 +397,20 @@ export default function PlayFriend() {
     }
   };
 
-  const handleMoveUpdate = async (move: any, fen: string) => {
+  const handleMoveUpdate = async (move: ChessMove | undefined, fen: string) => {
+    if (!move) return;
     setMoves((prev) => [...prev, move]);
     if (dbGameId) {
       await updateGame(dbGameId, { moves: [...moves, move], fen });
+    }
+    const socket = getSocket();
+    if (socket && gameId && user?._id) {
+      socket.emit("moveMade", {
+        gameId,
+        move,
+        playerId: user._id,
+        fen,
+      });
     }
   };
 
@@ -303,9 +433,7 @@ export default function PlayFriend() {
       return;
     }
     sendPlayRequest(selectedFriend._id, selectedTime);
-    toast.success(
-      `Play request sent to ${selectedFriend.username} (${selectedTime})`
-    );
+    toast.success(`Play request sent to ${selectedFriend.username} (${selectedTime})`);
   };
 
   const handleTimeChange = (value: string) => {
@@ -358,6 +486,7 @@ export default function PlayFriend() {
 
   return (
     <div className="flex flex-col md:flex-row w-full h-screen items-center p-4 font-clashDisplay">
+      {/* Left Section: Chessboard and Player Info */}
       <div className="flex flex-col items-center w-full md:w-1/2 h-full py-[30px]">
         <div className="flex items-center justify-between w-full max-w-[500px] pr-10 py-2 rounded-lg">
           <div className="flex items-center gap-2">
@@ -373,16 +502,12 @@ export default function PlayFriend() {
               )}
             </div>
             <h1 className="text-md font-semibold">
-              {gameStarted && selectedFriend
-                ? selectedFriend.username
-                : "Opponent"}
+              {gameStarted && selectedFriend ? selectedFriend.username : "Opponent"}
             </h1>
           </div>
           <div className="bg-[#262522] px-8 py-3 rounded-sm">
             <h1 className="text-md font-bold">
-              {playerColor === "w"
-                ? formatTime(blackTime)
-                : formatTime(whiteTime)}
+              {playerColor === "w" ? formatTime(blackTime) : formatTime(whiteTime)}
             </h1>
           </div>
         </div>
@@ -410,20 +535,17 @@ export default function PlayFriend() {
                 <UserRound />
               )}
             </div>
-            <h1 className="text-md font-semibold">
-              {user?.username || "Guest"}
-            </h1>
+            <h1 className="text-md font-semibold">{user?.username || "Guest"}</h1>
           </div>
           <div className="bg-[#262522] px-8 py-3 rounded-sm">
             <h1 className="text-md font-bold">
-              {playerColor === "w"
-                ? formatTime(whiteTime)
-                : formatTime(blackTime)}
+              {playerColor === "w" ? formatTime(whiteTime) : formatTime(blackTime)}
             </h1>
           </div>
         </div>
       </div>
 
+      {/* Right Section: Pre-Game Panels */}
       {!playAs && !gameStarted && !showHistory && (
         <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col gap-10 rounded-md">
           <div className="w-full flex justify-center items-center gap-2">
@@ -462,10 +584,7 @@ export default function PlayFriend() {
       {playAs && !gameStarted && !showHistory && (
         <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col items-center gap-10 rounded-md">
           <div className="w-full flex justify-center items-center gap-2 relative">
-            <div
-              className="absolute left-0 cursor-pointer"
-              onClick={() => setPlayAs(false)}
-            >
+            <div className="absolute left-0 cursor-pointer" onClick={() => setPlayAs(false)}>
               <CircleArrowLeft />
             </div>
             <div className="flex justify-center items-center gap-2">
@@ -521,12 +640,115 @@ export default function PlayFriend() {
               <p>No games found</p>
             )}
           </div>
-          <Button
-            onClick={() => setShowHistory(false)}
-            className="w-full h-11 font-bold"
-          >
+          <Button onClick={() => setShowHistory(false)} className="w-full h-11 font-bold">
             Back to Play
           </Button>
+        </div>
+      )}
+
+      {/* Game Info Panel */}
+      {gameStarted && (
+        <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-6 flex flex-col gap-6 rounded-md">
+          <div className="border-b border-gray-600 pb-2">
+            <h2 className="text-lg font-semibold text-white">Opening</h2>
+            <p className="text-sm text-gray-300">{currentOpening}</p>
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            <h2 className="text-lg font-semibold text-white mb-2">Moves</h2>
+            <div className="bg-[#3a3a3a] rounded-md p-2">
+              <table className="w-full text-sm text-white">
+                <thead>
+                  <tr className="border-b border-gray-600">
+                    <th className="w-1/6 text-center">#</th>
+                    <th className="w-5/12 text-center">White</th>
+                    <th className="w-5/12 text-center">Black</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getMovePairs(moves).map((pair, index) => (
+                    <tr key={index} className="hover:bg-[#4a4a4a]">
+                      <td className="text-center">{index + 1}.</td>
+                      <td className="text-center">
+                        {pair.white && (
+                          <>
+                            <span className="inline-block w-4 h-4 mr-1">
+                              {getPieceIcon(pair.white.piece, pair.white.color || "w")}
+                            </span>
+                            {pair.white.san}
+                          </>
+                        )}
+                      </td>
+                      <td className="text-center">
+                        {pair.black && (
+                          <>
+                            <span className="inline-block w-4 h-4 mr-1">
+                              {getPieceIcon(pair.black.piece, pair.black.color || "b")}
+                            </span>
+                            {pair.black.san}
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-2 justify-between">
+              <Button
+                variant="outline"
+                className="w-1/2 bg-gray-700 text-white hover:bg-gray-600"
+              >
+                <Hand className="mr-2" /> Draw
+              </Button>
+              <Button
+                variant="destructive"
+                className="w-1/2 bg-red-600 hover:bg-red-700"
+              >
+                <Flag className="mr-2" /> Resign
+              </Button>
+            </div>
+            <div className="flex gap-2 justify-center">
+              <Button
+                size="icon"
+                variant="outline"
+                className="bg-gray-700 text-white hover:bg-gray-600"
+              >
+                <ChevronsLeft />
+              </Button>
+              <Button
+                size="icon"
+                variant="outline"
+                className="bg-gray-700 text-white hover:bg-gray-600"
+              >
+                <ChevronLeft />
+              </Button>
+              <Button
+                size="icon"
+                variant="outline"
+                className="bg-gray-700 text-white hover:bg-gray-600"
+              >
+                <ChevronRight />
+              </Button>
+              <Button
+                size="icon"
+                variant="outline"
+                className="bg-gray-700 text-white hover:bg-gray-600"
+              >
+                <ChevronsRight />
+              </Button>
+              <Button
+                size="icon"
+                variant="outline"
+                className="bg-gray-700 text-white hover:bg-gray-600"
+              >
+                <RotateCcw />
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

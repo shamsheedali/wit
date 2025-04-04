@@ -57,10 +57,10 @@ export default function socketHandler(io: Server) {
       // log.info(`User joined game room: ${gameId}`);
     });
 
-    socket.on('makeMove', (data: { gameId: string; playerId: string; fen: string }) => {
-      const { gameId, playerId, fen } = data;
+    socket.on('makeMove', (data: { gameId: string; playerId: string; fen: string; move: any }) => {
+      const { gameId, playerId, fen, move } = data;
       log.info(`Move made in game ${gameId} by player ${playerId}`);
-      io.to(gameId).emit('moveMade', { gameId, playerId, fen });
+      io.to(gameId).emit('moveMade', { gameId, playerId, fen, move });
     });
 
     socket.on('gameTerminated', (data) => {
