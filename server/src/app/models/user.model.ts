@@ -9,6 +9,8 @@ export interface IUser extends Document {
   bio?: string;
   googleId?: string;
   friends: mongoose.Types.ObjectId[] | IUser[];
+  eloRating: number;
+  gamesPlayed: number;
   profileImageUrl?: string;
   profileImageId?: string;
   isBanned: boolean;
@@ -54,6 +56,14 @@ const UserSchema = new Schema<IUser>(
         ref: 'Users',
       },
     ],
+    eloRating: {
+      type: Number,
+      default: 500,
+    },
+    gamesPlayed: {
+      type: Number,
+      default: 0,
+    },
     profileImageUrl: {
       type: String,
     },

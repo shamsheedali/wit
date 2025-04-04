@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getUserGrowth } from "@/lib/api/user";
+import { getUserGrowth } from "@/lib/api/admin";
 
 const chartConfig = {
   users: {

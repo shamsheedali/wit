@@ -13,7 +13,7 @@ export const handleApiError = (error: unknown) => {
       error.response?.status === HttpStatus.FORBIDDEN ||
       error.response?.status === HttpStatus.INTERNAL_SERVER_ERROR
     ) {
-      toast.error(error.response.data.message, {
+      toast.error(error.response.data.message || error.response.data.error, {
         classNames: { toast: "bg-red-500 text-white" },
       });
     } else {

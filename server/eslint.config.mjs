@@ -10,13 +10,13 @@ export default tseslint.config(
     files: ['**/*.{js,ts}'],
     languageOptions: {
       globals: {
-        ...globals.node, // Node.js globals (e.g., process, require)
+        ...globals.node,
       },
       parser: tseslint.parser, // TypeScript parser
       parserOptions: {
-        ecmaVersion: 2020, // Match your target or higher
-        sourceType: 'commonjs', // Match your package.json "type": "commonjs"
-        project: './tsconfig.json', // Enable type-aware linting
+        ecmaVersion: 2020,
+        sourceType: 'commonjs',
+        project: './tsconfig.json',
       },
     },
     plugins: {
@@ -29,10 +29,10 @@ export default tseslint.config(
       prettierConfig,
     ],
     rules: {
-      'no-console': 'off', // Turn off for now since you use winston
+      'no-console': 'off', // Turn off since using winston
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn', // Downgrade to warning for now
+      '@typescript-eslint/no-explicit-any': 'warn',
       'prettier/prettier': 'error',
     },
   },

@@ -12,7 +12,6 @@ export default function asyncWrap(controller: CallableFunction) {
       if (error instanceof ApplicationError) {
         next(error);
       } else {
-        // Wrap unhandled errors in ApplicationError for consistency
         const wrappedError = new ApplicationError(
           HttpStatus.INTERNAL_SERVER_ERROR,
           error instanceof Error ? error.message : 'Unknown error occurred'

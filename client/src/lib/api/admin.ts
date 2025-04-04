@@ -80,3 +80,25 @@ export const terminateGame = async (gameId: string) => {
     throw error;
   }
 };
+
+export const getUserGrowth = async (period: "daily" | "weekly" | "monthly" = "daily") => {
+  try {
+    const response = await apiClient.get(`${API_URL}/growth`, {
+      params: { period },
+    });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    return [];
+  }
+};
+
+export const getTotalUsers = async () => {
+  try {
+    const response = await apiClient.get(`${API_URL}/total`);
+    return response.data.total;
+  } catch (error) {
+    handleApiError(error);
+    return 0;
+  }
+};

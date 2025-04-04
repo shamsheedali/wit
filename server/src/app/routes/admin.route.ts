@@ -54,6 +54,14 @@ router.patch(
   }
 );
 
+router.get('/growth', authenticateToken, isAdmin(), async (req: Request, res: Response) => {
+  await adminController.getUserGrowth(req, res);
+});
+
+router.get('/total', authenticateToken, isAdmin(), async (req: Request, res: Response) => {
+  await adminController.getTotalUsers(req, res);
+});
+
 router.post('/refresh', async (req: Request, res: Response) => {
   await adminController.refreshToken(req, res);
 });

@@ -144,7 +144,7 @@ export default function PlayFriend() {
         return;
       }
 
-      let allOpenings = [];
+      const allOpenings = [];
       try {
         for (const prefix of prefixes) {
           console.log(`Fetching /openings/${prefix}.json`);

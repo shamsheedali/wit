@@ -30,6 +30,7 @@ const getTokenInfo = (config: InternalAxiosRequestConfig): { token: string | nul
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const { token } = getTokenInfo(config);
+    console.log("This is sending token", getTokenInfo(config).tokenType)
 
     const excludedPaths = [
       '/api/user/register',

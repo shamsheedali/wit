@@ -8,8 +8,6 @@ import TYPES from '../../config/types';
 import AdminService from '../services/admin.service';
 import Role from '../../constants/role';
 import { ApplicationError } from '../../utils/http-error.util';
-import { plainToClass } from 'class-transformer';
-import { UserOutput } from '../dtos/user.dto';
 
 @injectable()
 export default class AdminController {
@@ -74,10 +72,8 @@ export default class AdminController {
       const users = await this._userService.findAllPaginated(skip, limit);
       const totalUsers = await this._userService.getTotalUsers();
 
-      const usersOutput = plainToClass(UserOutput, users, { excludeExtraneousValues: true });
-
       return res.status(HttpStatus.OK).json({
-        users: usersOutput,
+        users,
         totalUsers,
         totalPages: Math.ceil(totalUsers / limit),
         currentPage: page,
@@ -167,6 +163,31 @@ export default class AdminController {
     } catch (error) {
       console.error('Error deleting game:', error);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server Error' });
+    }
+  }
+
+  async getUserGrowth(req: Request, res: Response): Promise<Response> {
+    try {
+      const { period = 'daily' } = req.query; // daily, weekly, monthly
+      const growthData = await this._userService.getUserGrowth(period as string);
+      return res.status(HttpStatus.OK).json(growthData);
+    } catch (error) {
+      console.error('Error fetching user growth:', error);
+      return res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ message: 'Error fetching user growth' });
+    }
+  }
+
+  async getTotalUsers(req: Request, res: Response): Promise<Response> {
+    try {
+      const totalUsers = await this._userService.getTotalUsers();
+      return res.status(HttpStatus.OK).json({ total: totalUsers });
+    } catch (error) {
+      console.error('Error fetching total users:', error);
+      return res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ message: 'Error fetching total users' });
     }
   }
 

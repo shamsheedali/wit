@@ -25,16 +25,7 @@ router.put(
   upload.single('profileImage'),
   asyncWrap(userController.updateProfile.bind(userController))
 );
-router.get(
-  '/growth',
-  authenticateToken,
-  asyncWrap(userController.getUserGrowth.bind(userController))
-);
-router.get(
-  '/total',
-  authenticateToken,
-  asyncWrap(userController.getTotalUsers.bind(userController))
-);
+
 router.post('/refresh', asyncWrap(userController.refreshToken.bind(userController)));
 router.get('/users', authenticateToken, asyncWrap(userController.getUsers.bind(userController)));
 

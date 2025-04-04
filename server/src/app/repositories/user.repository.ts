@@ -51,7 +51,7 @@ export default class UserRepository extends BaseRepository<IUser> implements IUs
     try {
       console.log('first', userId, userData, profileImage);
       const user = await this.findById(userId);
-      console.log('User found:', user); // Add this
+      console.log('User found:', user);
 
       if (!user) {
         return null;
