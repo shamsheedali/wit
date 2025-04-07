@@ -66,7 +66,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-32 cursor-pointer overflow-hidden">
+          <Link href={'/leaderboard'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-32 cursor-pointer overflow-hidden">
             <Image
               src="/images/leaderBoardImg.webp"
               alt="Leaderboard"
@@ -78,7 +78,7 @@ export default function Home() {
             <div className="bg-white/5 h-14 w-full absolute bottom-0 rounded-bl-xl rounded-br-xl font-semibold flex items-center justify-end px-10">
               Leaderboard
             </div>
-          </div>
+          </Link>
 
           <Link href={'/history'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-8 cursor-pointer overflow-hidden">
             <Image

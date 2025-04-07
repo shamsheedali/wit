@@ -535,7 +535,7 @@ export default function PlayFriend() {
                 <UserRound />
               )}
             </div>
-            <h1 className="text-md font-semibold">{user?.username || "Guest"}</h1>
+            <h1 className="text-md font-semibold">{user?.username || "Guest"} <span className="text-gray-500 ml-1">({user?.eloRating || 500})</span></h1>
           </div>
           <div className="bg-[#262522] px-8 py-3 rounded-sm">
             <h1 className="text-md font-bold">
