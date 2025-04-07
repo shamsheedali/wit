@@ -27,7 +27,7 @@ morgan.token('params', (req: Request) => JSON.stringify(req.params || {}));
 
 app.use(
   cors({
-    origin: 'http://localhost:3000', //frontend
+    origin: process.env.FRONTEND_URL, //frontend
     credentials: true,
     methods: 'GET,POST,PUT,DELETE,PATCH',
     allowedHeaders: 'Content-Type,Authorization',

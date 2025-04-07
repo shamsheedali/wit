@@ -64,6 +64,12 @@ export class UserOutput {
   friends!: string[] | Types.ObjectId[];
 
   @Expose()
+  eloRating!: number;
+
+  @Expose()
+  gamesPlayed!: number;
+
+  @Expose()
   createdAt!: Date;
 
   @Expose()
