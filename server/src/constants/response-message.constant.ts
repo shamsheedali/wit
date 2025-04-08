@@ -24,6 +24,12 @@ enum HttpResponse {
   RESOURCE_FOUND = 'Resource found.',
   RESOURCE_UPDATED = 'Resource updated.',
   PROFILE_PICTURE_CHANGED = 'Profile picture changed successfully',
+  OTP_EXPIRED = 'OTP has expired',
+  INVALID_SEARCH_QUERY = 'Invalid search query',
+  PASSWORD_MATCHED = 'Password matched successfully',
+  TOKEN_REFRESHED = 'Token refreshed successfully',
+  LOGIN_SUCCESS = 'Login successful',
+  GAME_NOT_FOUND = 'Game not found',
 }
 
 export default HttpResponse;

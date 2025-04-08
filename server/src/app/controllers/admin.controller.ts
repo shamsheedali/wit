@@ -7,7 +7,15 @@ import GameService from '../services/game.service';
 import TYPES from '../../config/types';
 import AdminService from '../services/admin.service';
 import Role from '../../constants/role';
-import { ApplicationError } from '../../utils/http-error.util';
+import {
+  ApplicationError,
+  MissingFieldError,
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
+} from '../../utils/http-error.util';
+import HttpResponse from '../../constants/response-message.constant';
+import log from '../../utils/logger';
 
 @injectable()
 export default class AdminController {
@@ -28,190 +36,126 @@ export default class AdminController {
     this._gameService = gameService;
   }
 
-  // ADMIN LOGIN
-  async login(req: Request, res: Response): Promise<Response> {
-    try {
-      const { email, password } = req.body;
+  async login(req: Request, res: Response) {
+    const { email, password } = req.body;
 
-      if (!email || !password) {
-        return res.status(HttpStatus.BAD_REQUEST).json({ message: 'All fields are required' });
-      }
+    if (!email) throw new MissingFieldError('email');
+    if (!password) throw new MissingFieldError('password');
 
-      const admin = await this._adminService.findByEmail(email);
+    const admin = await this._adminService.findByEmail(email);
+    if (!admin) throw new UnauthorizedError(HttpResponse.INVALID_CREDENTIALS);
 
-      if (!admin) {
-        return res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Invalid credentials' });
-      }
+    const isPasswordValid = await this._userService.isPasswordValid(password, admin.password);
+    if (!isPasswordValid) throw new UnauthorizedError(HttpResponse.PASSWORD_INCORRECT);
 
-      const isPasswordValid = await this._userService.isPasswordValid(password, admin.password);
+    const accessToken = this._tokenService.generateAccessToken(email, Role.ADMIN);
 
-      if (!isPasswordValid) {
-        return res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Invalid password' });
-      }
-
-      const accessToken = this._tokenService.generateAccessToken(email, Role.ADMIN);
-
-      return res
-        .status(HttpStatus.OK)
-        .json({ message: 'Admin login successful', accessToken, admin });
-    } catch (error) {
-      console.error('Admin Login Error:', error);
-      return res
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ message: 'Error while admin login' });
-    }
+    res.status(HttpStatus.OK).json({
+      message: HttpResponse.LOGIN_SUCCESS,
+      accessToken,
+      admin,
+    });
   }
 
-  // GET ALL USERS
-  async getUsers(req: Request, res: Response): Promise<Response> {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 7;
-      const skip = (page - 1) * limit;
+  async getUsers(req: Request, res: Response) {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 7;
+    const skip = (page - 1) * limit;
 
-      const users = await this._userService.findAllPaginated(skip, limit);
-      const totalUsers = await this._userService.getTotalUsers();
+    const users = await this._userService.findAllPaginated(skip, limit);
+    const totalUsers = await this._userService.getTotalUsers();
 
-      return res.status(HttpStatus.OK).json({
-        users,
-        totalUsers,
-        totalPages: Math.ceil(totalUsers / limit),
-        currentPage: page,
-      });
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        message: 'Error fetching users',
-        error,
-      });
-    }
+    res.status(HttpStatus.OK).json({
+      users,
+      totalUsers,
+      totalPages: Math.ceil(totalUsers / limit),
+      currentPage: page,
+    });
   }
 
-  // BAN_UNBAN_USER
-  async toggleBan(req: Request, res: Response): Promise<Response> {
-    try {
-      const userId = req.params.id;
+  async toggleBan(req: Request, res: Response) {
+    const userId = req.params.id;
+    if (!userId) throw new BadRequestError('User ID is required');
 
-      const user = await this._userService.findById(userId);
+    const user = await this._userService.findById(userId);
+    if (!user) throw new NotFoundError(HttpResponse.USER_NOT_FOUND);
 
-      if (!user) {
-        return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User not found' });
-      }
+    const updatedUser = await this._userService.update(userId, { isBanned: !user.isBanned });
+    if (!updatedUser)
+      throw new ApplicationError(HttpStatus.INTERNAL_SERVER_ERROR, 'Failed to toggle ban status');
 
-      const updatedUser = await this._userService.update(userId, { isBanned: !user.isBanned });
-
-      return res.status(HttpStatus.OK).json({
-        message: updatedUser?.isBanned ? 'User banned successfully' : 'User unbanned successfully',
-        user: updatedUser,
-      });
-    } catch (error) {
-      console.error('Error toggling ban status', error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server Error' });
-    }
+    res.status(HttpStatus.OK).json({
+      message: updatedUser.isBanned ? 'User banned successfully' : 'User unbanned successfully',
+      user: updatedUser,
+    });
   }
 
-  async getAllGames(req: Request, res: Response): Promise<Response> {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 7;
+  async getAllGames(req: Request, res: Response) {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 7;
 
-      const { games, totalGames, totalPages } = await this._gameService.getAllGames(page, limit);
+    const { games, totalGames, totalPages } = await this._gameService.getAllGames(page, limit);
 
-      return res.status(HttpStatus.OK).json({
-        games,
-        totalGames,
-        totalPages,
-        currentPage: page,
-      });
-    } catch (error) {
-      console.error('Error fetching games:', error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        message: 'Error fetching games',
-        error,
-      });
-    }
+    res.status(HttpStatus.OK).json({
+      games,
+      totalGames,
+      totalPages,
+      currentPage: page,
+    });
   }
 
-  async deleteGame(req: Request, res: Response): Promise<Response> {
-    try {
-      const gameId = req.params.gameId;
+  async deleteGame(req: Request, res: Response) {
+    const gameId = req.params.gameId;
+    if (!gameId) throw new BadRequestError('Game ID is required');
 
-      const game = await this._gameService.deleteGame(gameId);
+    const game = await this._gameService.deleteGame(gameId);
+    if (!game) throw new NotFoundError('Game not found');
 
-      if (!game) {
-        return res.status(HttpStatus.NOT_FOUND).json({ message: 'Game not found' });
-      }
-
-      return res.status(HttpStatus.OK).json({ message: 'Game deleted successfully' });
-    } catch (error) {
-      console.error('Error deleting game:', error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server Error' });
-    }
+    res.status(HttpStatus.OK).json({ message: 'Game deleted successfully' });
   }
 
-  async terminateGame(req: Request, res: Response): Promise<Response> {
-    try {
-      const gameId = req.params.gameId;
+  async terminateGame(req: Request, res: Response) {
+    const gameId = req.params.gameId;
+    if (!gameId) throw new BadRequestError('Game ID is required');
 
-      const game = await this._gameService.terminateGame(gameId);
+    const game = await this._gameService.terminateGame(gameId);
+    if (!game) throw new NotFoundError('Game not found');
 
-      if (!game) {
-        return res.status(HttpStatus.NOT_FOUND).json({ message: 'Game not found' });
-      }
-
-      return res.status(HttpStatus.OK).json({ message: 'Game terminated successfully', game });
-    } catch (error) {
-      console.error('Error deleting game:', error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server Error' });
-    }
+    res.status(HttpStatus.OK).json({ message: 'Game terminated successfully', game });
   }
 
-  async getUserGrowth(req: Request, res: Response): Promise<Response> {
-    try {
-      const { period = 'daily' } = req.query; // daily, weekly, monthly
-      const growthData = await this._userService.getUserGrowth(period as string);
-      return res.status(HttpStatus.OK).json(growthData);
-    } catch (error) {
-      console.error('Error fetching user growth:', error);
-      return res
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ message: 'Error fetching user growth' });
-    }
+  async getUserGrowth(req: Request, res: Response) {
+    const { period = 'daily' } = req.query; // daily, weekly, monthly
+    const growthData = await this._userService.getUserGrowth(period as string);
+
+    res.status(HttpStatus.OK).json(growthData);
   }
 
-  async getTotalUsers(req: Request, res: Response): Promise<Response> {
-    try {
-      const totalUsers = await this._userService.getTotalUsers();
-      return res.status(HttpStatus.OK).json({ total: totalUsers });
-    } catch (error) {
-      console.error('Error fetching total users:', error);
-      return res
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ message: 'Error fetching total users' });
-    }
+  async getTotalUsers(req: Request, res: Response) {
+    const totalUsers = await this._userService.getTotalUsers();
+    res.status(HttpStatus.OK).json({ total: totalUsers });
   }
 
   async refreshToken(req: Request, res: Response) {
+    const refreshToken = req.cookies.adminRefreshToken;
+    if (!refreshToken) throw new UnauthorizedError(HttpResponse.NO_TOKEN);
+
+    let decoded;
     try {
-      const refreshToken = req.cookies.adminRefreshToken;
-      if (!refreshToken) {
-        throw new ApplicationError(HttpStatus.UNAUTHORIZED, 'No refresh token provided');
-      }
-
-      const decoded = this._tokenService.verifyToken(refreshToken, process.env.REFRESH_JWT_SECRET!);
-      const { email, role } = decoded as { email: string; role: string };
-
-      const newAccessToken = this._tokenService.generateAccessToken(email, role);
-      const newRefreshToken = this._tokenService.generateRefreshToken(email, role);
-      this._tokenService.setRefreshTokenCookie(res, newRefreshToken, true); // Admin-specific
-
-      res.status(HttpStatus.OK).json({
-        message: 'Token refreshed successfully',
-        accessToken: newAccessToken,
-      });
+      decoded = this._tokenService.verifyToken(refreshToken, process.env.REFRESH_JWT_SECRET!);
     } catch (error) {
-      console.error('Admin Refresh Token Error:', error);
-      res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Invalid or expired refresh token' });
+      log.error(error);
+      throw new UnauthorizedError(HttpResponse.TOKEN_EXPIRED);
     }
+    const { email, role } = decoded as { email: string; role: string };
+
+    const newAccessToken = this._tokenService.generateAccessToken(email, role);
+    const newRefreshToken = this._tokenService.generateRefreshToken(email, role);
+    this._tokenService.setRefreshTokenCookie(res, newRefreshToken, true); // Admin-specific
+
+    res.status(HttpStatus.OK).json({
+      message: 'Token refreshed successfully',
+      accessToken: newAccessToken,
+    });
   }
 }

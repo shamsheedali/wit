@@ -3,6 +3,7 @@ import { inject, injectable } from 'inversify';
 import TYPES from '../../config/types';
 import ClubService from '../services/club.service';
 import HttpStatus from '../../constants/httpStatus';
+import { MissingFieldError, BadRequestError } from '../../utils/http-error.util';
 
 @injectable()
 export default class ClubController {
@@ -12,87 +13,55 @@ export default class ClubController {
     this._clubService = clubService;
   }
 
-  async createClub(req: Request, res: Response): Promise<Response> {
-    try {
-      const { name, description, clubType, adminIds, memberIds, userId } = req.body;
+  async createClub(req: Request, res: Response) {
+    const { name, description, clubType, adminIds, memberIds, userId } = req.body;
 
-      if (!name || !clubType) {
-        return res
-          .status(HttpStatus.BAD_REQUEST)
-          .json({ message: 'Name and clubType are required' });
-      }
+    if (!name) throw new MissingFieldError('name');
+    if (!clubType) throw new MissingFieldError('clubType');
+    if (!userId) throw new MissingFieldError('userId');
 
-      if (!['public', 'private'].includes(clubType)) {
-        return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Invalid club type' });
-      }
-
-      // Ensure the requesting user is included in adminIds if not provided
-      const admins = adminIds && adminIds.length ? adminIds : [userId];
-
-      const club = await this._clubService.createClub(
-        name,
-        description,
-        clubType,
-        admins,
-        memberIds || []
-      );
-      return res.status(HttpStatus.CREATED).json({ message: 'Club created successfully', club });
-    } catch (error) {
-      console.error('Error creating club:', error);
-      return res
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ message: (error as Error).message });
+    if (!['public', 'private'].includes(clubType)) {
+      throw new BadRequestError('Invalid club type. Must be "public" or "private"');
     }
+
+    // Ensure the requesting user is included in adminIds if not provided
+    const admins = adminIds && adminIds.length ? adminIds : [userId];
+
+    const club = await this._clubService.createClub(
+      name,
+      description,
+      clubType,
+      admins,
+      memberIds || []
+    );
+
+    res.status(HttpStatus.CREATED).json({ message: 'Club created successfully', club });
   }
 
-  async joinClub(req: Request, res: Response): Promise<Response> {
-    try {
-      const { clubId, userId } = req.body;
+  async joinClub(req: Request, res: Response) {
+    const { clubId, userId } = req.body;
 
-      if (!clubId) {
-        return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Club ID is required' });
-      }
+    if (!clubId) throw new MissingFieldError('clubId');
+    if (!userId) throw new MissingFieldError('userId');
 
-      const updatedClub = await this._clubService.joinClub(clubId, userId);
-      return res
-        .status(HttpStatus.OK)
-        .json({ message: 'Joined club successfully', club: updatedClub });
-    } catch (error) {
-      console.error('Error joining club:', error);
-      return res
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ message: (error as Error).message });
-    }
+    const updatedClub = await this._clubService.joinClub(clubId, userId);
+    res.status(HttpStatus.OK).json({ message: 'Joined club successfully', club: updatedClub });
   }
 
-  async getPublicClubs(req: Request, res: Response): Promise<Response> {
-    try {
-      const { search } = req.query;
-      const clubs = await this._clubService.getPublicClubs((search as string) || '');
-      return res.status(HttpStatus.OK).json({ clubs });
-    } catch (error) {
-      console.error('Error fetching public clubs:', error);
-      return res
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ message: (error as Error).message });
-    }
+  async getPublicClubs(req: Request, res: Response) {
+    const { search } = req.query;
+    const clubs = await this._clubService.getPublicClubs((search as string) || '');
+    res.status(HttpStatus.OK).json({ clubs });
   }
 
-  async getUserClubs(req: Request, res: Response): Promise<Response> {
-    try {
-      const { userId } = req.query;
+  async getUserClubs(req: Request, res: Response) {
+    const { userId } = req.query;
 
-      if (!userId || typeof userId !== 'string') {
-        return res.status(HttpStatus.BAD_REQUEST).json({ message: 'User ID is required' });
-      }
-
-      const clubs = await this._clubService.getUserClubs(userId);
-      return res.status(HttpStatus.OK).json({ clubs });
-    } catch (error) {
-      console.error('Error fetching user clubs:', error);
-      return res
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ message: (error as Error).message });
+    if (!userId || typeof userId !== 'string') {
+      throw new MissingFieldError('userId');
     }
+
+    const clubs = await this._clubService.getUserClubs(userId);
+    res.status(HttpStatus.OK).json({ clubs });
   }
 }
