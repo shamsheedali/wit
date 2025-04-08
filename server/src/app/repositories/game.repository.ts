@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { Model } from 'mongoose';
+import { Model, ClientSession } from 'mongoose';
 import BaseRepository from '../../core/base.repository';
 import { GameStatus, IGame } from '../models/game.model';
 import { IGameInput } from '../dtos/game.dto';
@@ -16,8 +16,16 @@ export default class GameRepository extends BaseRepository<IGame> implements IGa
     return this.create(gameData);
   }
 
-  async updateGame(id: string, gameData: Partial<IGameInput>): Promise<IGame | null> {
-    return this.update(id, gameData);
+  async findById(id: string): Promise<IGame | null> {
+    return this.model.findById(id).exec();
+  }
+
+  async updateGame(
+    id: string,
+    gameData: Partial<IGameInput>,
+    session?: ClientSession
+  ): Promise<IGame | null> {
+    return this.model.findByIdAndUpdate(id, gameData, { new: true, session }).exec();
   }
 
   async getGamesByUserId(userId: string): Promise<IGame[]> {

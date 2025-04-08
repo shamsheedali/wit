@@ -48,7 +48,7 @@ export const userColumns = (queryClient: QueryClient): ColumnDef<UserData>[] => 
     sortingFn: "alphanumeric", // Enables sorting
   },
   {
-    accessorKey: "rating",
+    accessorKey: "eloRating",
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -60,7 +60,7 @@ export const userColumns = (queryClient: QueryClient): ColumnDef<UserData>[] => 
       </Button>
     ),
     cell: ({ row }) => {
-      const rating = row.getValue("rating");
+      const rating = row.getValue("eloRating");
       return <span className="text-right">{rating !== undefined ? rating : "-"}</span>;
     },
     sortingFn: "basic", // Enables sorting
