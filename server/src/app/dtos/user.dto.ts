@@ -1,77 +1,58 @@
-import { Types } from 'mongoose';
-import { Expose, Type } from 'class-transformer';
+import { IUser } from '../models/user.model';
 
-export class RegisterUserInput {
-  @Expose()
-  username!: string;
-
-  @Expose()
-  email!: string;
-
-  @Expose()
-  password!: string;
+export interface CreateUserDTO {
+  username: string;
+  email: string;
+  password: string;
 }
 
-export class GoogleUserInput {
-  @Expose()
-  googleId!: string;
-
-  @Expose()
-  username!: string;
-
-  @Expose()
-  email!: string;
-
-  @Expose()
-  profileImageUrl?: string;
+export interface UserResponseDTO {
+  _id: string;
+  username: string;
+  email: string;
 }
 
-export class LoginUserInput {
-  @Expose()
-  email!: string;
-
-  @Expose()
-  password!: string;
+export interface LoginUserDTO {
+  email: string;
+  password: string;
 }
 
-export class UserOutput {
-  @Expose()
-  _id!: string;
-
-  @Expose()
-  username!: string;
-
-  @Expose()
-  email!: string;
-
-  @Expose()
+export interface LoginResponseDTO {
+  _id: string;
   firstName?: string;
-
-  @Expose()
   lastName?: string;
-
-  @Expose()
+  username: string;
+  email: string;
   bio?: string;
-
-  @Expose()
+  friends: string[] | IUser[];
+  eloRating: number;
+  gamesPlayed: number;
   profileImageUrl?: string;
+  profileImageId?: string;
+  isBanned: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+export interface GoogleUserInput {
+  googleId: string;
+  username: string;
+  email: string;
+  profileImageUrl?: string;
+}
 
-  @Expose()
-  isBanned!: boolean;
-
-  @Expose()
-  @Type(() => String)
-  friends!: string[] | Types.ObjectId[];
-
-  @Expose()
-  eloRating!: number;
-
-  @Expose()
-  gamesPlayed!: number;
-
-  @Expose()
-  createdAt!: Date;
-
-  @Expose()
-  updatedAt!: Date;
+export interface GoogleUserResponseDTO {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+  username: string;
+  email: string;
+  bio?: string;
+  friends: string[];
+  eloRating: number;
+  gamesPlayed: number;
+  profileImageUrl?: string;
+  profileImageId?: string;
+  isBanned: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }

@@ -4,12 +4,11 @@ import HttpStatus from '../../constants/httpStatus';
 import UserService from '../services/user.service';
 import TokenService from '../services/token.service';
 import TYPES from '../../config/types';
-import { GoogleUserInput, LoginUserInput, UserOutput } from '../dtos/user.dto';
+import { CreateUserDTO, GoogleUserInput, LoginUserDTO } from '../dtos/user.dto';
 import MailService from '../services/mail.service';
 import redisClient from '../../config/redis';
 import { ApplicationError, MissingFieldError } from '../../utils/http-error.util';
 import HttpResponse from '../../constants/response-message.constant';
-import { plainToClass } from 'class-transformer';
 import Role from '../../constants/role';
 import log from '../../utils/logger';
 
@@ -31,29 +30,22 @@ export default class UserController {
 
   // USER_SIGN_UP
   async registerUser(req: Request, res: Response) {
-    const { username, email, password } = req.body;
+    const dto: CreateUserDTO = req.body;
 
-    if (!username) throw new MissingFieldError('username');
-    if (!email) throw new MissingFieldError('email');
-    if (!password) throw new MissingFieldError('password');
+    if (!dto.username) throw new MissingFieldError('username');
+    if (!dto.email) throw new MissingFieldError('email');
+    if (!dto.password) throw new MissingFieldError('password');
 
-    const userResult = await this._userService.registerUser({ username, email, password });
+    const userResult = await this._userService.registerUser(dto);
 
     if (userResult.isNewUser) {
-      const accessToken = this._tokenService.generateAccessToken(email, Role.USER);
-      const refreshToken = this._tokenService.generateRefreshToken(email, Role.USER);
+      const accessToken = this._tokenService.generateAccessToken(dto.email, Role.USER);
+      const refreshToken = this._tokenService.generateRefreshToken(dto.email, Role.USER);
       this._tokenService.setRefreshTokenCookie(res, refreshToken);
-
-      const plainUser = userResult.user.toObject();
-      plainUser._id = plainUser._id.toString();
-
-      const userOutput = plainToClass(UserOutput, plainUser, {
-        excludeExtraneousValues: true,
-      });
 
       res.status(HttpStatus.CREATED).json({
         message: HttpResponse.USER_CREATION_SUCCESS,
-        user: userOutput,
+        user: userResult.user,
         accessToken,
       });
     } else if (userResult.duplicate === 'username') {
@@ -65,39 +57,20 @@ export default class UserController {
 
   // USER_LOG_IN
   async login(req: Request, res: Response) {
-    const body: LoginUserInput = req.body;
-    const { email, password } = body;
-    if (!email) throw new MissingFieldError('email');
-    if (!password) throw new MissingFieldError('password');
+    const dto: LoginUserDTO = req.body;
 
-    const user = await this._userService.findByEmail(email);
-    if (!user) {
-      throw new ApplicationError(HttpStatus.BAD_REQUEST, HttpResponse.USER_NOT_FOUND);
-    }
+    if (!dto.email) throw new MissingFieldError('email');
+    if (!dto.password) throw new MissingFieldError('password');
 
-    if (user.isBanned) {
-      throw new ApplicationError(HttpStatus.FORBIDDEN, HttpResponse.USER_BANNED);
-    }
+    const user = await this._userService.loginUser(dto);
 
-    const passwordValidation = await this._userService.isPasswordValid(password, user.password);
-    if (!passwordValidation) {
-      throw new ApplicationError(HttpStatus.BAD_REQUEST, HttpResponse.PASSWORD_INCORRECT);
-    }
-
-    const accessToken = this._tokenService.generateAccessToken(email, Role.USER);
-    const refreshToken = this._tokenService.generateRefreshToken(email, Role.USER);
+    const accessToken = this._tokenService.generateAccessToken(dto.email, Role.USER);
+    const refreshToken = this._tokenService.generateRefreshToken(dto.email, Role.USER);
     this._tokenService.setRefreshTokenCookie(res, refreshToken);
-
-    const plainUser = user.toObject();
-    plainUser._id = plainUser._id.toString(); // Force _id to string
-
-    const userOutput = plainToClass(UserOutput, plainUser, {
-      excludeExtraneousValues: true,
-    });
 
     res.status(HttpStatus.OK).json({
       message: 'Login Successful',
-      user: userOutput,
+      user, // LoginResponseDTO, no googleId or password
       accessToken,
     });
   }
@@ -121,38 +94,22 @@ export default class UserController {
 
   // GOOGLE_AUTH
   async googleUser(req: Request, res: Response) {
-    const body: GoogleUserInput = req.body;
-    const { googleId, username, email, profileImageUrl } = body;
+    const dto: GoogleUserInput = req.body;
 
-    if (!googleId) throw new MissingFieldError('googleId');
-    if (!username) throw new MissingFieldError('username');
-    if (!email) throw new MissingFieldError('email');
+    if (!dto.googleId) throw new MissingFieldError('googleId');
+    if (!dto.username) throw new MissingFieldError('username');
+    if (!dto.email) throw new MissingFieldError('email');
 
-    const newUsername = username.includes(' ') ? username.replace(/ /g, '_') : username;
+    const user = await this._userService.googleUser(dto);
 
-    let user = await this._userService.findByEmail(email);
-    if (!user) {
-      user = await this._userService.createGoogleUser({
-        googleId,
-        username: newUsername,
-        email,
-        profileImageUrl,
-      });
-    }
-
-    const accessToken = this._tokenService.generateAccessToken(email, 'user');
-
-    const plainUser = user.toObject();
-    plainUser._id = plainUser._id.toString(); // Force _id to string
-
-    const userOutput = plainToClass(UserOutput, plainUser, {
-      excludeExtraneousValues: true,
-    });
+    const accessToken = this._tokenService.generateAccessToken(dto.email, Role.USER);
+    const refreshToken = this._tokenService.generateRefreshToken(dto.email, Role.USER);
+    this._tokenService.setRefreshTokenCookie(res, refreshToken);
 
     res.status(HttpStatus.OK).json({
       message: 'Google auth successful',
       accessToken,
-      user: userOutput,
+      user,
     });
   }
 
@@ -233,7 +190,7 @@ export default class UserController {
       const updateData = {
         password: hashedPassword,
       };
-      await this._userService.update(user._id as string, updateData);
+      await this._userService.update(user._id.toString(), updateData);
 
       return res.status(HttpStatus.OK).json({ message: 'Password reset successfully' });
     } catch (error) {

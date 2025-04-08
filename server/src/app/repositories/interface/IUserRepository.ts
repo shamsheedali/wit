@@ -1,10 +1,10 @@
 import { IUser } from '../../models/user.model';
-import { IUserInput } from '../../dtos/user.dto';
+import { CreateUserDTO, GoogleUserInput } from '../../dtos/user.dto';
 
 export interface IUserRepository {
   // Create operations
-  createUser(userData: IUserInput): Promise<IUser>;
-  createGoogleUser(userData: IUserInput): Promise<IUser>;
+  createUser(userData: CreateUserDTO & { password: string }): Promise<IUser>;
+  createGoogleUser(userData: GoogleUserInput): Promise<IUser>;
 
   // Find operations
   findOneByEmail(email: string): Promise<IUser | null>;

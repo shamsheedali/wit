@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema, model } from 'mongoose';
 
 export interface IUser extends Document {
+  _id: mongoose.Types.ObjectId;
   firstName?: string;
   lastName?: string;
   username: string;
@@ -14,6 +15,8 @@ export interface IUser extends Document {
   profileImageUrl?: string;
   profileImageId?: string;
   isBanned: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const UserSchema = new Schema<IUser>(
