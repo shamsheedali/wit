@@ -1,29 +1,19 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
 import container from '../../config/inversify.config';
 import TYPES from '../../config/types';
 import GameController from '../controllers/game.controller';
+import asyncWrap from '../../middleware/asyncWrapper';
 
 const router = express.Router();
 const gameController = container.get<GameController>(TYPES.GameController);
 
-router.post('/save', async (req: Request, res: Response) => {
-  await gameController.saveGame(req, res);
-});
-
-router.put('/update/:gameId', async (req: Request, res: Response) => {
-  await gameController.updateGame(req, res);
-});
-
-router.get('/user/:userId', async (req: Request, res: Response) => {
-  await gameController.getUserGames(req, res);
-});
-
-router.get('/total', async (req: Request, res: Response) => {
-  await gameController.getTotalGames(req, res);
-});
-
-router.get('/ongoing/:userId', async (req: Request, res: Response) => {
-  await gameController.getOngoingGameByUserId(req, res);
-});
+router.post('/save', asyncWrap(gameController.saveGame.bind(gameController)));
+router.put('/update/:gameId', asyncWrap(gameController.updateGame.bind(gameController)));
+router.get('/user/:userId', asyncWrap(gameController.getUserGames.bind(gameController)));
+router.get('/total', asyncWrap(gameController.getTotalGames.bind(gameController)));
+router.get(
+  '/ongoing/:userId',
+  asyncWrap(gameController.getOngoingGameByUserId.bind(gameController))
+);
 
 export default router;

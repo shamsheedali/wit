@@ -4,7 +4,8 @@ import FriendService from '../services/friend.service';
 import TYPES from '../../config/types';
 import HttpStatus from '../../constants/httpStatus';
 import { Server } from 'socket.io';
-import log from '../../utils/logger';
+import { MissingFieldError, BadRequestError, NotFoundError } from '../../utils/http-error.util';
+import HttpResponse from '../../constants/response-message.constant';
 
 @injectable()
 export default class FriendController {
@@ -14,82 +15,64 @@ export default class FriendController {
     this._friendService = friendService;
   }
 
-  async getFriends(req: Request, res: Response): Promise<void> {
-    try {
-      const { userId } = req.query;
-      if (!userId) {
-        res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: 'User ID required' });
-        return;
-      }
-      const friends = await this._friendService.getFriends(userId as string);
-      res.status(HttpStatus.OK).json(friends);
-    } catch (error: any) {
-      log.error('Get friends error:', error);
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
-    }
+  async getFriends(req: Request, res: Response) {
+    const { userId } = req.query;
+    if (!userId) throw new MissingFieldError('userId');
+
+    const friends = await this._friendService.getFriends(userId as string);
+    res.status(HttpStatus.OK).json(friends);
   }
 
-  async sendFriendRequest(req: Request, res: Response): Promise<void> {
-    try {
-      const { senderId, receiverId } = req.body;
-      const io = req.app.get('io') as Server;
+  async sendFriendRequest(req: Request, res: Response) {
+    const { senderId, receiverId } = req.body;
+    if (!senderId) throw new MissingFieldError('senderId');
+    if (!receiverId) throw new MissingFieldError('receiverId');
 
-      const request = await this._friendService.sendFriendRequest(senderId, receiverId, io);
-      res.status(HttpStatus.CREATED).json({ success: true, data: request });
-    } catch (error: any) {
-      log.error(error);
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
-    }
+    const io = req.app.get('io') as Server;
+    const request = await this._friendService.sendFriendRequest(senderId, receiverId, io);
+
+    res.status(HttpStatus.CREATED).json({ success: true, data: request });
   }
 
-  async getFriendRequests(req: Request, res: Response): Promise<void> {
-    try {
-      const { userId } = req.query;
-      if (!userId)
-        res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: 'User ID required' });
-      const requests = await this._friendService.getFriendRequests(userId as string);
-      res.json(requests);
-    } catch (error: any) {
-      log.error(error);
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
-    }
+  async getFriendRequests(req: Request, res: Response) {
+    const { userId } = req.query;
+    if (!userId) throw new MissingFieldError('userId');
+
+    const requests = await this._friendService.getFriendRequests(userId as string);
+    res.status(HttpStatus.OK).json(requests);
   }
 
-  async updateFriendRequest(req: Request, res: Response): Promise<void> {
-    try {
-      const { requestId } = req.params;
-      const { status, userId } = req.body;
-      const io = req.app.get('io') as Server;
+  async updateFriendRequest(req: Request, res: Response) {
+    const { requestId } = req.params;
+    const { status, userId } = req.body;
 
-      const updatedRequest = await this._friendService.updateFriendRequest(
-        requestId,
-        userId,
-        status,
-        io
-      );
-      res.json({ success: true, data: updatedRequest });
-    } catch (error: any) {
-      log.error(error);
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
-    }
+    if (!requestId) throw new BadRequestError('Request ID is required');
+    if (!status) throw new MissingFieldError('status');
+    if (!userId) throw new MissingFieldError('userId');
+
+    const io = req.app.get('io') as Server;
+    const updatedRequest = await this._friendService.updateFriendRequest(
+      requestId,
+      userId,
+      status,
+      io
+    );
+
+    res.status(HttpStatus.OK).json({ success: true, data: updatedRequest });
   }
 
-  async removeFriend(req: Request, res: Response): Promise<void> {
-    try {
-      const { userId, friendId } = req.body;
-      const updatedUser = await this._friendService.removeFriend(userId, friendId);
+  async removeFriend(req: Request, res: Response) {
+    const { userId, friendId } = req.body;
+    if (!userId) throw new MissingFieldError('userId');
+    if (!friendId) throw new MissingFieldError('friendId');
 
-      if (!updatedUser) {
-        res.status(HttpStatus.NOT_FOUND).json({ message: 'User not found' });
-      }
+    const updatedUser = await this._friendService.removeFriend(userId, friendId);
+    if (!updatedUser) throw new NotFoundError(HttpResponse.USER_NOT_FOUND);
 
-      //also remove from other user as-well
-      await this._friendService.removeFriend(friendId, userId);
+    // Also remove from the other user
+    const updatedFriend = await this._friendService.removeFriend(friendId, userId);
+    if (!updatedFriend) throw new NotFoundError(HttpResponse.USER_NOT_FOUND);
 
-      res.status(HttpStatus.OK).json({ message: 'Removed user as friend', updatedUser });
-    } catch (error) {
-      log.error('Error removing friend:', error);
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error' });
-    }
+    res.status(HttpStatus.OK).json({ message: 'Friend removed successfully', updatedUser });
   }
 }

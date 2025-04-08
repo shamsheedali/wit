@@ -5,7 +5,7 @@ import { IUser } from '../models/user.model';
 import TYPES from '../../config/types';
 import { cloudinary } from '../../config/cloudinary.config';
 import { IUserRepository } from './interface/IUserRepository';
-import { GoogleUserInput, RegisterUserInput } from '../dtos/user.dto';
+import { CreateUserDTO, GoogleUserInput } from '../dtos/user.dto';
 
 @injectable()
 export default class UserRepository extends BaseRepository<IUser> implements IUserRepository {
@@ -13,12 +13,18 @@ export default class UserRepository extends BaseRepository<IUser> implements IUs
     super(userModel);
   }
 
-  async createUser(userData: RegisterUserInput): Promise<IUser> {
-    return await this.create(userData);
+  async createUser(userData: CreateUserDTO & { password: string }): Promise<IUser> {
+    return await this.create(userData as Partial<IUser>);
   }
 
   async createGoogleUser(userData: GoogleUserInput): Promise<IUser> {
-    return await this.model.create(userData);
+    const data: Partial<IUser> = {
+      googleId: userData.googleId,
+      username: userData.username,
+      email: userData.email,
+      profileImageUrl: userData.profileImageUrl,
+    };
+    return await this.create(data);
   }
 
   async findOneByEmail(email: string): Promise<IUser | null> {

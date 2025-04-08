@@ -2,27 +2,20 @@ import express, { Request, Response } from 'express';
 import TYPES from '../../config/types';
 import container from '../../config/inversify.config';
 import ClubController from '../controllers/club.controller';
+import asyncWrap from '../../middleware/asyncWrapper';
 
 const router = express.Router();
 const clubController = container.get<ClubController>(TYPES.ClubController);
 
 // Create a club
-router.post('/create', async (req: Request, res: Response) => {
-  await clubController.createClub(req, res);
-});
+router.post('/create', asyncWrap(clubController.createClub.bind(clubController)));
 
 // Join a club
-router.post('/join', async (req: Request, res: Response) => {
-  await clubController.joinClub(req, res);
-});
+router.post('/join', asyncWrap(clubController.joinClub.bind(clubController)));
 
 // Get all public clubs
-router.get('/public', async (req: Request, res: Response) => {
-  await clubController.getPublicClubs(req, res);
-});
+router.get('/public', asyncWrap(clubController.getPublicClubs.bind(clubController)));
 
-router.get('/user-clubs', async (req: Request, res: Response) => {
-  await clubController.getUserClubs(req, res);
-});
+router.get('/user-clubs', asyncWrap(clubController.getUserClubs.bind(clubController)));
 
 export default router;
