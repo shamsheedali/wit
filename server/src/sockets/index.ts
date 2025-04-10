@@ -34,18 +34,18 @@ export default function socketHandler(io: Server) {
       // Added to queue
       matchmakingQueue.set(userId, { userId, time, socket });
 
-      // Look for a match
+      // Looking for a match
       for (const [queuedUserId, queuedData] of matchmakingQueue) {
         if (queuedUserId !== userId && queuedData.time === time) {
           // Match found
           const gameId = uuidv4();
           log.info(`Matched ${userId} with ${queuedUserId}, gameId: ${gameId}`);
 
-          // Notify both players
+          // Notifying both players
           socket.emit('matchFound', { opponentId: queuedUserId, gameId, time });
           queuedData.socket.emit('matchFound', { opponentId: userId, gameId, time });
 
-          // Remove from queue
+          // Removed from queue
           matchmakingQueue.delete(userId);
           matchmakingQueue.delete(queuedUserId);
           return;

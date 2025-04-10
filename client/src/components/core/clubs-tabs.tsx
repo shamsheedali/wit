@@ -72,6 +72,10 @@ export function ClubsTabs() {
     joinClubMutation.mutate({ clubId, userId: mainUser._id });
   };
 
+  const handlePageChange = (clubName: string) => {
+    router.push(`/clubs/${clubName}`)
+  }
+
   return (
     <Tabs defaultValue="clubs" className="w-full flex flex-col items-end">
       {mainUser?._id && (
@@ -121,6 +125,7 @@ export function ClubsTabs() {
                     </p>
                   </div>
                   <Button
+                    onClick={() => handlePageChange(club.name)}
                     size="sm"
                     variant="ghost"
                     className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary hover:text-primary-foreground"
