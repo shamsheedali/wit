@@ -28,13 +28,22 @@ export default class GameRepository extends BaseRepository<IGame> implements IGa
     return this.model.findByIdAndUpdate(id, gameData, { new: true, session }).exec();
   }
 
-  async getGamesByUserId(userId: string): Promise<IGame[]> {
+  async getGamesByUserId(userId: string, skip: number, limit: number): Promise<IGame[]> {
     return this.model
       .find({
         $or: [{ playerOne: userId }, { playerTwo: userId }],
       })
       .sort({ createdAt: -1 })
-      .limit(10)
+      .skip(skip)
+      .limit(limit)
+      .exec();
+  }
+
+  async countGamesByUserId(userId: string): Promise<number> {
+    return this.model
+      .countDocuments({
+        $or: [{ playerOne: userId }, { playerTwo: userId }],
+      })
       .exec();
   }
 

@@ -131,8 +131,17 @@ export default class GameService extends BaseService<IGame> implements IGameServ
     return null; // Shouldn’t reach here due to max retries throw
   }
 
-  async getUserGames(userId: string): Promise<IGame[]> {
-    return this._gameRepository.getGamesByUserId(userId);
+  async getUserGames(
+    userId: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ games: IGame[]; total: number }> {
+    const skip = (page - 1) * limit;
+    const [games, total] = await Promise.all([
+      this._gameRepository.getGamesByUserId(userId, skip, limit),
+      this._gameRepository.countGamesByUserId(userId),
+    ]);
+    return { games, total };
   }
 
   async getAllGames(
