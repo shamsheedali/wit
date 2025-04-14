@@ -2,10 +2,15 @@ import { Server, Socket } from 'socket.io';
 import User from '../app/models/user.model';
 import log from '../utils/logger';
 import { v4 as uuidv4 } from 'uuid'; //for unique game IDs
+import container from '../config/inversify.config';
+import ClubRepository from '../app/repositories/club.repository';
+import TYPES from '../config/types';
+import { Types } from 'mongoose';
 
 export default function socketHandler(io: Server) {
   const onlineUsers = new Map<string, string>(); // userId -> socketId
   const matchmakingQueue = new Map<string, { userId: string; time: string; socket: Socket }>(); // userId -> queue entry
+  const clubRepository = container.get<ClubRepository>(TYPES.ClubRepository);
 
   io.on('connection', (socket: Socket) => {
     log.info(`User connected: ${socket.id}`);
@@ -120,6 +125,34 @@ export default function socketHandler(io: Server) {
     socket.on('opponentBanned', (data) => {
       const { gameId, bannedUserId, opponentId } = data;
       io.to(opponentId).emit('opponentBanned', { gameId, bannedUserId });
+    });
+
+    //Club Chat
+    socket.on('joinClubChat', async (data: { clubName: string; userId: string }) => {
+      const { clubName, userId } = data;
+      const club = await clubRepository.findByName(clubName);
+      if (!club) {
+        socket.emit('clubChatError', { message: 'Club not found' });
+        return;
+      }
+      const userObjectId = new Types.ObjectId(userId);
+      if (!club.members?.some((memberId) => memberId.equals(userObjectId))) {
+        socket.emit('clubChatError', { message: 'You are not a member of this club' });
+        return;
+      }
+      socket.join(clubName);
+      log.info(`${userId} joined club chat: ${clubName}`);
+    });
+
+    // New: Send a message to a club chat room
+    socket.on('sendClubMessage', (data: { clubName: string; userId: string; message: string }) => {
+      const { clubName, userId, message } = data;
+      log.info(`Club message in ${clubName} from ${userId}: ${message}`);
+      io.to(clubName).emit('clubMessageReceived', {
+        senderId: userId,
+        content: message,
+        timestamp: Date.now(),
+      });
     });
 
     socket.on('disconnect', async () => {

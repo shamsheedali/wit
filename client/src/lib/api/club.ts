@@ -4,6 +4,7 @@ import { handleApiError } from "../constants/errorHandler";
 import apiClient from "../apiClient";
 
 const CLUB_API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/club`;
+const ADMIN_API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin`;
 
 // Fetch public clubs
 export const getPublicClubs = async (search: string = '') => {
@@ -61,5 +62,17 @@ export const getUserClubs = async (userId: string) => {
     return response.data.clubs;
   } catch (error) {
     handleApiError(error);
+  }
+};
+
+export const getClubs = async (page: number, limit: number) => {
+  try {
+    const response = await apiClient.get(`${ADMIN_API_URL}/clubs`, {
+      params: { page, limit },
+    });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    return { clubs: [], totalClubs: 0, totalPages: 1, currentPage: 1 };
   }
 };

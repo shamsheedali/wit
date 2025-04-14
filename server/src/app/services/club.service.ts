@@ -98,4 +98,15 @@ export default class ClubService implements IClubService {
   async getUserClubs(userId: string): Promise<IClub[]> {
     return this._clubRepository.findByUserId(userId);
   }
+
+  async getAllClubs(
+    page: number,
+    limit: number
+  ): Promise<{ clubs: IClub[]; totalClubs: number; totalPages: number }> {
+    const skip = (page - 1) * limit;
+    const clubs = await this._clubRepository.findAllPaginated(skip, limit);
+    const totalClubs = await this._clubRepository.countDocuments();
+    const totalPages = Math.ceil(totalClubs / limit);
+    return { clubs, totalClubs, totalPages };
+  }
 }
