@@ -191,7 +191,7 @@ export default function SignupFormDetailsPage() {
         localStorage.removeItem("userEmail");
         //saving in global state
         setUser(response.data.user);
-        router.push("/home");
+        router.push("/");
       }
     },
     onError: (error: Error) => {
@@ -216,7 +216,7 @@ export default function SignupFormDetailsPage() {
   return (
     <div className="min-h-screen w-full flex justify-center py-10 font-clashDisplay">
       <div className="flex flex-col gap-3 w-[500px]">
-        <Link href={"/home"} className="text-2xl font-stardom">
+        <Link href={"/"} className="text-2xl font-stardom">
           Wit.
         </Link>
         <h1 className="text-3xl">Just a Few More Moves!</h1>

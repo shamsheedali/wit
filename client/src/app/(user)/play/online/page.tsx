@@ -198,7 +198,7 @@ export default function PlayOnline() {
 
         socketInstance.on("opponentBanned", () => {
           toast.info("Admin banned your opponent.");
-          router.push("/home");
+          router.push("/");
         });
 
         socketInstance.on(

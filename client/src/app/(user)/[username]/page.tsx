@@ -1,5 +1,6 @@
 "use client";
 
+import NotFoundPage from "@/app/not-found";
 import UserProfile from "@/components/core/user-profile";
 import { getUser } from "@/lib/api/user";
 import { useQuery } from "@tanstack/react-query";
@@ -21,7 +22,7 @@ export default function ProfilePage() {
   if (isError || !user) {
     return (
       <div className="w-full h-screen flex items-center justify-center">
-        <p>User not found. <Link href="/home">Go back</Link></p>
+        <NotFoundPage />
       </div>
     )
   }

@@ -56,7 +56,7 @@ export const { handlers, signIn, signOut } = NextAuth({
       return true;
     },
     async redirect({ url, baseUrl}) {
-      return '/home'
+      return '/'
     }
   },
   secret: process.env.AUTH_SECRET,
