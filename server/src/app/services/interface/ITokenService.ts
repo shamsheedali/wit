@@ -2,8 +2,8 @@ import { Response } from 'express';
 
 export interface ITokenService {
   // Token generation
-  generateAccessToken(email: string, role: string): string;
-  generateRefreshToken(email: string, role: string): string;
+  generateAccessToken(userId: string, email: string, role: string): string;
+  generateRefreshToken(userId: string, email: string, role: string): string;
 
   // Cookie management
   setRefreshTokenCookie(res: Response, refreshToken: string): void;
