@@ -4,6 +4,7 @@ import HttpStatus from '../../constants/httpStatus';
 import UserService from '../services/user.service';
 import TokenService from '../services/token.service';
 import GameService from '../services/game.service';
+import ClubService from '../services/club.service';
 import TYPES from '../../config/types';
 import AdminService from '../services/admin.service';
 import Role from '../../constants/role';
@@ -23,17 +24,20 @@ export default class AdminController {
   private _userService: UserService;
   private _tokenService: TokenService;
   private _gameService: GameService;
+  private _clubService: ClubService;
 
   constructor(
     @inject(TYPES.AdminService) adminService: AdminService,
     @inject(TYPES.UserService) userService: UserService,
     @inject(TYPES.TokenService) tokenService: TokenService,
-    @inject(TYPES.GameService) gameService: GameService
+    @inject(TYPES.GameService) gameService: GameService,
+    @inject(TYPES.ClubService) clubService: ClubService
   ) {
     this._adminService = adminService;
     this._userService = userService;
     this._tokenService = tokenService;
     this._gameService = gameService;
+    this._clubService = clubService;
   }
 
   async login(req: Request, res: Response) {
@@ -134,6 +138,20 @@ export default class AdminController {
   async getTotalUsers(req: Request, res: Response) {
     const totalUsers = await this._userService.getTotalUsers();
     res.status(HttpStatus.OK).json({ total: totalUsers });
+  }
+
+  async getAllClubs(req: Request, res: Response) {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 7;
+
+    const { clubs, totalClubs, totalPages } = await this._clubService.getAllClubs(page, limit);
+
+    res.status(HttpStatus.OK).json({
+      clubs,
+      totalClubs,
+      totalPages,
+      currentPage: page,
+    });
   }
 
   async refreshToken(req: Request, res: Response) {

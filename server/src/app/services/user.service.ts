@@ -203,4 +203,17 @@ export default class UserService extends BaseService<IUser> implements IUserServ
   async getTotalUsers(): Promise<number> {
     return await this._userRepository.countUsers();
   }
+
+  //elo
+  async findById(id: string, session?: mongoose.ClientSession): Promise<IUser | null> {
+    return await this._userRepository.findById(id, session);
+  }
+
+  async update(
+    id: string,
+    updateData: Partial<IUser>,
+    session?: mongoose.ClientSession
+  ): Promise<IUser | null> {
+    return await this._userRepository.update(id, updateData, session);
+  }
 }

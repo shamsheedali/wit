@@ -16,17 +16,32 @@ export default class ClubRepository extends BaseRepository<IClub> implements ICl
   }
 
   async findByName(name: string): Promise<IClub | null> {
-    return await this.model.findOne({ name });
+    return this.model.findOne({ name }).exec();
   }
 
   async addMember(clubId: string, userId: string): Promise<IClub | null> {
-    return await this.model
+    return this.model
       .findByIdAndUpdate(clubId, { $addToSet: { members: userId } }, { new: true })
       .populate('admins', 'username email')
-      .populate('members', 'username email'); // admin and member details
+      .populate('members', 'username email')
+      .exec();
   }
 
   async findPublicClubs(query: any): Promise<IClub[]> {
     return this.model.find(query).exec();
+  }
+
+  async findAllPaginated(skip: number, limit: number): Promise<IClub[]> {
+    return this.model
+      .find()
+      .skip(skip)
+      .limit(limit)
+      .populate('admins', 'username')
+      .populate('members', 'username')
+      .exec();
+  }
+
+  async countDocuments(): Promise<number> {
+    return this.model.countDocuments().exec();
   }
 }

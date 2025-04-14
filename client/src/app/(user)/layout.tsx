@@ -16,7 +16,7 @@ export default function UserLayout({
   const { initializeSocket } = useFriendStore();
   const pathname = usePathname();
   const router = useRouter();
-  const noNavbarPaths = ["/play/friend"];
+  const noNavbarPaths = ["/play/friend", "/play/online"];
 
   useEffect(() => {
     if (user?._id) {

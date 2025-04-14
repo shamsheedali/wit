@@ -34,7 +34,7 @@ type Game = {
 
 interface PlayerInfo {
   username: string;
-  profileImageUrl?: string; // Optional profile image URL
+  profileImageUrl?: string;
 }
 
 interface GameHistoryTableProps {

@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { Model } from 'mongoose';
+import mongoose, { Model, ClientSession } from 'mongoose';
 import BaseRepository from '../../core/base.repository';
 import { IUser } from '../models/user.model';
 import TYPES from '../../config/types';
@@ -31,19 +31,34 @@ export default class UserRepository extends BaseRepository<IUser> implements IUs
     return await this.model.findOne({ email });
   }
 
-  async findOneByUsername(username: string) {
+  async findOneByUsername(username: string): Promise<IUser | null> {
     return await this.model.findOne({ username });
   }
 
-  async findAllPaginated(skip: number, limit: number) {
+  async findById(id: string, session?: mongoose.ClientSession): Promise<IUser | null> {
+    return await this.model
+      .findById(id)
+      .session(session ?? null)
+      .exec();
+  }
+
+  async update(
+    id: string,
+    updateData: Partial<IUser>,
+    session?: ClientSession
+  ): Promise<IUser | null> {
+    return await this.model.findByIdAndUpdate(id, updateData, { new: true, session }).exec();
+  }
+
+  async findAllPaginated(skip: number, limit: number): Promise<IUser[]> {
     return await this.model.find().skip(skip).limit(limit).select('-password').exec();
   }
 
-  async countUsers() {
-    return await this.model.countDocuments();
+  async countUsers(): Promise<number> {
+    return await this.model.countDocuments().exec();
   }
 
-  async searchUserByUsername(query: string) {
+  async searchUserByUsername(query: string): Promise<IUser[]> {
     return await this.model.find({
       username: { $regex: `^${query}`, $options: 'i' },
     });
@@ -53,34 +68,22 @@ export default class UserRepository extends BaseRepository<IUser> implements IUs
     userId: string,
     userData: Partial<IUser>,
     profileImage?: Express.Multer.File
-  ) {
+  ): Promise<IUser | null> {
     try {
-      console.log('first', userId, userData, profileImage);
       const user = await this.findById(userId);
-      console.log('User found:', user);
+      if (!user) return null;
 
-      if (!user) {
-        return null;
-      }
-
-      // If profile image is provided, upload to Cloudinary
       if (profileImage) {
-        // Delete existing image if it exists
         if (user.profileImageId) {
           await cloudinary.uploader.destroy(user.profileImageId);
         }
-
-        // Upload new image to Cloudinary
         const result = await cloudinary.uploader.upload(profileImage.path, {
           folder: 'user-profiles',
         });
-
-        // Update user data with new image info
         userData.profileImageUrl = result.secure_url;
         userData.profileImageId = result.public_id;
       }
 
-      // Update user in database
       return await this.update(userId, userData);
     } catch (error) {
       console.error('Error updating profile image:', error);

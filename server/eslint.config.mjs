@@ -23,11 +23,7 @@ export default tseslint.config(
       '@typescript-eslint': tseslint.plugin,
       prettier: prettierPlugin,
     },
-    extends: [
-      js.configs.recommended,
-      ...tseslint.configs.recommended,
-      prettierConfig,
-    ],
+    extends: [js.configs.recommended, ...tseslint.configs.recommended, prettierConfig],
     rules: {
       'no-console': 'off', // Turn off since using winston
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
@@ -38,11 +34,6 @@ export default tseslint.config(
   },
   // Ignores
   {
-    ignores: [
-      'node_modules/**',
-      'dist/**',
-      'logs/**',
-      '*.log',
-    ],
+    ignores: ['node_modules/**', 'dist/**', 'logs/**', '*.log'],
   }
 );

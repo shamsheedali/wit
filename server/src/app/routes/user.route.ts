@@ -19,7 +19,11 @@ router.post('/reset-password', asyncWrap(userController.resetPassword.bind(userC
 router.post('/otp', asyncWrap(userController.sendOtp.bind(userController)));
 router.post('/verify-otp', asyncWrap(userController.verifyOtp.bind(userController)));
 router.get('/search', asyncWrap(userController.searchUser.bind(userController)));
-router.get('/username/:username', asyncWrap(userController.getUser.bind(userController)));
+router.get(
+  '/username/:username',
+  authenticateToken,
+  asyncWrap(userController.getUser.bind(userController))
+);
 router.put(
   '/profile/:id',
   upload.single('profileImage'),

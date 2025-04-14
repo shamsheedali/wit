@@ -5,10 +5,9 @@ import { TimeDropdown } from "@/components/chess/time-dropdown";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores";
 import { useFriendStore } from "@/stores/useFriendStore";
-import { Friend } from "@/types/friend";
+import { ChessMove } from "@/types/game";
+import { Chess } from "chess.js";
 import {
-  CircleArrowLeft,
-  Handshake,
   UserRound,
   Clock,
   ChevronLeft,
@@ -18,6 +17,7 @@ import {
   RotateCcw,
   Flag,
   Hand,
+  Swords,
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
@@ -25,16 +25,12 @@ import { getSocket } from "@/lib/socket";
 import { saveGame, updateGame, getUserGames } from "@/lib/api/game";
 import { useRouter } from "next/navigation";
 import { getUsers } from "@/lib/api/user";
-import { ChessMove } from "@/types/game";
-import { Chess } from "chess.js";
 import ChatInterface from "@/components/core/chat-interface";
 
-export default function PlayFriend() {
+export default function PlayOnline() {
   const { user } = useAuthStore();
   const router = useRouter();
-  const { fetchFriends, friends, sendPlayRequest } = useFriendStore();
-  const [playAs, setPlayAs] = useState<boolean>(false);
-  const [selectedFriend, setSelectedFriend] = useState<Friend | undefined>();
+  const { fetchFriends } = useFriendStore(); // Keep for consistency
   const [gameStarted, setGameStarted] = useState<boolean>(false);
   const [gameId, setGameId] = useState<string | undefined>(undefined);
   const [dbGameId, setDbGameId] = useState<string | undefined>(undefined);
@@ -52,6 +48,9 @@ export default function PlayFriend() {
   const [chess, setChess] = useState<Chess>(new Chess());
   const [currentOpening, setCurrentOpening] = useState<string>("No moves yet");
   const [openings, setOpenings] = useState<any[]>([]);
+  const [matchmakingStatus, setMatchmakingStatus] = useState<
+    "idle" | "searching" | "matched"
+  >("idle");
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Helper function to pair moves
@@ -109,16 +108,11 @@ export default function PlayFriend() {
     if (!openings.length) return "Loading openings...";
 
     const moveSequence = history.join(" ");
-    console.log("Current move sequence:", moveSequence);
-
     let bestMatch = "Unknown Opening";
     let longestMatchLength = 0;
 
     for (const opening of openings) {
       const normalizedOpeningPGN = normalizePGN(opening.pgn);
-      console.log(
-        `Checking opening: ${opening.name} - ${normalizedOpeningPGN}`
-      );
       if (
         moveSequence.startsWith(normalizedOpeningPGN) &&
         normalizedOpeningPGN.split(" ").length > longestMatchLength
@@ -127,8 +121,6 @@ export default function PlayFriend() {
         longestMatchLength = normalizedOpeningPGN.split(" ").length;
       }
     }
-
-    console.log("Best match found:", bestMatch);
     return bestMatch;
   };
 
@@ -150,19 +142,15 @@ export default function PlayFriend() {
       const allOpenings = [];
       try {
         for (const prefix of prefixes) {
-          console.log(`Fetching /openings/${prefix}.json`);
           const response = await fetch(`/openings/${prefix}.json`);
           if (!response.ok) throw new Error(`Failed to fetch ${prefix}.json`);
           const data = await response.json();
-          console.log(`Loaded ${data.length} openings from ${prefix}.json`);
           allOpenings.push(...data);
         }
         setOpenings(allOpenings);
 
-        // If no match is found, load all files as a fallback
         const opening = getOpeningFromPGN(newChess);
         if (opening === "Unknown Opening" && prefixes.length < 5) {
-          console.log("No match found, loading all files as fallback");
           const allPrefixes = ["a", "b", "c", "d", "e"];
           for (const prefix of allPrefixes) {
             if (!prefixes.includes(prefix)) {
@@ -213,88 +201,36 @@ export default function PlayFriend() {
           router.push("/home");
         });
 
-        socketInstance.on("playRequestReceived", (data) => {
-          setOpponentId(data.senderId);
-          toast(
-            `Game request from ${
-              playerNames[data.senderId] || data.senderId
-            } (${data.time})`,
-            {
-              description: (
-                <div className="flex gap-2 mt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => toast.info("Play request declined")}
-                  >
-                    Decline
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={async () => {
-                      if (!socketInstance || !user?._id) return;
-                      const newGameId = `${data.senderId}-${
-                        user._id
-                      }-${Date.now()}`;
-                      socketInstance.emit("acceptPlayRequest", {
-                        senderId: data.senderId,
-                        receiverId: user._id,
-                        gameId: newGameId,
-                        time: data.time,
-                      });
-                      socketInstance.emit("joinGame", { gameId: newGameId });
-                      setGameId(newGameId);
-                      setPlayerColor("b");
-                      const initialTime = timeToSeconds(data.time);
-                      setWhiteTime(initialTime);
-                      setBlackTime(initialTime);
-                      setGameStarted(true);
-                      setActivePlayer("w");
-                      setGameStartTime(Date.now());
+        socketInstance.on(
+          "matchFound",
+          (data: { opponentId: string; gameId: string; time: string }) => {
+            setMatchmakingStatus("matched");
+            setGameId(data.gameId);
+            setOpponentId(data.opponentId);
+            setPlayerColor(Math.random() > 0.5 ? "w" : "b");
+            const initialTime = timeToSeconds(data.time);
+            setWhiteTime(initialTime);
+            setBlackTime(initialTime);
+            setGameStarted(true);
+            setActivePlayer("w");
+            setGameStartTime(Date.now());
+            toast.success(
+              `Matched with ${playerNames[data.opponentId] || data.opponentId}`
+            );
 
-                      const gameType = getGameType(data.time);
-                      const savedGame = await saveGame(
-                        data.senderId,
-                        user._id,
-                        "w",
-                        "rnbqkbnr/pppppppp/5n5/8/8/5N5/PPPPPPPP/RNBQKB1R w KQkq - 1 1",
-                        gameType,
-                        data.time
-                      );
-                      setDbGameId(savedGame?._id);
-                      toast.success(
-                        `Game started with ${
-                          playerNames[data.senderId] || data.senderId
-                        }`
-                      );
-                    }}
-                  >
-                    Accept
-                  </Button>
-                </div>
-              ),
-              duration: 10000,
-            }
-          );
-        });
+            const gameType = getGameType(data.time);
+            saveGame(
+              user._id,
+              data.opponentId,
+              playerColor,
+              chess.fen(),
+              gameType,
+              data.time
+            ).then((savedGame) => setDbGameId(savedGame?._id));
 
-        socketInstance.on("playRequestAccepted", (data) => {
-          setGameId(data.gameId);
-          setOpponentId(data.opponentId);
-          setPlayerColor("w");
-          const initialTime = timeToSeconds(data.time);
-          setWhiteTime(initialTime);
-          setBlackTime(initialTime);
-          setGameStarted(true);
-          setActivePlayer("w");
-          setGameStartTime(Date.now());
-          toast.success(
-            `Game started with ${
-              playerNames[data.opponentId] || data.opponentId
-            }`
-          );
-          socketInstance.emit("joinGame", { gameId: data.gameId });
-        });
+            socketInstance.emit("joinGame", { gameId: data.gameId });
+          }
+        );
 
         socketInstance.on(
           "moveMade",
@@ -324,8 +260,7 @@ export default function PlayFriend() {
 
         return () => {
           socketInstance.off("connect");
-          socketInstance.off("playRequestReceived");
-          socketInstance.off("playRequestAccepted");
+          socketInstance.off("matchFound");
           socketInstance.off("moveMade");
           socketInstance.off("gameTerminated");
           socketInstance.off("opponentBanned");
@@ -335,34 +270,7 @@ export default function PlayFriend() {
     }
   }, [user?._id, fetchFriends, playerColor, gameId]);
 
-  const fetchUserNames = async () => {
-    try {
-      const limit = 100;
-      let page = 1;
-      let allUsers: { _id: string; username: string }[] = [];
-      let hasMore = true;
-
-      while (hasMore) {
-        const response = await getUsers(page, limit);
-        if (response && response.users && response.users.length > 0) {
-          allUsers = [...allUsers, ...response.users];
-          page += 1;
-          hasMore = response.users.length === limit;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      const namesMap: { [key: string]: string } = {};
-      allUsers.forEach((u) => {
-        namesMap[u._id] = u.username;
-      });
-      setPlayerNames(namesMap);
-    } catch (error) {
-      console.error("Failed to fetch users:", error);
-    }
-  };
-
+  // Timer logic
   useEffect(() => {
     if (gameStarted && gameId) {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -396,6 +304,55 @@ export default function PlayFriend() {
     }
   }, [gameStarted, gameId, activePlayer]);
 
+  // Matchmaking handlers
+  const joinMatchmaking = () => {
+    const socket = getSocket();
+    if (!socket || !user?._id) {
+      toast.error("Cannot join matchmaking - socket or user missing");
+      return;
+    }
+    setMatchmakingStatus("searching");
+    socket.emit("joinMatchmaking", { userId: user._id, time: selectedTime });
+    toast.info("Searching for an opponent...");
+  };
+
+  const cancelMatchmaking = () => {
+    const socket = getSocket();
+    if (!socket || !user?._id) return;
+    socket.emit("cancelMatchmaking", user._id);
+    setMatchmakingStatus("idle");
+    toast.info("Matchmaking canceled");
+  };
+
+  // Helper functions
+  const fetchUserNames = async () => {
+    try {
+      const limit = 100;
+      let page = 1;
+      let allUsers: { _id: string; username: string }[] = [];
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await getUsers(page, limit);
+        if (response && response.users && response.users.length > 0) {
+          allUsers = [...allUsers, ...response.users];
+          page += 1;
+          hasMore = response.users.length === limit;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      const namesMap: { [key: string]: string } = {};
+      allUsers.forEach((u) => {
+        namesMap[u._id] = u.username;
+      });
+      setPlayerNames(namesMap);
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+    }
+  };
+
   const endGame = async (
     result: "whiteWin" | "blackWin" | "draw",
     lossType: "checkmate" | "resignation" | "timeout",
@@ -409,14 +366,14 @@ export default function PlayFriend() {
         lossType,
         gameDuration,
         gameStatus: "completed",
-        fen:
-          fen || "rnbqkbnr/pppppppp/5n5/8/8/5N5/PPPPPPPP/RNBQKB1R w KQkq - 1 1",
+        fen: fen || chess.fen(),
       });
       setGameStarted(false);
       setGameId(undefined);
       setDbGameId(undefined);
       setMoves([]);
       setGameStartTime(null);
+      setMatchmakingStatus("idle");
       toast.success(`Game ended: ${result}`);
     }
   };
@@ -429,12 +386,7 @@ export default function PlayFriend() {
     }
     const socket = getSocket();
     if (socket && gameId && user?._id) {
-      socket.emit("moveMade", {
-        gameId,
-        move,
-        playerId: user._id,
-        fen,
-      });
+      socket.emit("moveMade", { gameId, move, playerId: user._id, fen });
     }
   };
 
@@ -444,26 +396,6 @@ export default function PlayFriend() {
       setGameHistory(games || []);
       setShowHistory(true);
     }
-  };
-
-  const handleClick = (friendId: string) => {
-    setPlayAs(true);
-    setSelectedFriend(friends.find((friend) => friend._id === friendId));
-  };
-
-  const handlePlay = () => {
-    if (!selectedFriend?._id || !user?._id) {
-      toast.error("Cannot send play request - missing user or friend");
-      return;
-    }
-    sendPlayRequest(selectedFriend._id, selectedTime);
-    toast.success(
-      `Play request sent to ${selectedFriend.username} (${selectedTime})`
-    );
-  };
-
-  const handleTimeChange = (value: string) => {
-    setSelectedTime(value);
   };
 
   const timeToSeconds = (time: string): number => {
@@ -512,14 +444,14 @@ export default function PlayFriend() {
 
   return (
     <div className="flex flex-col md:flex-row w-full h-screen items-center p-4 font-clashDisplay">
-      {/* Left Section: Chessboard and Player Info */}
+      {/* Chessboard and Player Info */}
       <div className="flex flex-col items-center w-full md:w-1/2 h-full py-[30px]">
         <div className="flex items-center justify-between w-full max-w-[500px] pr-10 py-2 rounded-lg">
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 bg-[#262522] rounded-full flex items-center justify-center">
-              {selectedFriend?.profileImageUrl ? (
+              {opponentId && playerNames[opponentId] ? (
                 <img
-                  src={selectedFriend.profileImageUrl}
+                  src="/placeholder.svg?height=40&width=40" // Replace with actual profile image if available
                   alt="opponent profile image"
                   className="w-10 h-10 rounded-full"
                 />
@@ -528,9 +460,7 @@ export default function PlayFriend() {
               )}
             </div>
             <h1 className="text-md font-semibold">
-              {gameStarted && selectedFriend
-                ? selectedFriend.username
-                : "Opponent"}
+              {opponentId ? playerNames[opponentId] : "Opponent"}
             </h1>
           </div>
           <div className="bg-[#262522] px-8 py-3 rounded-sm">
@@ -557,7 +487,7 @@ export default function PlayFriend() {
             <div className="h-10 w-10 bg-[#262522] rounded-full flex items-center justify-center">
               {user?.profileImageUrl ? (
                 <img
-                  src={user?.profileImageUrl}
+                  src={user.profileImageUrl}
                   alt="user profile image"
                   className="w-10 h-10 rounded-full"
                 />
@@ -582,77 +512,39 @@ export default function PlayFriend() {
         </div>
       </div>
 
-      {/* Right Section: Pre-Game Panels */}
-      {!playAs && !gameStarted && !showHistory && (
-        <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col gap-10 rounded-md">
+      {/* Matchmaking Panel */}
+      {!gameStarted && !showHistory && (
+        <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col items-center gap-10 rounded-md">
           <div className="w-full flex justify-center items-center gap-2">
-            <Handshake width={30} height={30} />
-            <h1 className="text-3xl font-bold">Play a friend</h1>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold">Friends</h1>
-            {friends && friends.length > 0 ? (
-              friends.map((friend) => (
-                <div
-                  key={friend._id}
-                  className="flex items-center gap-2 mt-5 cursor-pointer"
-                  onClick={() => handleClick(friend._id)}
-                >
-                  <div className="h-10 w-10 bg-white rounded-full">
-                    <img
-                      src={friend.profileImageUrl || "/placeholder.svg"}
-                      alt={`${friend.username}`}
-                      className="h-10 w-10 rounded-full"
-                    />
-                  </div>
-                  <h1>{friend.username}</h1>
-                </div>
-              ))
-            ) : (
-              <p>No friends yet</p>
-            )}
+            <Swords width={30} height={30} />
+            <h1 className="text-3xl font-bold">Play Online</h1>
           </div>
           <Button onClick={fetchGameHistory} className="w-full h-11 font-bold">
             <Clock className="mr-2" /> View History
           </Button>
-        </div>
-      )}
-
-      {playAs && !gameStarted && !showHistory && (
-        <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col items-center gap-10 rounded-md">
-          <div className="w-full flex justify-center items-center gap-2 relative">
-            <div
-              className="absolute left-0 cursor-pointer"
-              onClick={() => setPlayAs(false)}
-            >
-              <CircleArrowLeft />
-            </div>
-            <div className="flex justify-center items-center gap-2">
-              <Handshake width={30} height={30} />
-              <h1 className="text-3xl font-bold">Play vs</h1>
-            </div>
-          </div>
-          <div>
-            <div className="flex flex-col items-center gap-2 mt-5">
-              <div className="h-32 w-32 bg-white rounded-full">
-                <img
-                  src={selectedFriend?.profileImageUrl || "/placeholder.svg"}
-                  alt={selectedFriend?.username}
-                  className="h-32 w-32 rounded-full"
-                />
-              </div>
-              <h1>{selectedFriend?.username}</h1>
-            </div>
-          </div>
           <div className="space-y-2">
-            <TimeDropdown onValueChange={handleTimeChange} />
+            <TimeDropdown onValueChange={setSelectedTime} />
           </div>
-          <Button className="w-full h-11 font-bold" onClick={handlePlay}>
-            Play
-          </Button>
+          {matchmakingStatus === "idle" && (
+            <Button className="w-full h-11 font-bold" onClick={joinMatchmaking}>
+              Find Match
+            </Button>
+          )}
+          {matchmakingStatus === "searching" && (
+            <>
+              <p className="text-white">Searching for an opponent...</p>
+              <Button
+                className="w-full h-11 font-bold bg-red-600 hover:bg-red-700"
+                onClick={cancelMatchmaking}
+              >
+                Cancel
+              </Button>
+            </>
+          )}
         </div>
       )}
 
+      {/* Game History Panel */}
       {showHistory && (
         <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col gap-10 rounded-md overflow-y-auto">
           <div className="w-full flex justify-center items-center gap-2">
@@ -756,6 +648,13 @@ export default function PlayFriend() {
               <Button
                 variant="destructive"
                 className="w-1/2 bg-red-600 hover:bg-red-700"
+                onClick={() =>
+                  endGame(
+                    playerColor === "w" ? "blackWin" : "whiteWin",
+                    "resignation",
+                    chess.fen()
+                  )
+                }
               >
                 <Flag className="mr-2" /> Resign
               </Button>
@@ -801,6 +700,7 @@ export default function PlayFriend() {
         </div>
       )}
 
+      {/* Chat Panel */}
       {gameStarted && (
         <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col gap-10 rounded-md">
           <ChatInterface

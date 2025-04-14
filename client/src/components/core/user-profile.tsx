@@ -93,7 +93,7 @@ const UserProfile = ({ user }: { user: User }) => {
           </div>
           <div className="flex flex-col items-center gap-3">
             <Swords />
-            123
+            {isCurrentUser ? mainUser?.gamesPlayed : user?.gamesPlayed}
           </div>
         </div>
 

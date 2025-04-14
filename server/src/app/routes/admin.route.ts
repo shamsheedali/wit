@@ -68,6 +68,14 @@ router.get(
   asyncWrap(adminController.getTotalUsers.bind(adminController))
 );
 
+// GET ALL CLUBS
+router.get(
+  '/clubs',
+  authenticateToken,
+  isAdmin(),
+  asyncWrap(adminController.getAllClubs.bind(adminController))
+);
+
 // REFRESH TOKEN
 router.post('/refresh', asyncWrap(adminController.refreshToken.bind(adminController)));
 
