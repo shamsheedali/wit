@@ -6,6 +6,11 @@ export interface IClub extends Document {
   clubType: 'public' | 'private';
   admins: Types.ObjectId[];
   members?: Types.ObjectId[];
+  messages?: {
+    senderId: Types.ObjectId;
+    content: string;
+    timestamp: number;
+  }[];
 }
 
 const clubSchema = new Schema<IClub>(
@@ -34,6 +39,13 @@ const clubSchema = new Schema<IClub>(
       {
         type: Schema.Types.ObjectId,
         ref: 'Users',
+      },
+    ],
+    messages: [
+      {
+        senderId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        content: { type: String, required: true },
+        timestamp: { type: Number, default: Date.now },
       },
     ],
   },

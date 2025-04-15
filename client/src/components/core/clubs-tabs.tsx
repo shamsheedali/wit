@@ -106,9 +106,10 @@ export function ClubsTabs() {
               userClubs.map((club: IClub) => (
                 <div
                   key={club._id}
-                  className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
+                  onClick={() => handlePageChange(club.name)}
+                  className="flex items-center space-x-4 p-3 cursor-pointer rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
                 >
-                  <div className="relative">
+                  {/* <div className="relative">
                     <img
                       src="/placeholder.svg?height=40&width=40"
                       alt="Club avatar"
@@ -116,7 +117,7 @@ export function ClubsTabs() {
                       width={40}
                       height={40}
                     />
-                  </div>
+                  </div> */}
                   <div className="flex-1">
                     <p className="text-sm font-medium">{club.name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -124,14 +125,6 @@ export function ClubsTabs() {
                       {club.members?.length || "No members"}
                     </p>
                   </div>
-                  <Button
-                    onClick={() => handlePageChange(club.name)}
-                    size="sm"
-                    variant="ghost"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary hover:text-primary-foreground"
-                  >
-                    View
-                  </Button>
                 </div>
               ))
             )}
@@ -166,7 +159,7 @@ export function ClubsTabs() {
                     key={club._id}
                     className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
                   >
-                    <div className="relative">
+                    {/* <div className="relative">
                       <img
                         src="/placeholder.svg?height=40&width=40"
                         alt="Club avatar"
@@ -174,7 +167,7 @@ export function ClubsTabs() {
                         width={40}
                         height={40}
                       />
-                    </div>
+                    </div> */}
                     <div className="flex-1">
                       <p className="text-sm font-medium">{club.name}</p>
                       <p className="text-xs text-muted-foreground">

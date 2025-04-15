@@ -64,4 +64,35 @@ export default class ClubController {
     const clubs = await this._clubService.getUserClubs(userId);
     res.status(HttpStatus.OK).json({ clubs });
   }
+
+  async leaveClub(req: Request, res: Response) {
+    const { clubId, userId } = req.body;
+
+    if (!clubId) throw new MissingFieldError('clubId');
+    if (!userId) throw new MissingFieldError('userId');
+
+    const updatedClub = await this._clubService.leaveClub(clubId, userId);
+    res.status(HttpStatus.OK).json({ message: 'Left club successfully', club: updatedClub });
+  }
+
+  async addMessage(req: Request, res: Response) {
+    const { clubId, senderId, content } = req.body;
+
+    if (!clubId) throw new MissingFieldError('clubId');
+    if (!senderId) throw new MissingFieldError('senderId');
+    if (!content) throw new MissingFieldError('content');
+
+    const updatedClub = await this._clubService.addMessage(clubId, senderId, content);
+    res.status(HttpStatus.OK).json({ message: 'Message added successfully', club: updatedClub });
+  }
+
+  async deleteClub(req: Request, res: Response) {
+    const { clubId, userId } = req.body;
+
+    if (!clubId) throw new MissingFieldError('clubId');
+    if (!userId) throw new MissingFieldError('userId');
+
+    await this._clubService.deleteClub(clubId, userId);
+    res.status(HttpStatus.OK).json({ message: 'Club deleted successfully' });
+  }
 }

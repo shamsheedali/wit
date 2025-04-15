@@ -109,4 +109,72 @@ export default class ClubService implements IClubService {
     const totalPages = Math.ceil(totalClubs / limit);
     return { clubs, totalClubs, totalPages };
   }
+
+  async addMessage(clubId: string, senderId: string, content: string): Promise<IClub> {
+    const club = await this._clubRepository.findById(clubId);
+    if (!club) throw new Error('Club not found');
+
+    const user = await this._userRepository.findById(senderId);
+    if (!user) throw new Error('User not found');
+
+    const userObjectId = new Types.ObjectId(senderId);
+    if (!club.members?.some((id) => id.equals(userObjectId))) {
+      throw new Error('User is not a member of this club');
+    }
+
+    const updatedClub = await this._clubRepository.addMessage(clubId, senderId, content);
+    if (!updatedClub) throw new Error('Failed to add message');
+
+    return updatedClub;
+  }
+
+  async deleteClub(clubId: string, userId: string): Promise<void> {
+    const club = await this._clubRepository.findById(clubId);
+    if (!club) throw new Error('Club not found');
+
+    const userObjectId = new Types.ObjectId(userId);
+    if (!club.admins?.some((id) => id.equals(userObjectId))) {
+      throw new Error('Only admins can delete the club');
+    }
+
+    await this._clubRepository.delete(clubId);
+  }
+
+  async leaveClub(clubId: string, userId: string): Promise<IClub> {
+    const club = await this._clubRepository.findById(clubId);
+    if (!club) {
+      throw new Error('Club not found');
+    }
+
+    const user = await this._userRepository.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const userObjectId = new Types.ObjectId(userId);
+
+    // Check if user is a member
+    if (!club.members?.some((id) => id.equals(userObjectId))) {
+      throw new Error('User is not a member of this club');
+    }
+
+    // Check if user is an admin
+    const isAdmin = club.admins?.some((id) => id.equals(userObjectId));
+    if (isAdmin) {
+      // Prevent the last admin from leaving
+      if (club.admins?.length === 1) {
+        throw new Error(
+          'Cannot leave club: You are the only admin. Please assign another admin or delete the club.'
+        );
+      }
+    }
+
+    // Remove user from members and admins
+    const updatedClub = await this._clubRepository.removeMember(clubId, userId);
+    if (!updatedClub) {
+      throw new Error('Failed to leave club');
+    }
+
+    return updatedClub;
+  }
 }
