@@ -25,7 +25,8 @@ router.get(
   asyncWrap(userController.getUser.bind(userController))
 );
 router.put(
-  '/profile/:id',
+  '/profile',
+  authenticateToken,
   upload.single('profileImage'),
   asyncWrap(userController.updateProfile.bind(userController))
 );

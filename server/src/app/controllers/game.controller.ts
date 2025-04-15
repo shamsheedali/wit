@@ -58,11 +58,20 @@ export default class GameController {
   }
 
   async getUserGames(req: Request, res: Response) {
-    const { userId } = req.params;
+    const userId = req.user?.userId;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+
     if (!userId) throw new BadRequestError('User ID is required');
 
-    const games = await this._gameService.getUserGames(userId);
-    res.status(HttpStatus.OK).json({ games });
+    const { games, total } = await this._gameService.getUserGames(userId, page, limit);
+    res.status(HttpStatus.OK).json({
+      games,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
   }
 
   async getTotalGames(req: Request, res: Response) {

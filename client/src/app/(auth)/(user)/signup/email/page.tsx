@@ -76,7 +76,7 @@ export default function SignupFormEmailPage() {
   return (
     <div className="min-h-screen w-full flex justify-center pt-10 font-clashDisplay">
       <div className="flex flex-col gap-3 w-[500px]">
-        <Link href={"/home"} className="text-2xl font-stardom">
+        <Link href={"/"} className="text-2xl font-stardom">
           Wit.
         </Link>
         <h1 className="text-3xl">Let’s Get Started!</h1>

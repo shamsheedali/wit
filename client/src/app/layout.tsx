@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/lib/providers/QueryProvider";
 import { Toaster } from "@/components/ui/sonner";
+import ClientSocketInitializer from "@/components/ClientSocketInitializer";
+import ClientNavbarWrapper from "@/components/ClientNavbarWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,7 +39,8 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <QueryProvider>
-        {/* <ClientSocketInitializer /> */}
+          <ClientSocketInitializer />
+          <ClientNavbarWrapper />
           {children}
         </QueryProvider>
         <Toaster />

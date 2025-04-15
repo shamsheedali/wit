@@ -37,7 +37,7 @@ export default function UserNavbar() {
     <div ref={navRef} className="bg-[#09090b] flex justify-between items-center px-4 sm:px-8 md:px-16 py-5 border-b-[1px] text-[#f0f0f0db] font-bold font-clashDisplay text-[15px] w-full fixed z-10">
       {/* Left Section (Logo and Nav) */}
       <div className="flex items-center gap-16">
-        <Link href={"/home"} className="font-stardom text-xl">
+        <Link href={"/"} className="font-stardom text-xl">
           Wit.
         </Link>
         <nav className="hidden md:flex gap-16">

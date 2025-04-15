@@ -5,6 +5,7 @@ import HttpStatus from '../constants/httpStatus';
 declare module 'express-serve-static-core' {
   interface Request {
     user?: {
+      userId: string;
       email: string;
       role: string;
     };
@@ -29,7 +30,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       return res.status(HttpStatus.FORBIDDEN).json({ message: 'Invalid Token Payload' });
     }
 
-    req.user = decoded as { email: string; role: string };
+    req.user = decoded as { userId: string; email: string; role: string };
     next();
   });
 };

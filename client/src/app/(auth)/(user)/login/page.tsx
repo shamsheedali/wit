@@ -10,7 +10,7 @@ export default function LoginPage() {
   const router = useRouter();
   useLayoutEffect(() => {
     if(isAuthenticated) {
-      router.push('/home')
+      router.push('/')
     }
   }, [router])
     

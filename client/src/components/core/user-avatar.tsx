@@ -23,7 +23,7 @@ export function UserAvatar() {
   const onLogout = () => {
     userLogout();
     logout();
-    router.push("/home");
+    router.push("/");
   };
 
   return (

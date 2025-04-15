@@ -26,7 +26,11 @@ export interface IGameService {
   ): Promise<IGame | null>;
 
   // Read operations
-  getUserGames(userId: string): Promise<IGame[]>;
+  getUserGames(
+    userId: string,
+    page: number,
+    limit: number
+  ): Promise<{ games: IGame[]; total: number }>;
   getAllGames(
     page: number,
     limit: number

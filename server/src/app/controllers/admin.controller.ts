@@ -52,7 +52,11 @@ export default class AdminController {
     const isPasswordValid = await this._userService.isPasswordValid(password, admin.password);
     if (!isPasswordValid) throw new UnauthorizedError(HttpResponse.PASSWORD_INCORRECT);
 
-    const accessToken = this._tokenService.generateAccessToken(email, Role.ADMIN);
+    const accessToken = this._tokenService.generateAccessToken(
+      admin._id as string,
+      email,
+      Role.ADMIN
+    );
 
     res.status(HttpStatus.OK).json({
       message: HttpResponse.LOGIN_SUCCESS,
@@ -165,10 +169,10 @@ export default class AdminController {
       log.error(error);
       throw new UnauthorizedError(HttpResponse.TOKEN_EXPIRED);
     }
-    const { email, role } = decoded as { email: string; role: string };
+    const { userId, email, role } = decoded as { userId: string; email: string; role: string };
 
-    const newAccessToken = this._tokenService.generateAccessToken(email, role);
-    const newRefreshToken = this._tokenService.generateRefreshToken(email, role);
+    const newAccessToken = this._tokenService.generateAccessToken(userId, email, role);
+    const newRefreshToken = this._tokenService.generateRefreshToken(userId, email, role);
     this._tokenService.setRefreshTokenCookie(res, newRefreshToken, true); // Admin-specific
 
     res.status(HttpStatus.OK).json({

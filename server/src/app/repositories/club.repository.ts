@@ -44,4 +44,45 @@ export default class ClubRepository extends BaseRepository<IClub> implements ICl
   async countDocuments(): Promise<number> {
     return this.model.countDocuments().exec();
   }
+
+  async removeMember(clubId: string, userId: string): Promise<IClub | null> {
+    return this.model
+      .findByIdAndUpdate(
+        clubId,
+        {
+          $pull: {
+            members: userId,
+            admins: userId,
+          },
+        },
+        { new: true }
+      )
+      .populate('admins', 'username email')
+      .populate('members', 'username email')
+      .exec();
+  }
+
+  async addMessage(clubId: string, senderId: string, content: string): Promise<IClub | null> {
+    return this.model
+      .findByIdAndUpdate(
+        clubId,
+        {
+          $push: {
+            messages: {
+              senderId: new Types.ObjectId(senderId),
+              content,
+              timestamp: Date.now(),
+            },
+          },
+        },
+        { new: true }
+      )
+      .populate('admins', 'username email')
+      .populate('members', 'username email')
+      .exec();
+  }
+
+  async delete(clubId: string): Promise<IClub | null> {
+    return await this.model.findByIdAndDelete(clubId).exec();
+  }
 }

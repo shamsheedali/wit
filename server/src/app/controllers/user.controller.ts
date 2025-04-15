@@ -44,8 +44,16 @@ export default class UserController {
     const userResult = await this._userService.registerUser(dto);
 
     if (userResult.isNewUser) {
-      const accessToken = this._tokenService.generateAccessToken(dto.email, Role.USER);
-      const refreshToken = this._tokenService.generateRefreshToken(dto.email, Role.USER);
+      const accessToken = this._tokenService.generateAccessToken(
+        userResult.user._id,
+        dto.email,
+        Role.USER
+      );
+      const refreshToken = this._tokenService.generateRefreshToken(
+        userResult.user._id,
+        dto.email,
+        Role.USER
+      );
       this._tokenService.setRefreshTokenCookie(res, refreshToken);
 
       res.status(HttpStatus.CREATED).json({
@@ -68,8 +76,8 @@ export default class UserController {
 
     const user = await this._userService.loginUser(dto); // Already throws ApplicationError
 
-    const accessToken = this._tokenService.generateAccessToken(dto.email, Role.USER);
-    const refreshToken = this._tokenService.generateRefreshToken(dto.email, Role.USER);
+    const accessToken = this._tokenService.generateAccessToken(user._id, dto.email, Role.USER);
+    const refreshToken = this._tokenService.generateRefreshToken(user._id, dto.email, Role.USER);
     this._tokenService.setRefreshTokenCookie(res, refreshToken);
 
     res.status(HttpStatus.OK).json({
@@ -99,8 +107,8 @@ export default class UserController {
 
     const user = await this._userService.googleUser(dto); // Already throws ApplicationError
 
-    const accessToken = this._tokenService.generateAccessToken(dto.email, Role.USER);
-    const refreshToken = this._tokenService.generateRefreshToken(dto.email, Role.USER);
+    const accessToken = this._tokenService.generateAccessToken(user._id, dto.email, Role.USER);
+    const refreshToken = this._tokenService.generateRefreshToken(user._id, dto.email, Role.USER);
     this._tokenService.setRefreshTokenCookie(res, refreshToken);
 
     res.status(HttpStatus.OK).json({
@@ -223,7 +231,7 @@ export default class UserController {
   }
 
   async updateProfile(req: Request, res: Response) {
-    const userId = req.params.id;
+    const userId = req.user?.userId;
 
     if (!userId) throw new UnauthorizedError(HttpResponse.UNAUTHORIZED);
 
@@ -244,10 +252,10 @@ export default class UserController {
     if (!refreshToken) throw new UnauthorizedError(HttpResponse.NO_TOKEN);
 
     const decoded = this._tokenService.verifyToken(refreshToken, process.env.REFRESH_JWT_SECRET!);
-    const { email, role } = decoded as { email: string; role: string };
+    const { userId, email, role } = decoded as { userId: string; email: string; role: string };
 
-    const newAccessToken = this._tokenService.generateAccessToken(email, role);
-    const newRefreshToken = this._tokenService.generateRefreshToken(email, role);
+    const newAccessToken = this._tokenService.generateAccessToken(userId, email, role);
+    const newRefreshToken = this._tokenService.generateRefreshToken(userId, email, role);
     this._tokenService.setRefreshTokenCookie(res, newRefreshToken, false);
 
     res.status(HttpStatus.OK).json({

@@ -184,14 +184,13 @@ export const getUser = async (username: string) => {
 //UPDATE_USER
 export const updateUserProfile = async ({
   userData,
-  userId,
 }: {
   userData: FormData;
   userId: string;
 }) => {
   try {
     const response = await apiClient.put(
-      `${API_URL}/profile/${userId}`,
+      `${API_URL}/profile`,
       userData,
       {
         headers: {

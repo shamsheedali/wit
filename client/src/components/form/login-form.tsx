@@ -58,7 +58,7 @@ export function LoginForm({
     onSuccess: (result) => {
       if (result?.success) {
         setUser(result.data.user);
-        router.push("/home");
+        router.push("/");
         resetForm();
       }
     },
@@ -87,7 +87,7 @@ export function LoginForm({
       onSubmit={handleSubmit}
     >
       <div className="flex flex-col items-center gap-2 text-center">
-        <Link href={"/home"} className="text-2xl font-stardom">
+        <Link href={"/"} className="text-2xl font-stardom">
           Wit.
         </Link>
         <h1 className="text-2xl font-bold">Login to your account</h1>

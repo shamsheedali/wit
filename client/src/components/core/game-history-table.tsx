@@ -9,11 +9,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronDown, ChevronUp, User, Zap, MoveUpRight, Timer } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  User,
+  Zap,
+  MoveUpRight,
+  Timer,
+} from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getUserGames } from "@/lib/api/game";
 import { useAuthStore } from "@/stores";
 import { getUsers } from "@/lib/api/user";
+import { Button } from "@/components/ui/button"; // Assuming you have a Button component
 
 type Game = {
   _id: string;
@@ -42,39 +50,55 @@ interface GameHistoryTableProps {
   playerNames?: { [key: string]: PlayerInfo };
 }
 
-export default function GameHistoryTable({ initialGames = [], playerNames: initialPlayerNames = {} }: GameHistoryTableProps) {
+export default function GameHistoryTable({
+  initialGames = [],
+  playerNames: initialPlayerNames = {},
+}: GameHistoryTableProps) {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [games, setGames] = useState<Game[]>(initialGames);
-  const [playerNames, setPlayerNames] = useState<{ [key: string]: PlayerInfo }>(initialPlayerNames);
+  const [playerNames, setPlayerNames] = useState<{ [key: string]: PlayerInfo }>(
+    initialPlayerNames
+  );
   const { user } = useAuthStore();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [limit] = useState(10); // Number of games per page
 
   useEffect(() => {
     const fetchData = async () => {
       if (user?._id) {
         try {
-          // Fetch games
-          const fetchedGames = await getUserGames(user._id);
-          setGames(fetchedGames || []);
+          // Fetch paginated games
+          const gameData = await getUserGames(user._id, currentPage, limit);
+          setGames(gameData?.games || []);
+          setTotalPages(gameData?.totalPages || 1);
 
-          // Fetch all users
-          const limit = 100;
+          // Fetch all users (unchanged)
+          const usersLimit = 100;
           let page = 1;
-          let allUsers: { _id: string; username: string; profileImageUrl?: string }[] = [];
+          let allUsers: {
+            _id: string;
+            username: string;
+            profileImageUrl?: string;
+          }[] = [];
           let hasMore = true;
 
           while (hasMore) {
-            const response = await getUsers(page, limit);
+            const response = await getUsers(page, usersLimit);
             if (response && response.users && response.users.length > 0) {
               allUsers = [...allUsers, ...response.users];
               page += 1;
-              hasMore = response.users.length === limit;
+              hasMore = response.users.length === usersLimit;
             } else {
               hasMore = false;
             }
           }
 
           const namesMap: { [key: string]: PlayerInfo } = {
-            [user._id]: { username: user.username || "You", profileImageUrl: user.profileImageUrl },
+            [user._id]: {
+              username: user.username || "You",
+              profileImageUrl: user.profileImageUrl,
+            },
           };
           allUsers.forEach((u) => {
             namesMap[u._id] = {
@@ -90,7 +114,7 @@ export default function GameHistoryTable({ initialGames = [], playerNames: initi
     };
 
     fetchData();
-  }, [user?._id]);
+  }, [user?._id, currentPage, limit]);
 
   const sortByDate = () => {
     const sortedGames = [...games].sort((a, b) => {
@@ -125,6 +149,18 @@ export default function GameHistoryTable({ initialGames = [], playerNames: initi
     return "text-red-600 font-medium";
   };
 
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
   return (
     <div className="w-full rounded-lg border shadow-sm">
       <div className="overflow-x-auto">
@@ -153,18 +189,19 @@ export default function GameHistoryTable({ initialGames = [], playerNames: initi
           <TableBody>
             {games && games.length > 0 ? (
               games.map((game) => (
-                <TableRow key={game._id} className="hover:bg-muted/50 transition-colors">
+                <TableRow
+                  key={game._id}
+                  className="hover:bg-muted/50 transition-colors"
+                >
                   <TableCell>
                     <div className="flex items-center px-3 gap-3 space-y-2 py-1 sm:space-y-0 sm:py-0">
                       <div className="text-center">
-                        {game.gameType === 'blitz' ? (
+                        {game.gameType === "blitz" ? (
                           <Zap />
+                        ) : game.gameType === "bullet" ? (
+                          <MoveUpRight />
                         ) : (
-                          game.gameType === 'bullet' ? (
-                            <MoveUpRight />
-                          ) : (
-                            <Timer />
-                          )
+                          <Timer />
                         )}
                         <h1>{game.gameType}</h1>
                       </div>
@@ -173,7 +210,9 @@ export default function GameHistoryTable({ initialGames = [], playerNames: initi
                           <div className="h-8 w-8 rounded-full overflow-hidden bg-muted">
                             {playerNames[game.playerOne]?.profileImageUrl ? (
                               <img
-                                src={playerNames[game.playerOne].profileImageUrl}
+                                src={
+                                  playerNames[game.playerOne].profileImageUrl
+                                }
                                 alt={playerNames[game.playerOne].username}
                                 className="h-full w-full object-cover"
                               />
@@ -182,14 +221,17 @@ export default function GameHistoryTable({ initialGames = [], playerNames: initi
                             )}
                           </div>
                           <span className={getResultClass(game)}>
-                            {playerNames[game.playerOne]?.username || game.playerOne}
+                            {playerNames[game.playerOne]?.username ||
+                              game.playerOne}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="h-8 w-8 rounded-full overflow-hidden bg-muted">
                             {playerNames[game.playerTwo]?.profileImageUrl ? (
                               <img
-                                src={playerNames[game.playerTwo].profileImageUrl}
+                                src={
+                                  playerNames[game.playerTwo].profileImageUrl
+                                }
                                 alt={playerNames[game.playerTwo].username}
                                 className="h-full w-full object-cover"
                               />
@@ -198,17 +240,24 @@ export default function GameHistoryTable({ initialGames = [], playerNames: initi
                             )}
                           </div>
                           <span className={getResultClass(game)}>
-                            {playerNames[game.playerTwo]?.username || game.playerTwo}
+                            {playerNames[game.playerTwo]?.username ||
+                              game.playerTwo}
                           </span>
                         </div>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-center font-medium">
-                    <span className={getResultClass(game)}>{getResultDisplay(game)}</span>
+                    <span className={getResultClass(game)}>
+                      {getResultDisplay(game)}
+                    </span>
                   </TableCell>
-                  <TableCell className="text-center">{game.timeControl}</TableCell>
-                  <TableCell className="text-center">{game.moves.length}</TableCell>
+                  <TableCell className="text-center">
+                    {game.timeControl}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {game.moves.length}
+                  </TableCell>
                   <TableCell>{formatDate(game.createdAt)}</TableCell>
                 </TableRow>
               ))
@@ -222,6 +271,28 @@ export default function GameHistoryTable({ initialGames = [], playerNames: initi
           </TableBody>
         </Table>
       </div>
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center p-4">
+          <Button
+            variant="outline"
+            onClick={handlePreviousPage}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </Button>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            onClick={handleNextPage}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
