@@ -5,7 +5,18 @@ import UserNavbar from "@/components/core/my-user-navbar";
 
 export default function ClientNavbarWrapper() {
   const pathname = usePathname();
-  const noNavbarPaths = ["/play/friend", "/play/online"];
+  const noNavbarPaths = [
+    "/play/friend",
+    "/play/online",
+    /^\/tournaments\/[^\/]+\/play\/[^\/]+$/,
+  ];
 
-  return !noNavbarPaths.includes(pathname) ? <UserNavbar /> : null;
+  const hideNavbar = noNavbarPaths.some((path) => {
+    if (typeof path === "string") {
+      return path === pathname;
+    }
+    return path.test(pathname);
+  });
+
+  return hideNavbar ? null : <UserNavbar />;
 }

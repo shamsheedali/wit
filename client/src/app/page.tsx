@@ -52,7 +52,7 @@ export default function Home() {
             </div>
           </Link>
 
-          <div className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-8 cursor-pointer overflow-hidden">
+          <Link href={'/tournaments'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-8 cursor-pointer overflow-hidden">
             <Image
               src="/images/tournamentImg.webp"
               alt="Tournaments"
@@ -64,7 +64,7 @@ export default function Home() {
             <div className="bg-white/5 h-14 w-full absolute bottom-0 rounded-bl-xl rounded-br-xl font-semibold flex items-center justify-end px-10">
               Tournaments
             </div>
-          </div>
+          </Link>
 
           <Link href={'/leaderboard'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-32 cursor-pointer overflow-hidden">
             <Image

@@ -7,6 +7,7 @@ import adminRouter from './app/routes/admin.route';
 import friendRouter from './app/routes/friend.route';
 import clubRouter from './app/routes/club.route';
 import gameRoutes from './app/routes/game.route';
+import tournamentRoutes from './app/routes/tournament.route';
 import { connectRedis } from './config/redis';
 import setupErrorHandling from './middleware/error.middleware';
 
@@ -50,6 +51,8 @@ app.use('/api/friend', friendRouter);
 app.use('/api/club', clubRouter);
 //GAME-ROUTER
 app.use('/api/game', gameRoutes);
+//TOURNAMENT-ROUTER
+app.use('/api/tournament', tournamentRoutes);
 
 //Error Handler
 setupErrorHandling(app);
