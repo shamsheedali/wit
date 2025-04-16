@@ -9,6 +9,8 @@ export default function ClientNavbarWrapper() {
     "/play/friend",
     "/play/online",
     /^\/tournaments\/[^\/]+\/play\/[^\/]+$/,
+    /^\/dashboard(\/.*)?$/, // Matches /admin and any subroutes
+    "/admin-login"
   ];
 
   const hideNavbar = noNavbarPaths.some((path) => {
