@@ -45,7 +45,7 @@ export const sendFriendRequest = async (
     });
     console.log("sendFriendRequest", response)
     if (response.status === HttpStatus.CREATED) {
-      return { success: true, data: response.data.data }; // Match your backend response structure
+      return { success: true, data: response.data.data };
     }
     return { success: false, message: "Unexpected response" };
   } catch (error) {

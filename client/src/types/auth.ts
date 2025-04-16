@@ -10,6 +10,8 @@ export interface User {
   profileImageUrl?: string;
   eloRating: number;
   gamesPlayed: number;
+  friends: string[];
+  createdAt: string;
 }
 
 export interface Admin {

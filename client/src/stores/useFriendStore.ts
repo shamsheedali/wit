@@ -9,7 +9,7 @@ interface FriendState {
   friendRequests: FriendRequest[];
   friends: Friend[];
   fetchFriendRequests: () => Promise<void>;
-  sendFriendRequest: (receiverId: string) => Promise<void>;
+  sendFriendRequest: (receiverId: string) => Promise<{receiverId: string}>;
   updateFriendRequest: (requestId: string, status: "accepted" | "ignored") => Promise<void>;
   fetchFriends: () => Promise<void>;
   sendPlayRequest: (receiverId: string, senderName: string, senderPfp: string, time?: string) => void;
@@ -61,6 +61,7 @@ export const useFriendStore = create<FriendState>((set) => ({
       set((state) => ({
         friendRequests: [...state.friendRequests, result.data],
       }));
+      return result?.data?.receiverId;
     } else {
       console.error("Failed to send friend request:", result.error || result.message);
       throw new Error(result.message || "Failed to send friend request");

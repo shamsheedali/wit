@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import {
   Calendar1,
@@ -19,12 +19,21 @@ import { useFriendStore } from "@/stores/useFriendStore";
 import { User } from "@/types/auth";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { removeFriend } from "@/lib/api/friend";
 
 const UserProfile = ({ user }: { user: User }) => {
-  const { user: mainUser } = useAuthStore();
-  const { sendFriendRequest } = useFriendStore();
+  const { user: mainUser, updateUser } = useAuthStore();
+  const { sendFriendRequest, friends, fetchFriends } = useFriendStore();
   const isCurrentUser = mainUser?._id === user?._id;
   const [isRequestSent, setIsRequestSent] = useState(false);
+  const [reRender, setReRender] = useState(false);
+
+  useEffect(() => {
+    if (mainUser?._id) {
+      fetchFriends();
+      console.log("rerender")
+    }
+  }, [reRender, mainUser?._id, fetchFriends])
 
   const dateToFormat = isCurrentUser ? mainUser?.createdAt : user?.createdAt;
   let formatDate
@@ -32,7 +41,7 @@ const UserProfile = ({ user }: { user: User }) => {
     formatDate = format(new Date(dateToFormat), "MMM d, yyyy"); // "Aug 27, 2023"
   }
 
-  const isFriend = mainUser?.friends.includes(user._id);
+  const isFriend = friends.some(friend => friend._id === user._id);
 
   const handleAddFriend = async () => {
     try {
@@ -41,6 +50,7 @@ const UserProfile = ({ user }: { user: User }) => {
         return;
       }
       await sendFriendRequest(user._id); 
+      setReRender(true);
       setIsRequestSent(true); 
     } catch (error) {
       console.error("Failed to send friend request:", error);
@@ -48,8 +58,14 @@ const UserProfile = ({ user }: { user: User }) => {
     }
   };
 
+  const handleRemoveFriend = async () => {
+    const response = await removeFriend(mainUser?._id as string, user._id);
+    updateUser(response?.updatedUser);
+    setReRender(true);
+  }
+
   return (
-    <div className="border-2 rounded-lg flex justify-center items-center p-8 gap-20">
+    <div className="lg:border-2 rounded-lg flex justify-center items-center p-8 lg:gap-20 sm:gap-5">
       <Avatar className="cursor-pointer w-40 h-40">
         <AvatarImage
           src={isCurrentUser ? mainUser?.profileImageUrl : user?.profileImageUrl}
@@ -102,7 +118,7 @@ const UserProfile = ({ user }: { user: User }) => {
             {isFriend ? (
               <Button
                 variant="destructive"
-                // onClick={handleRemoveFriend}
+                onClick={handleRemoveFriend}
                 // disabled={isRequestSent}
               >
                 <HeartCrack />
