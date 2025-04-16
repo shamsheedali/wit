@@ -5,12 +5,12 @@ import { TimeDropdown } from "@/components/chess/time-dropdown";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores";
 import { useFriendStore } from "@/stores/useFriendStore";
+import { useGameStore } from "@/stores/useGameStore";
 import { Friend } from "@/types/friend";
 import {
   CircleArrowLeft,
   Handshake,
   UserRound,
-  Clock,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -22,7 +22,7 @@ import {
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
-import { saveGame, updateGame, getUserGames } from "@/lib/api/game";
+import { updateGame } from "@/lib/api/game";
 import { useRouter } from "next/navigation";
 import { getUsers } from "@/lib/api/user";
 import { ChessMove } from "@/types/game";
@@ -30,24 +30,29 @@ import { Chess } from "chess.js";
 import ChatInterface from "@/components/core/chat-interface";
 
 export default function PlayFriend() {
-  const { user } = useAuthStore();
   const router = useRouter();
+  const { user } = useAuthStore();
   const { fetchFriends, friends, sendPlayRequest } = useFriendStore();
+  const {
+    gameId,
+    dbGameId,
+    opponentId,
+    opponentName,
+    opponentProfilePicture,
+    playerColor,
+    whiteTime,
+    blackTime,
+    gameStarted,
+    activePlayer,
+    gameStartTime,
+    moves,
+    addMove,
+    resetGame,
+  } = useGameStore();
+
   const [playAs, setPlayAs] = useState<boolean>(false);
   const [selectedFriend, setSelectedFriend] = useState<Friend | undefined>();
-  const [gameStarted, setGameStarted] = useState<boolean>(false);
-  const [gameId, setGameId] = useState<string | undefined>(undefined);
-  const [dbGameId, setDbGameId] = useState<string | undefined>(undefined);
-  const [playerColor, setPlayerColor] = useState<"w" | "b">("w");
-  const [opponentId, setOpponentId] = useState<string | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>("10min");
-  const [whiteTime, setWhiteTime] = useState<number>(600);
-  const [blackTime, setBlackTime] = useState<number>(600);
-  const [activePlayer, setActivePlayer] = useState<"w" | "b">("w");
-  const [moves, setMoves] = useState<ChessMove[]>([]);
-  const [gameStartTime, setGameStartTime] = useState<number | null>(null);
-  const [showHistory, setShowHistory] = useState<boolean>(false);
-  const [gameHistory, setGameHistory] = useState<any[]>([]);
   const [playerNames, setPlayerNames] = useState<{ [key: string]: string }>({});
   const [chess, setChess] = useState<Chess>(new Chess());
   const [currentOpening, setCurrentOpening] = useState<string>("No moves yet");
@@ -109,16 +114,11 @@ export default function PlayFriend() {
     if (!openings.length) return "Loading openings...";
 
     const moveSequence = history.join(" ");
-    console.log("Current move sequence:", moveSequence);
-
     let bestMatch = "Unknown Opening";
     let longestMatchLength = 0;
 
     for (const opening of openings) {
       const normalizedOpeningPGN = normalizePGN(opening.pgn);
-      console.log(
-        `Checking opening: ${opening.name} - ${normalizedOpeningPGN}`
-      );
       if (
         moveSequence.startsWith(normalizedOpeningPGN) &&
         normalizedOpeningPGN.split(" ").length > longestMatchLength
@@ -128,7 +128,6 @@ export default function PlayFriend() {
       }
     }
 
-    console.log("Best match found:", bestMatch);
     return bestMatch;
   };
 
@@ -150,19 +149,17 @@ export default function PlayFriend() {
       const allOpenings = [];
       try {
         for (const prefix of prefixes) {
-          console.log(`Fetching /openings/${prefix}.json`);
           const response = await fetch(`/openings/${prefix}.json`);
           if (!response.ok) throw new Error(`Failed to fetch ${prefix}.json`);
           const data = await response.json();
-          console.log(`Loaded ${data.length} openings from ${prefix}.json`);
           allOpenings.push(...data);
         }
         setOpenings(allOpenings);
 
-        // If no match is found, load all files as a fallback
-        const opening = getOpeningFromPGN(newChess);
-        if (opening === "Unknown Opening" && prefixes.length < 5) {
-          console.log("No match found, loading all files as fallback");
+        if (
+          getOpeningFromPGN(newChess) === "Unknown Opening" &&
+          prefixes.length < 5
+        ) {
           const allPrefixes = ["a", "b", "c", "d", "e"];
           for (const prefix of allPrefixes) {
             if (!prefixes.includes(prefix)) {
@@ -192,148 +189,47 @@ export default function PlayFriend() {
     }
   }, [chess, openings]);
 
-  // Socket and fetch logic
+  // Fetch friends and user names
   useEffect(() => {
     if (user?._id) {
       fetchFriends();
       fetchUserNames();
-      const socketInstance = getSocket();
-      if (socketInstance) {
-        socketInstance.on("connect", () => {
-          console.log(`Socket connected for user ${user._id}`);
-        });
-
-        socketInstance.on("gameTerminated", () => {
-          toast.info("This game has been terminated by an admin.");
-          router.push("/play");
-        });
-
-        socketInstance.on("opponentBanned", () => {
-          toast.info("Admin banned your opponent.");
-          router.push("/");
-        });
-
-        socketInstance.on("playRequestReceived", (data) => {
-          setOpponentId(data.senderId);
-          toast(
-            `Game request from ${
-              playerNames[data.senderId] || data.senderId
-            } (${data.time})`,
-            {
-              description: (
-                <div className="flex gap-2 mt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => toast.info("Play request declined")}
-                  >
-                    Decline
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={async () => {
-                      if (!socketInstance || !user?._id) return;
-                      const newGameId = `${data.senderId}-${
-                        user._id
-                      }-${Date.now()}`;
-                      socketInstance.emit("acceptPlayRequest", {
-                        senderId: data.senderId,
-                        receiverId: user._id,
-                        gameId: newGameId,
-                        time: data.time,
-                      });
-                      socketInstance.emit("joinGame", { gameId: newGameId });
-                      setGameId(newGameId);
-                      setPlayerColor("b");
-                      const initialTime = timeToSeconds(data.time);
-                      setWhiteTime(initialTime);
-                      setBlackTime(initialTime);
-                      setGameStarted(true);
-                      setActivePlayer("w");
-                      setGameStartTime(Date.now());
-
-                      const gameType = getGameType(data.time);
-                      const savedGame = await saveGame(
-                        data.senderId,
-                        user._id,
-                        "w",
-                        "rnbqkbnr/pppppppp/5n5/8/8/5N5/PPPPPPPP/RNBQKB1R w KQkq - 1 1",
-                        gameType,
-                        data.time
-                      );
-                      setDbGameId(savedGame?._id);
-                      toast.success(
-                        `Game started with ${
-                          playerNames[data.senderId] || data.senderId
-                        }`
-                      );
-                    }}
-                  >
-                    Accept
-                  </Button>
-                </div>
-              ),
-              duration: 10000,
-            }
-          );
-        });
-
-        socketInstance.on("playRequestAccepted", (data) => {
-          setGameId(data.gameId);
-          setOpponentId(data.opponentId);
-          setPlayerColor("w");
-          const initialTime = timeToSeconds(data.time);
-          setWhiteTime(initialTime);
-          setBlackTime(initialTime);
-          setGameStarted(true);
-          setActivePlayer("w");
-          setGameStartTime(Date.now());
-          toast.success(
-            `Game started with ${
-              playerNames[data.opponentId] || data.opponentId
-            }`
-          );
-          socketInstance.emit("joinGame", { gameId: data.gameId });
-        });
-
-        socketInstance.on(
-          "moveMade",
-          (data: {
-            gameId: string;
-            move: ChessMove;
-            playerId: string;
-            fen: string;
-          }) => {
-            if (data.gameId === gameId && data.playerId !== user._id) {
-              setMoves((prev) => {
-                if (
-                  prev.some(
-                    (m) =>
-                      m.san === data.move.san && m.color === data.move.color
-                  )
-                ) {
-                  return prev;
-                }
-                return [...prev, data.move];
-              });
-              const newActivePlayer = data.move.color === "w" ? "b" : "w";
-              setActivePlayer(newActivePlayer);
-            }
-          }
-        );
-
-        return () => {
-          socketInstance.off("connect");
-          socketInstance.off("playRequestReceived");
-          socketInstance.off("playRequestAccepted");
-          socketInstance.off("moveMade");
-          socketInstance.off("gameTerminated");
-          socketInstance.off("opponentBanned");
-          if (timerRef.current) clearInterval(timerRef.current);
-        };
-      }
     }
-  }, [user?._id, fetchFriends, playerColor, gameId]);
+  }, [user?._id, fetchFriends]);
+
+  // Timer logic
+  useEffect(() => {
+    if (gameStarted && gameId) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        if (activePlayer === "w") {
+          if (whiteTime <= 0) {
+            clearInterval(timerRef.current!);
+            toast.error("White ran out of time!");
+            endGame("blackWin", "timeout", chess.fen());
+            return;
+          }
+          useGameStore.setState({
+            whiteTime: whiteTime - 1,
+          });
+        } else if (activePlayer === "b") {
+          if (blackTime <= 0) {
+            clearInterval(timerRef.current!);
+            toast.error("Black ran out of time!");
+            endGame("whiteWin", "timeout", chess.fen());
+            return;
+          }
+          useGameStore.setState({
+            blackTime: blackTime - 1,
+          });
+        }
+      }, 1000);
+
+      return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+      };
+    }
+  }, [gameStarted, gameId, activePlayer, whiteTime, blackTime]);
 
   const fetchUserNames = async () => {
     try {
@@ -363,39 +259,6 @@ export default function PlayFriend() {
     }
   };
 
-  useEffect(() => {
-    if (gameStarted && gameId) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = setInterval(() => {
-        if (activePlayer === "w") {
-          setWhiteTime((prev) => {
-            if (prev <= 0) {
-              clearInterval(timerRef.current!);
-              toast.error("White ran out of time!");
-              endGame("blackWin", "timeout", "");
-              return 0;
-            }
-            return prev - 1;
-          });
-        } else if (activePlayer === "b") {
-          setBlackTime((prev) => {
-            if (prev <= 0) {
-              clearInterval(timerRef.current!);
-              toast.error("Black ran out of time!");
-              endGame("whiteWin", "timeout", "");
-              return 0;
-            }
-            return prev - 1;
-          });
-        }
-      }, 1000);
-
-      return () => {
-        if (timerRef.current) clearInterval(timerRef.current);
-      };
-    }
-  }, [gameStarted, gameId, activePlayer]);
-
   const endGame = async (
     result: "whiteWin" | "blackWin" | "draw",
     lossType: "checkmate" | "resignation" | "timeout",
@@ -409,21 +272,16 @@ export default function PlayFriend() {
         lossType,
         gameDuration,
         gameStatus: "completed",
-        fen:
-          fen || "rnbqkbnr/pppppppp/5n5/8/8/5N5/PPPPPPPP/RNBQKB1R w KQkq - 1 1",
+        fen,
       });
-      setGameStarted(false);
-      setGameId(undefined);
-      setDbGameId(undefined);
-      setMoves([]);
-      setGameStartTime(null);
+      resetGame();
       toast.success(`Game ended: ${result}`);
     }
   };
 
   const handleMoveUpdate = async (move: ChessMove | undefined, fen: string) => {
     if (!move) return;
-    setMoves((prev) => [...prev, move]);
+    addMove(move);
     if (dbGameId) {
       await updateGame(dbGameId, { moves: [...moves, move], fen });
     }
@@ -438,14 +296,6 @@ export default function PlayFriend() {
     }
   };
 
-  const fetchGameHistory = async () => {
-    if (user?._id) {
-      const games = await getUserGames(user._id);
-      setGameHistory(games || []);
-      setShowHistory(true);
-    }
-  };
-
   const handleClick = (friendId: string) => {
     setPlayAs(true);
     setSelectedFriend(friends.find((friend) => friend._id === friendId));
@@ -456,7 +306,12 @@ export default function PlayFriend() {
       toast.error("Cannot send play request - missing user or friend");
       return;
     }
-    sendPlayRequest(selectedFriend._id, selectedTime);
+    sendPlayRequest(
+      selectedFriend._id,
+      user.username,
+      user.profileImageUrl as string,
+      selectedTime
+    );
     toast.success(
       `Play request sent to ${selectedFriend.username} (${selectedTime})`
     );
@@ -523,6 +378,12 @@ export default function PlayFriend() {
                   alt="opponent profile image"
                   className="w-10 h-10 rounded-full"
                 />
+              ) : opponentProfilePicture ? (
+                <img
+                  src={opponentProfilePicture}
+                  alt="opponent profile image"
+                  className="w-10 h-10 rounded-full"
+                />
               ) : (
                 <UserRound />
               )}
@@ -530,7 +391,7 @@ export default function PlayFriend() {
             <h1 className="text-md font-semibold">
               {gameStarted && selectedFriend
                 ? selectedFriend.username
-                : "Opponent"}
+                : opponentName || "Opponent"}
             </h1>
           </div>
           <div className="bg-[#262522] px-8 py-3 rounded-sm">
@@ -542,22 +403,24 @@ export default function PlayFriend() {
           </div>
         </div>
 
+        {/* CHESS BOARD */}
         <div className="flex-grow flex items-center justify-center w-full max-w-[500px] my-2">
           <ChessBoard
-            gameId={gameId}
-            playerColor={playerColor}
-            opponentId={opponentId}
+            gameId={gameId || ""}
+            playerColor={playerColor || "w"}
+            opponentId={opponentId || ""}
             onMove={handleMoveUpdate}
             onGameEnd={endGame}
           />
         </div>
 
+        {/* Player - 01 */}
         <div className="flex items-center justify-between w-full max-w-[500px] pr-10 py-2 rounded-lg">
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 bg-[#262522] rounded-full flex items-center justify-center">
               {user?.profileImageUrl ? (
                 <img
-                  src={user?.profileImageUrl}
+                  src={user.profileImageUrl}
                   alt="user profile image"
                   className="w-10 h-10 rounded-full"
                 />
@@ -583,7 +446,7 @@ export default function PlayFriend() {
       </div>
 
       {/* Right Section: Pre-Game Panels */}
-      {!playAs && !gameStarted && !showHistory && (
+      {!playAs && !gameStarted && (
         <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col gap-10 rounded-md">
           <div className="w-full flex justify-center items-center gap-2">
             <Handshake width={30} height={30} />
@@ -612,13 +475,11 @@ export default function PlayFriend() {
               <p>No friends yet</p>
             )}
           </div>
-          <Button onClick={fetchGameHistory} className="w-full h-11 font-bold">
-            <Clock className="mr-2" /> View History
-          </Button>
         </div>
       )}
 
-      {playAs && !gameStarted && !showHistory && (
+      {/* Play Vs */}
+      {playAs && !gameStarted && (
         <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col items-center gap-10 rounded-md">
           <div className="w-full flex justify-center items-center gap-2 relative">
             <div
@@ -649,42 +510,6 @@ export default function PlayFriend() {
           </div>
           <Button className="w-full h-11 font-bold" onClick={handlePlay}>
             Play
-          </Button>
-        </div>
-      )}
-
-      {showHistory && (
-        <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col gap-10 rounded-md overflow-y-auto">
-          <div className="w-full flex justify-center items-center gap-2">
-            <Clock width={30} height={30} />
-            <h1 className="text-3xl font-bold">Game History</h1>
-          </div>
-          <div>
-            {gameHistory.length > 0 ? (
-              gameHistory.map((game) => (
-                <div key={game._id} className="mb-4 p-2 bg-[#3a3a3a] rounded">
-                  <p>
-                    Opponent:{" "}
-                    {game.playerOne === user?._id
-                      ? playerNames[game.playerTwo] || game.playerTwo
-                      : playerNames[game.playerOne] || game.playerOne}
-                  </p>
-                  <p>Result: {game.result || "Ongoing"}</p>
-                  <p>Type: {game.gameType}</p>
-                  <p>Time: {game.timeControl}</p>
-                  <p>Moves: {game.moves.length}</p>
-                  <p>Status: {game.gameStatus}</p>
-                </div>
-              ))
-            ) : (
-              <p>No games found</p>
-            )}
-          </div>
-          <Button
-            onClick={() => setShowHistory(false)}
-            className="w-full h-11 font-bold"
-          >
-            Back to Play
           </Button>
         </div>
       )}
@@ -750,12 +575,20 @@ export default function PlayFriend() {
               <Button
                 variant="outline"
                 className="w-1/2 bg-gray-700 text-white hover:bg-gray-600"
+                onClick={() => endGame("draw", "resignation", chess.fen())}
               >
                 <Hand className="mr-2" /> Draw
               </Button>
               <Button
                 variant="destructive"
                 className="w-1/2 bg-red-600 hover:bg-red-700"
+                onClick={() =>
+                  endGame(
+                    playerColor === "w" ? "blackWin" : "whiteWin",
+                    "resignation",
+                    chess.fen()
+                  )
+                }
               >
                 <Flag className="mr-2" /> Resign
               </Button>
@@ -801,6 +634,7 @@ export default function PlayFriend() {
         </div>
       )}
 
+      {/* Chat Interface */}
       {gameStarted && (
         <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col gap-10 rounded-md">
           <ChatInterface

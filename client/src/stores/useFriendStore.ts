@@ -12,7 +12,7 @@ interface FriendState {
   sendFriendRequest: (receiverId: string) => Promise<void>;
   updateFriendRequest: (requestId: string, status: "accepted" | "ignored") => Promise<void>;
   fetchFriends: () => Promise<void>;
-  sendPlayRequest: (receiverId: string, time?: string) => void;
+  sendPlayRequest: (receiverId: string, senderName: string, senderPfp: string, time?: string) => void;
   initializeSocket: () => Socket | null;
 }
 
@@ -93,7 +93,7 @@ export const useFriendStore = create<FriendState>((set) => ({
     }
   },
 
-  sendPlayRequest: (receiverId: string, time = "10min") => {
+  sendPlayRequest: (receiverId: string, senderName: string, senderPfp: string, time = "10min") => {
     const userId = useAuthStore.getState().user?._id;
     if (!userId) {
       console.log("No authenticated user for play request");
@@ -107,6 +107,8 @@ export const useFriendStore = create<FriendState>((set) => ({
     socket.emit("playRequest", {
       senderId: userId,
       receiverId,
+      senderName,
+      senderPfp,
       time,
     });
     console.log(`Play request sent to ${receiverId}`);

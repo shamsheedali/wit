@@ -64,24 +64,42 @@ export default function socketHandler(io: Server) {
       log.info(`${userId} canceled matchmaking`);
     });
 
-    socket.on('playRequest', (data: { senderId: string; receiverId: string; time: string }) => {
-      const { senderId, receiverId, time } = data;
-      log.info(`Play request from ${senderId} to ${receiverId} with time ${time}`);
-      io.to(receiverId).emit('playRequestReceived', {
-        senderId,
-        receiverId,
-        time,
-        timestamp: Date.now(),
-      });
-    });
+    socket.on(
+      'playRequest',
+      (data: {
+        senderId: string;
+        receiverId: string;
+        senderName: string;
+        senderPfp: string;
+        time: string;
+      }) => {
+        const { senderId, receiverId, senderName, senderPfp, time } = data;
+        // log.info(`Play request from ${senderId} to ${receiverId} with time ${time}`);
+        io.to(receiverId).emit('playRequestReceived', {
+          senderId,
+          receiverId,
+          senderName,
+          senderPfp,
+          time,
+          timestamp: Date.now(),
+        });
+      }
+    );
 
     socket.on(
       'acceptPlayRequest',
-      (data: { senderId: string; receiverId: string; gameId: string; time: string }) => {
-        const { senderId, receiverId, gameId, time } = data;
-        log.info(`Play request accepted by ${receiverId} for ${senderId}, gameId: ${gameId}`);
+      (data: {
+        senderId: string;
+        receiverId: string;
+        senderName: string;
+        gameId: string;
+        time: string;
+      }) => {
+        const { senderId, receiverId, senderName, gameId, time } = data;
+        // log.info(`Play request accepted by ${receiverId} for ${senderId}, gameId: ${gameId}`);
         io.to(senderId).emit('playRequestAccepted', {
           opponentId: receiverId,
+          opponentName: senderName,
           gameId,
           time,
           timestamp: Date.now(),
