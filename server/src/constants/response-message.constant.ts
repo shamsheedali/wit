@@ -30,6 +30,8 @@ enum HttpResponse {
   TOKEN_REFRESHED = 'Token refreshed successfully',
   LOGIN_SUCCESS = 'Login successful',
   GAME_NOT_FOUND = 'Game not found',
+  MESSAGE_SENT = 'Message sent successfully',
+  MESSAGES_FETCHED = 'Messages fetched successfully',
 }
 
 export default HttpResponse;

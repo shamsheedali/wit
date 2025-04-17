@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import User from '../app/models/user.model';
 import log from '../utils/logger';
-import { v4 as uuidv4 } from 'uuid'; //for unique game IDs
+import { v4 as uuidv4 } from 'uuid';
 import container from '../config/inversify.config';
 import ClubRepository from '../app/repositories/club.repository';
 import TYPES from '../config/types';
@@ -9,7 +9,7 @@ import { Types } from 'mongoose';
 
 export default function socketHandler(io: Server) {
   const onlineUsers = new Map<string, string>(); // userId -> socketId
-  const matchmakingQueue = new Map<string, { userId: string; time: string; socket: Socket }>(); // userId -> queue entry
+  const matchmakingQueue = new Map<string, { userId: string; time: string; socket: Socket }>();
   const clubRepository = container.get<ClubRepository>(TYPES.ClubRepository);
 
   io.on('connection', (socket: Socket) => {
@@ -35,22 +35,14 @@ export default function socketHandler(io: Server) {
     socket.on('joinMatchmaking', (data: { userId: string; time: string }) => {
       const { userId, time } = data;
       log.info(`${userId} joined matchmaking with time ${time}`);
-
-      // Added to queue
       matchmakingQueue.set(userId, { userId, time, socket });
 
-      // Looking for a match
       for (const [queuedUserId, queuedData] of matchmakingQueue) {
         if (queuedUserId !== userId && queuedData.time === time) {
-          // Match found
           const gameId = uuidv4();
           log.info(`Matched ${userId} with ${queuedUserId}, gameId: ${gameId}`);
-
-          // Notifying both players
           socket.emit('matchFound', { opponentId: queuedUserId, gameId, time });
           queuedData.socket.emit('matchFound', { opponentId: userId, gameId, time });
-
-          // Removed from queue
           matchmakingQueue.delete(userId);
           matchmakingQueue.delete(queuedUserId);
           return;
@@ -74,7 +66,6 @@ export default function socketHandler(io: Server) {
         time: string;
       }) => {
         const { senderId, receiverId, senderName, senderPfp, time } = data;
-        // log.info(`Play request from ${senderId} to ${receiverId} with time ${time}`);
         io.to(receiverId).emit('playRequestReceived', {
           senderId,
           receiverId,
@@ -96,7 +87,6 @@ export default function socketHandler(io: Server) {
         time: string;
       }) => {
         const { senderId, receiverId, senderName, gameId, time } = data;
-        // log.info(`Play request accepted by ${receiverId} for ${senderId}, gameId: ${gameId}`);
         io.to(senderId).emit('playRequestAccepted', {
           opponentId: receiverId,
           opponentName: senderName,
@@ -129,6 +119,35 @@ export default function socketHandler(io: Server) {
       });
     });
 
+    socket.on(
+      'sendMessage',
+      async (data: {
+        senderId: string;
+        receiverId: string;
+        content: string;
+        _id: string;
+        timestamp: string;
+      }) => {
+        const { senderId, receiverId, content, _id, timestamp } = data;
+        log.info(`Message from ${senderId} to ${receiverId}: ${content}`);
+
+        io.to(receiverId).emit('messageReceived', {
+          senderId,
+          receiverId,
+          content,
+          timestamp,
+          _id,
+        });
+
+        io.to(receiverId).emit('notification', {
+          type: 'message',
+          senderId,
+          content: `New message from ${senderId}`,
+          timestamp: Date.now(),
+        });
+      }
+    );
+
     socket.on('gameTerminated', (data) => {
       const { gameId, playerOne, playerTwo } = data;
       io.to(playerOne).to(playerTwo).emit('gameTerminated', { gameId });
@@ -145,7 +164,6 @@ export default function socketHandler(io: Server) {
       io.to(opponentId).emit('opponentBanned', { gameId, bannedUserId });
     });
 
-    //Club Chat
     socket.on('joinClubChat', async (data: { clubName: string; userId: string }) => {
       const { clubName, userId } = data;
       const club = await clubRepository.findByName(clubName);
@@ -162,7 +180,6 @@ export default function socketHandler(io: Server) {
       log.info(`${userId} joined club chat: ${clubName}`);
     });
 
-    // New: Send a message to a club chat room
     socket.on('sendClubMessage', (data: { clubName: string; userId: string; message: string }) => {
       const { clubName, userId, message } = data;
       log.info(`Club message in ${clubName} from ${userId}: ${message}`);
@@ -178,7 +195,7 @@ export default function socketHandler(io: Server) {
       const userId = [...onlineUsers.entries()].find(([, sId]) => sId === socket.id)?.[0];
       if (userId) {
         onlineUsers.delete(userId);
-        matchmakingQueue.delete(userId); // Clean up queue
+        matchmakingQueue.delete(userId);
         const user = await User.findById(userId).populate('friends', 'username');
         if (user && user.friends) {
           user.friends.forEach((friend) => {

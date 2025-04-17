@@ -27,6 +27,10 @@ import tournamentModel, { ITournament } from '../app/models/tournament.model';
 import TournamentRepository from '../app/repositories/tournament.repository';
 import TournamentService from '../app/services/tournament.service';
 import TournamentController from '../app/controllers/tournament.controller';
+import messageModel from '../app/models/message.model';
+import MessageRepository from '../app/repositories/message.repository';
+import MessageService from '../app/services/message.service';
+import MessageController from '../app/controllers/message.controller';
 
 const container = new Container();
 
@@ -37,6 +41,7 @@ container.bind<Model<IFriendRequest>>(TYPES.FriendRequestModel).toConstantValue(
 container.bind<Model<IClub>>(TYPES.ClubModel).toConstantValue(clubModel);
 container.bind<Model<IGame>>(TYPES.GameModel).toConstantValue(gameModel);
 container.bind<Model<ITournament>>(TYPES.TournamentModel).toConstantValue(tournamentModel);
+container.bind(TYPES.MessageModel).toConstantValue(messageModel);
 
 // Bind Repositories
 container.bind<UserRepository>(TYPES.UserRepository).to(UserRepository);
@@ -48,6 +53,7 @@ container
   .bind<TournamentRepository>(TYPES.TournamentRepository)
   .to(TournamentRepository)
   .inSingletonScope();
+container.bind<MessageRepository>(TYPES.MessageRepository).to(MessageRepository);
 
 // Bind Services
 container.bind<UserService>(TYPES.UserService).to(UserService);
@@ -58,6 +64,7 @@ container.bind<GameService>(TYPES.GameService).to(GameService);
 container.bind<TokenService>(TYPES.TokenService).to(TokenService);
 container.bind<MailService>(TYPES.MailService).to(MailService);
 container.bind<TournamentService>(TYPES.TournamentService).to(TournamentService).inSingletonScope();
+container.bind<MessageService>(TYPES.MessageService).to(MessageService);
 
 // Bind Controllers
 container.bind<UserController>(TYPES.UserController).to(UserController);
@@ -69,5 +76,6 @@ container
   .bind<TournamentController>(TYPES.TournamentController)
   .to(TournamentController)
   .inSingletonScope();
+container.bind<MessageController>(TYPES.MessageController).to(MessageController);
 
 export default container;

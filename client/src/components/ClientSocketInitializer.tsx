@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/stores";
 import { useFriendStore } from "@/stores/useFriendStore";
 import { useGameStore } from "@/stores/useGameStore";
+import { useNotificationStore } from "@/stores/useNotificationStore";
 import { Button } from "./ui/button";
 import { getGameType, timeToSeconds } from "@/lib/utils";
 import { saveGame } from "@/lib/api/game";
@@ -15,6 +16,7 @@ export default function ClientSocketInitializer() {
   const { user, logout } = useAuthStore();
   const { initializeSocket } = useFriendStore();
   const { setGameDetails, addMove, resetGame } = useGameStore();
+  const { addNotification } = useNotificationStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -144,6 +146,16 @@ export default function ClientSocketInitializer() {
           router.push("/");
         });
 
+        socket.on("notification", (data) => {
+          addNotification({
+            _id: `${data.senderId}-${data.timestamp}`,
+            type: "message",
+            senderId: data.senderId,
+            content: data.content,
+            timestamp: data.timestamp,
+          });
+        });
+
         return () => {
           socket.off("userBanned");
           socket.off("playRequestReceived");
@@ -151,6 +163,7 @@ export default function ClientSocketInitializer() {
           socket.off("moveMade");
           socket.off("gameTerminated");
           socket.off("opponentBanned");
+          socket.off("notification");
         };
       }
     }
@@ -162,6 +175,7 @@ export default function ClientSocketInitializer() {
     setGameDetails,
     addMove,
     resetGame,
+    addNotification,
   ]);
 
   return null;
