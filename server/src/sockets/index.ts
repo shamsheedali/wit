@@ -202,6 +202,11 @@ export default function socketHandler(io: Server) {
       io.to(opponentId).emit('opponentBanned', { gameId, bannedUserId });
     });
 
+    socket.on('opponentResigned', (data) => {
+      const { opponentId, result } = data;
+      io.to(opponentId).emit('opponentResigned', { opponentId, result });
+    });
+
     socket.on('joinClubChat', async (data: { clubName: string; userId: string }) => {
       const { clubName, userId } = data;
       const club = await clubRepository.findByName(clubName);

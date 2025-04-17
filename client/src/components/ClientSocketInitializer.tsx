@@ -153,6 +153,11 @@ export default function ClientSocketInitializer() {
           router.push("/");
         });
 
+        socket.on("opponentResigned", (data) => {
+          toast.success(`Game ended: ${data.result}`);
+          resetGame();
+        });
+
         socket.on("notification", (data) => {
           addNotification({
             _id: `${data.senderId}-${data.timestamp}`,

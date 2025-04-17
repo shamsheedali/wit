@@ -38,6 +38,7 @@ import { ChessMove } from "@/types/game";
 import { Chess } from "chess.js";
 import ChatInterface from "@/components/core/chat-interface";
 import { reportGame } from "@/lib/api/gameReport";
+import { Socket } from "socket.io-client";
 
 export default function PlayFriend() {
   const { user } = useAuthStore();
@@ -287,6 +288,13 @@ export default function PlayFriend() {
         fen,
       });
       resetGame();
+      const socket = getSocket();
+      if (socket) {
+        socket.emit("opponentResigned", {
+          opponentId,
+          result,
+        });
+      }
       toast.success(`Game ended: ${result}`);
     }
   };
