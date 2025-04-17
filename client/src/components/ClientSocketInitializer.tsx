@@ -51,15 +51,6 @@ export default function ClientSocketInitializer() {
                     const newGameId = `${data.senderId}-${
                       user._id
                     }-${Date.now()}`;
-                    socket.emit("acceptPlayRequest", {
-                      senderId: data.senderId,
-                      receiverId: user._id,
-                      senderName: data.senderName,
-                      gameId: newGameId,
-                      time: data.time,
-                    });
-                    socket.emit("joinGame", { gameId: newGameId });
-
                     const gameType = getGameType(data.time);
                     const savedGame = await saveGame(
                       data.senderId,
@@ -70,9 +61,24 @@ export default function ClientSocketInitializer() {
                       data.time
                     );
 
+                    if (!savedGame?._id) {
+                      toast.error("Failed to create game");
+                      return;
+                    }
+
+                    socket.emit("acceptPlayRequest", {
+                      senderId: data.senderId,
+                      receiverId: user._id,
+                      senderName: data.senderName,
+                      gameId: newGameId,
+                      dbGameId: savedGame._id, // Include dbGameId
+                      time: data.time,
+                    });
+                    socket.emit("joinGame", { gameId: newGameId });
+
                     setGameDetails({
                       gameId: newGameId,
-                      dbGameId: savedGame?._id,
+                      dbGameId: savedGame._id,
                       opponentId: data.senderId,
                       opponentName: data.senderName,
                       opponentProfilePicture: data.senderPfp,
@@ -100,6 +106,7 @@ export default function ClientSocketInitializer() {
         socket.on("playRequestAccepted", (data) => {
           setGameDetails({
             gameId: data.gameId,
+            dbGameId: data.dbGameId, // Store dbGameId
             opponentId: data.opponentId,
             opponentName: data.opponentName,
             playerColor: "w",

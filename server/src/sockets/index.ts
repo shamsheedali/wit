@@ -1,4 +1,5 @@
 import { Server, Socket } from 'socket.io';
+import Admin from '../app/models/admin.model';
 import User from '../app/models/user.model';
 import log from '../utils/logger';
 import { v4 as uuidv4 } from 'uuid';
@@ -20,9 +21,16 @@ export default function socketHandler(io: Server) {
       socket.join(userId);
       log.info(`${userId} joined their room`);
 
-      const user = await User.findById(userId).populate('friends', 'username');
-      if (user && user.friends) {
-        user.friends.forEach((friend) => {
+      // Join admin room if user is admin
+      const admin = await Admin.findOne({ userId });
+      if (admin) {
+        socket.join('adminRoom');
+        log.info(`${userId} joined admin room`);
+      }
+
+      const friends = await User.findById(userId).populate('friends', 'username');
+      if (friends && friends.friends) {
+        friends.friends.forEach((friend) => {
           io.to(friend._id.toString()).emit('friendStatus', {
             userId,
             online: true,
@@ -84,13 +92,15 @@ export default function socketHandler(io: Server) {
         receiverId: string;
         senderName: string;
         gameId: string;
+        dbGameId: string; // Added dbGameId
         time: string;
       }) => {
-        const { senderId, receiverId, senderName, gameId, time } = data;
+        const { senderId, receiverId, senderName, gameId, dbGameId, time } = data;
         io.to(senderId).emit('playRequestAccepted', {
           opponentId: receiverId,
           opponentName: senderName,
           gameId,
+          dbGameId, // Include dbGameId
           time,
           timestamp: Date.now(),
         });
@@ -144,6 +154,34 @@ export default function socketHandler(io: Server) {
           senderId,
           content: `New message from ${senderId}`,
           timestamp: Date.now(),
+        });
+      }
+    );
+
+    socket.on(
+      'gameReport',
+      async (data: {
+        gameId: string;
+        reportingUserId: string;
+        reportedUserId: string;
+        reason: string;
+        details: string;
+        _id: string;
+        timestamp: string;
+      }) => {
+        const { gameId, reportingUserId, reportedUserId, reason, details, _id, timestamp } = data;
+        log.info(
+          `Game report from ${reportingUserId} against ${reportedUserId} for game ${gameId}`
+        );
+
+        io.to('adminRoom').emit('gameReportReceived', {
+          _id,
+          gameId,
+          reportingUserId,
+          reportedUserId,
+          reason,
+          details,
+          timestamp,
         });
       }
     );

@@ -32,6 +32,8 @@ enum HttpResponse {
   GAME_NOT_FOUND = 'Game not found',
   MESSAGE_SENT = 'Message sent successfully',
   MESSAGES_FETCHED = 'Messages fetched successfully',
+  REPORT_SUBMITTED = 'Game report submitted successfully',
+  REPORTS_FETCHED = 'Game reports fetched successfully',
 }
 
 export default HttpResponse;

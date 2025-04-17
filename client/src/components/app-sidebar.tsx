@@ -8,12 +8,14 @@ import {
   Frame,
   Gamepad,
   LifeBuoy,
+  Mail,
   Map,
   PieChart,
   Send,
   Settings2,
   SquareTerminal,
   User,
+  Users,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -109,7 +111,7 @@ const data = {
     {
       title: "Clubs",
       url: "/dashboard/club-management",
-      icon: Settings2,
+      icon: Users,
       // items: [
       //   {
       //     title: "General",
@@ -130,24 +132,16 @@ const data = {
       // ],
     },
     {
-      title: "Chats",
+      title: "Messages",
       url: "#",
-      icon: Settings2,
+      icon: Mail,
       items: [
         {
-          title: "General",
-          url: "#",
+          title: "Game",
+          url: "/dashboard/game-messages",
         },
         {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
+          title: "User",
           url: "#",
         },
       ],

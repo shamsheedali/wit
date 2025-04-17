@@ -3,6 +3,16 @@
 import { ChessBoard } from "@/components/chess/chessBoard";
 import { TimeDropdown } from "@/components/chess/time-dropdown";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuthStore } from "@/stores";
 import { useFriendStore } from "@/stores/useFriendStore";
 import { useGameStore } from "@/stores/useGameStore";
@@ -15,22 +25,21 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  RotateCcw,
   Flag,
   Hand,
+  AlertCircle,
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
 import { updateGame } from "@/lib/api/game";
-import { useRouter } from "next/navigation";
 import { getUsers } from "@/lib/api/user";
 import { ChessMove } from "@/types/game";
 import { Chess } from "chess.js";
 import ChatInterface from "@/components/core/chat-interface";
+import { reportGame } from "@/lib/api/gameReport";
 
 export default function PlayFriend() {
-  const router = useRouter();
   const { user } = useAuthStore();
   const { fetchFriends, friends, sendPlayRequest } = useFriendStore();
   const {
@@ -57,6 +66,9 @@ export default function PlayFriend() {
   const [chess, setChess] = useState<Chess>(new Chess());
   const [currentOpening, setCurrentOpening] = useState<string>("No moves yet");
   const [openings, setOpenings] = useState<any[]>([]);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<string>("cheating");
+  const [reportDetails, setReportDetails] = useState<string>("");
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Helper function to pair moves
@@ -319,6 +331,46 @@ export default function PlayFriend() {
 
   const handleTimeChange = (value: string) => {
     setSelectedTime(value);
+  };
+
+  const handleReportSubmit = async () => {
+    if (!dbGameId || !user?._id || !opponentId) {
+      toast.error("Cannot submit report - missing game or user details");
+      return;
+    }
+
+    try {
+      const response = await reportGame({
+        gameId: dbGameId,
+        reportedUserId: opponentId,
+        reason: reportReason,
+        details: reportDetails,
+      });
+
+      if (response?.success) {
+        const socket = getSocket();
+        if (socket) {
+          socket.emit("gameReport", {
+            _id: response.data._id,
+            gameId: dbGameId,
+            reportingUserId: user._id,
+            reportedUserId: opponentId,
+            reason: reportReason,
+            details: reportDetails,
+            timestamp: response.data.timestamp,
+          });
+        }
+        toast.success("Game report submitted successfully");
+        setIsReportModalOpen(false);
+        setReportReason("cheating");
+        setReportDetails("");
+      } else {
+        toast.error("Failed to submit report");
+      }
+    } catch (error) {
+      toast.error("Error submitting report");
+      console.error(error);
+    }
   };
 
   const timeToSeconds = (time: string): number => {
@@ -626,13 +678,78 @@ export default function PlayFriend() {
                 size="icon"
                 variant="outline"
                 className="bg-gray-700 text-white hover:bg-gray-600"
+                onClick={() => setIsReportModalOpen(true)}
               >
-                <RotateCcw />
+                <AlertCircle />
               </Button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Report Modal */}
+      <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
+        <DialogContent className="bg-[#262522] text-white">
+          <DialogHeader>
+            <DialogTitle>Report Game</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm">Reason for Report</Label>
+              <RadioGroup
+                value={reportReason}
+                onValueChange={setReportReason}
+                className="mt-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="cheating" id="cheating" />
+                  <Label htmlFor="cheating">Cheating</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem
+                    value="inappropriate_behavior"
+                    id="inappropriate_behavior"
+                  />
+                  <Label htmlFor="inappropriate_behavior">
+                    Inappropriate Behavior
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="other" id="other" />
+                  <Label htmlFor="other">Other</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <div>
+              <Label htmlFor="details" className="text-sm">
+                Additional Details
+              </Label>
+              <Input
+                id="details"
+                value={reportDetails}
+                onChange={(e) => setReportDetails(e.target.value)}
+                placeholder="Provide more information..."
+                className="bg-gray-800 text-white border-gray-700 mt-2"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsReportModalOpen(false)}
+              className="bg-gray-700 text-white hover:bg-gray-600"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReportSubmit}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Submit Report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Chat Interface */}
       {gameStarted && (
