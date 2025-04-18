@@ -5,6 +5,7 @@ import UserService from '../services/user.service';
 import TokenService from '../services/token.service';
 import GameService from '../services/game.service';
 import ClubService from '../services/club.service';
+import TournamentService from '../services/tournament.service';
 import TYPES from '../../config/types';
 import AdminService from '../services/admin.service';
 import Role from '../../constants/role';
@@ -25,19 +26,22 @@ export default class AdminController {
   private _tokenService: TokenService;
   private _gameService: GameService;
   private _clubService: ClubService;
+  private _tournamentService: TournamentService;
 
   constructor(
     @inject(TYPES.AdminService) adminService: AdminService,
     @inject(TYPES.UserService) userService: UserService,
     @inject(TYPES.TokenService) tokenService: TokenService,
     @inject(TYPES.GameService) gameService: GameService,
-    @inject(TYPES.ClubService) clubService: ClubService
+    @inject(TYPES.ClubService) clubService: ClubService,
+    @inject(TYPES.TournamentService) tournamentService: TournamentService
   ) {
     this._adminService = adminService;
     this._userService = userService;
     this._tokenService = tokenService;
     this._gameService = gameService;
     this._clubService = clubService;
+    this._tournamentService = tournamentService;
   }
 
   async login(req: Request, res: Response) {
@@ -132,8 +136,53 @@ export default class AdminController {
     res.status(HttpStatus.OK).json({ message: 'Game terminated successfully', game });
   }
 
+  async getAllTournaments(req: Request, res: Response) {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 7;
+
+    const { tournaments, total } = await this._tournamentService.getTournaments(page, limit);
+
+    res.status(HttpStatus.OK).json({
+      tournaments,
+      totalTournaments: total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+    });
+  }
+
+  async createTournament(req: Request, res: Response) {
+    const { name, timeControl, maxGames, createdBy } = req.body;
+
+    if (!name) throw new MissingFieldError('name');
+    if (!timeControl) throw new MissingFieldError('timeControl');
+    if (!maxGames) throw new MissingFieldError('maxGames');
+    if (!createdBy) throw new MissingFieldError('createdBy');
+
+    const tournament = await this._tournamentService.createTournament(
+      name,
+      timeControl,
+      maxGames,
+      createdBy
+    );
+
+    res.status(HttpStatus.OK).json({
+      message: 'Tournament created successfully',
+      tournament,
+    });
+  }
+
+  async deleteTournament(req: Request, res: Response) {
+    const tournamentId = req.params.tournamentId;
+    if (!tournamentId) throw new BadRequestError('Tournament ID is required');
+
+    const tournament = await this._tournamentService.deleteTournament(tournamentId);
+    if (!tournament) throw new NotFoundError('Tournament not found');
+
+    res.status(HttpStatus.OK).json({ message: 'Tournament deleted successfully' });
+  }
+
   async getUserGrowth(req: Request, res: Response) {
-    const { period = 'daily' } = req.query; // daily, weekly, monthly
+    const { period = 'daily' } = req.query;
     const growthData = await this._userService.getUserGrowth(period as string);
 
     res.status(HttpStatus.OK).json(growthData);
@@ -173,7 +222,7 @@ export default class AdminController {
 
     const newAccessToken = this._tokenService.generateAccessToken(userId, email, role);
     const newRefreshToken = this._tokenService.generateRefreshToken(userId, email, role);
-    this._tokenService.setRefreshTokenCookie(res, newRefreshToken, true); // Admin-specific
+    this._tokenService.setRefreshTokenCookie(res, newRefreshToken, true);
 
     res.status(HttpStatus.OK).json({
       message: 'Token refreshed successfully',

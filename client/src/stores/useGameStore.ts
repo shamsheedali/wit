@@ -14,9 +14,9 @@ interface GameState {
   activePlayer: "w" | "b" | null;
   gameStartTime: number | null;
   moves: ChessMove[];
-  setGameDetails: (details: Partial<GameState>) => void;
   addMove: (move: ChessMove) => void;
   resetGame: () => void;
+  setGameState: (state: Partial<GameState>) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -32,8 +32,10 @@ export const useGameStore = create<GameState>((set) => ({
   activePlayer: null,
   gameStartTime: null,
   moves: [],
-  setGameDetails: (details) => set((state) => ({ ...state, ...details })),
-  addMove: (move) => set((state) => ({ moves: [...state.moves, move] })),
+  addMove: (move) =>
+    set((state) => ({
+      moves: [...state.moves, move],
+    })),
   resetGame: () =>
     set({
       gameId: null,
@@ -49,4 +51,5 @@ export const useGameStore = create<GameState>((set) => ({
       gameStartTime: null,
       moves: [],
     }),
+  setGameState: (newState) => set((state) => ({ ...state, ...newState })),
 }));

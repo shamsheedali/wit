@@ -2,8 +2,6 @@
 
 import * as React from "react"
 import {
-  BookOpen,
-  Bot,
   Command,
   Frame,
   Gamepad,
@@ -87,26 +85,26 @@ const data = {
     },
     {
       title: "Tournaments",
-      url: "#",
+      url: "/dashboard/tournament-management",
       icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
+      // items: [
+      //   {
+      //     title: "General",
+      //     url: "#",
+      //   },
+      //   {
+      //     title: "Team",
+      //     url: "#",
+      //   },
+      //   {
+      //     title: "Billing",
+      //     url: "#",
+      //   },
+      //   {
+      //     title: "Limits",
+      //     url: "#",
+      //   },
+      // ],
     },
     {
       title: "Clubs",

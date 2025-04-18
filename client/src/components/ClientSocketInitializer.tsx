@@ -15,7 +15,7 @@ import { ChessMove } from "@/types/game";
 export default function ClientSocketInitializer() {
   const { user, logout } = useAuthStore();
   const { initializeSocket } = useFriendStore();
-  const { setGameDetails, addMove, resetGame } = useGameStore();
+  const { setGameState, addMove, resetGame } = useGameStore();
   const { addNotification } = useNotificationStore();
   const router = useRouter();
 
@@ -34,6 +34,8 @@ export default function ClientSocketInitializer() {
         });
 
         socket.on("playRequestReceived", (data) => {
+          // Ignore tournament play requests
+          if (data.tournamentId) return;
           toast(`Game request from ${data.senderName} (${data.time})`, {
             description: (
               <div className="flex gap-2 mt-2">
@@ -71,12 +73,12 @@ export default function ClientSocketInitializer() {
                       receiverId: user._id,
                       senderName: data.senderName,
                       gameId: newGameId,
-                      dbGameId: savedGame._id, // Include dbGameId
+                      dbGameId: savedGame._id,
                       time: data.time,
                     });
                     socket.emit("joinGame", { gameId: newGameId });
 
-                    setGameDetails({
+                    setGameState({
                       gameId: newGameId,
                       dbGameId: savedGame._id,
                       opponentId: data.senderId,
@@ -104,9 +106,11 @@ export default function ClientSocketInitializer() {
         });
 
         socket.on("playRequestAccepted", (data) => {
-          setGameDetails({
+          // Ignore tournament play requests
+          if (data.tournamentId) return;
+          setGameState({
             gameId: data.gameId,
-            dbGameId: data.dbGameId, // Store dbGameId
+            dbGameId: data.dbGameId,
             opponentId: data.opponentId,
             opponentName: data.opponentName,
             playerColor: "w",
@@ -119,6 +123,7 @@ export default function ClientSocketInitializer() {
           });
           socket.emit("joinGame", { gameId: data.gameId });
           toast.success(`Game started with ${data.opponentName}`);
+          router.push("/play/friend");
         });
 
         socket.on(
@@ -184,7 +189,7 @@ export default function ClientSocketInitializer() {
     initializeSocket,
     router,
     logout,
-    setGameDetails,
+    setGameState,
     addMove,
     resetGame,
     addNotification,

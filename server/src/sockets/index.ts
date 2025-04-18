@@ -21,7 +21,6 @@ export default function socketHandler(io: Server) {
       socket.join(userId);
       log.info(`${userId} joined their room`);
 
-      // Join admin room if user is admin
       const admin = await Admin.findOne({ userId });
       if (admin) {
         socket.join('adminRoom');
@@ -64,6 +63,7 @@ export default function socketHandler(io: Server) {
       log.info(`${userId} canceled matchmaking`);
     });
 
+    // Friend game play request
     socket.on(
       'playRequest',
       (data: {
@@ -74,6 +74,7 @@ export default function socketHandler(io: Server) {
         time: string;
       }) => {
         const { senderId, receiverId, senderName, senderPfp, time } = data;
+        log.info(`Friend play request from ${senderId} to ${receiverId}`);
         io.to(receiverId).emit('playRequestReceived', {
           senderId,
           receiverId,
@@ -85,6 +86,7 @@ export default function socketHandler(io: Server) {
       }
     );
 
+    // Friend game accept play request
     socket.on(
       'acceptPlayRequest',
       (data: {
@@ -92,16 +94,96 @@ export default function socketHandler(io: Server) {
         receiverId: string;
         senderName: string;
         gameId: string;
-        dbGameId: string; // Added dbGameId
+        dbGameId: string;
         time: string;
       }) => {
         const { senderId, receiverId, senderName, gameId, dbGameId, time } = data;
+        log.info(`Friend play request accepted by ${receiverId} for game ${gameId}`);
         io.to(senderId).emit('playRequestAccepted', {
+          senderId,
+          receiverId,
           opponentId: receiverId,
           opponentName: senderName,
           gameId,
-          dbGameId, // Include dbGameId
+          dbGameId,
           time,
+          timestamp: Date.now(),
+        });
+        io.to(receiverId).emit('gameStarted', {
+          gameId,
+          dbGameId,
+          opponentId: senderId,
+          opponentName: senderName,
+          time,
+        });
+      }
+    );
+
+    // Tournament play request
+    socket.on(
+      'tournamentPlayRequest',
+      (data: {
+        senderId: string;
+        receiverId: string;
+        senderName: string;
+        senderPfp: string;
+        time: string;
+        tournamentId: string;
+        matchId: string;
+      }) => {
+        const { senderId, receiverId, senderName, senderPfp, time, tournamentId, matchId } = data;
+        log.info(
+          `Tournament play request from ${senderId} to ${receiverId} for tournament ${tournamentId}`
+        );
+        io.to(receiverId).emit('tournamentPlayRequestReceived', {
+          senderId,
+          receiverId,
+          senderName,
+          senderPfp,
+          time,
+          tournamentId,
+          matchId,
+          timestamp: Date.now(),
+        });
+      }
+    );
+
+    // Tournament accept play request
+    socket.on(
+      'tournamentPlayRequestAccepted',
+      (data: {
+        senderId: string;
+        receiverId: string;
+        senderName: string;
+        gameId: string;
+        dbGameId: string;
+        time: string;
+        tournamentId: string;
+        matchId: string;
+      }) => {
+        const { senderId, receiverId, senderName, gameId, dbGameId, time, tournamentId, matchId } =
+          data;
+        log.info(`Tournament play request accepted by ${receiverId} for game ${gameId}`);
+        io.to(senderId).emit('tournamentPlayRequestAccepted', {
+          senderId,
+          receiverId,
+          opponentId: receiverId,
+          opponentName: senderName,
+          gameId,
+          dbGameId,
+          time,
+          tournamentId,
+          matchId,
+          timestamp: Date.now(),
+        });
+        io.to(receiverId).emit('tournamentGameStarted', {
+          gameId,
+          dbGameId,
+          opponentId: senderId,
+          opponentName: senderName,
+          time,
+          tournamentId,
+          matchId,
           timestamp: Date.now(),
         });
       }
@@ -205,6 +287,11 @@ export default function socketHandler(io: Server) {
     socket.on('opponentResigned', (data) => {
       const { opponentId, result } = data;
       io.to(opponentId).emit('opponentResigned', { opponentId, result });
+    });
+
+    socket.on('tournamentUpdate', (updatedTournament: any) => {
+      io.emit('tournamentUpdated', updatedTournament);
+      log.info(`Tournament updated: ${updatedTournament._id}`);
     });
 
     socket.on('joinClubChat', async (data: { clubName: string; userId: string }) => {
