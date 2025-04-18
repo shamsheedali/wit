@@ -72,14 +72,14 @@ const UserProfile = ({ user }: { user: User }) => {
   };
 
   return (
-    <>
-      <div className="lg:border-2 rounded-lg flex justify-center items-center p-8 lg:gap-20 sm:gap-5">
-        <Avatar className="cursor-pointer w-40 h-40">
+    <div className="w-full flex items-center justify-center">
+      <div className="border-2 rounded-lg flex justify-center items-center w-fit p-5 md:py-8 md:px-14 gap-5 lg:gap-20">
+        <Avatar className="cursor-pointer w-32 h-32 md:w-40 md:h-40">
           <AvatarImage
             src={
               isCurrentUser ? mainUser?.profileImageUrl : user?.profileImageUrl
             }
-            alt="@shadcn"
+            alt={`${user.username} profile image`}
             className="object-cover"
           />
           <AvatarFallback>{user?.username[0].toUpperCase()}</AvatarFallback>
@@ -103,7 +103,7 @@ const UserProfile = ({ user }: { user: User }) => {
             )}
           </div>
 
-          <div className="flex gap-20 text-center">
+          <div className="flex gap-14 lg:gap-20 text-center">
             <div className="flex flex-col items-center gap-3">
               <TrendingUp />
               Online Now
@@ -166,7 +166,7 @@ const UserProfile = ({ user }: { user: User }) => {
           onClose={() => setIsChatOpen(false)}
         />
       )}
-    </>
+    </div>
   );
 };
 

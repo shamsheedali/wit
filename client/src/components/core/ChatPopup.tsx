@@ -109,7 +109,7 @@ export default function ChatPopup({
       <div className="bg-[#262522] w-full max-w-md h-[500px] rounded-lg p-4 flex flex-col">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-white">
-            Chat with {otherUsername}
+            {otherUsername}
           </h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5 text-white" />

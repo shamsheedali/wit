@@ -34,10 +34,10 @@ export default function Home() {
   return (
     <div className="px-16 w-full h-screen lg:overflow-hidden pt-[80px] font-clashDisplay text-[#f0f0f0db]">
       <div className="relative h-full flex justify-center">
-        <div className="flex flex-col gap-[30px] h-fit relative top-5 md:flex-row md:flex-wrap lg:flex-nowrap">
+        <div className="flex flex-col justify-center items-center gap-[155px] md:gap-[30px] h-fit relative top-5 md:flex-row md:flex-wrap lg:flex-nowrap">
           <Link
             href={"/play"}
-            className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-32 cursor-pointer overflow-hidden"
+            className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-14 md:top-32 cursor-pointer overflow-hidden"
           >
             <Image
               src="/images/newGameImg.webp"
@@ -52,7 +52,7 @@ export default function Home() {
             </div>
           </Link>
 
-          <Link href={'/tournaments'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-8 cursor-pointer overflow-hidden">
+          <Link href={'/tournaments'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative md:top-8 cursor-pointer overflow-hidden">
             <Image
               src="/images/tournamentImg.webp"
               alt="Tournaments"
@@ -66,7 +66,7 @@ export default function Home() {
             </div>
           </Link>
 
-          <Link href={'/leaderboard'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-32 cursor-pointer overflow-hidden">
+          <Link href={'/leaderboard'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative md:top-32 cursor-pointer overflow-hidden">
             <Image
               src="/images/leaderBoardImg.webp"
               alt="Leaderboard"
@@ -80,7 +80,7 @@ export default function Home() {
             </div>
           </Link>
 
-          <Link href={'/history'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-8 cursor-pointer overflow-hidden">
+          <Link href={'/history'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative md:top-8 bottom-14 cursor-pointer overflow-hidden">
             <Image
               src="/images/historyImg.webp"
               alt="History"

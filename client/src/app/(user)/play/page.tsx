@@ -8,8 +8,8 @@ export default function Play() {
   return (
     <div className="px-16 w-full h-screen lg:overflow-hidden pt-[80px] font-clashDisplay text-[#f0f0f0db]">
       <div className="relative h-full flex justify-center">
-        <div className="flex flex-col gap-[50px] h-fit relative top-5 md:flex-row md:flex-wrap lg:flex-nowrap">
-          <Link href={'/play/online'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-32 cursor-pointer overflow-hidden">
+        <div className="flex flex-col justify-center items-center gap-[155px] md:gap-[50px] h-fit relative top-5 md:flex-row md:flex-wrap lg:flex-nowrap">
+          <Link href={'/play/online'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-14 md:top-32 cursor-pointer overflow-hidden">
             <Image
               src="/images/playOnlineImg.webp"
               alt="Play Online"
@@ -23,7 +23,7 @@ export default function Play() {
             </div>
           </Link>
 
-          <Link href={'/play/friend'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-8 cursor-pointer overflow-hidden">
+          <Link href={'/play/friend'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative md:top-8 cursor-pointer overflow-hidden">
             <Image
               src="/images/playFriendImg.webp"
               alt="Play a Friend"
@@ -37,7 +37,7 @@ export default function Play() {
             </div>
           </Link>
 
-          <Link href={'/play/computer'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-32 cursor-pointer overflow-hidden">
+          <Link href={'/play/computer'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative md:top-32 bottom-14 cursor-pointer overflow-hidden">
             <Image
               src="/images/playBotsImg.webp"
               alt="Play Bots"

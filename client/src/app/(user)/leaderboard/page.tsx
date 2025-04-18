@@ -53,7 +53,7 @@ export default function Leaderboard() {
           users.map((user) => (
             <div
               key={user._id}
-              className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
+              className="flex items-center space-x-4 p-3 cursor-pointer rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
               onClick={() => handleUserPage(user.username)}
             >
               <div className="relative">
