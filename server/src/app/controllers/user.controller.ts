@@ -188,6 +188,7 @@ export default class UserController {
       text: `Your OTP code is ${generatedOtp}.`,
     };
 
+    console.log('SHARED OTP: ', generatedOtp);
     await this._mailService.sendMail(mailOptions);
     await redisClient.set(`otp:${email}`, generatedOtp, { EX: 300 }); // 5 min
 

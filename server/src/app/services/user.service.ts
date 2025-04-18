@@ -42,6 +42,13 @@ export default class UserService extends BaseService<IUser> implements IUserServ
           _id: existingUserEmail._id.toString(),
           username: existingUserEmail.username,
           email: existingUserEmail.email,
+          friends: Array.isArray(existingUserEmail.friends)
+            ? (existingUserEmail.friends as mongoose.Types.ObjectId[]).map((id) => id.toString())
+            : [],
+          eloRating: existingUserEmail.eloRating,
+          gamesPlayed: existingUserEmail.gamesPlayed,
+          createdAt: existingUserEmail.createdAt,
+          updatedAt: existingUserEmail.updatedAt,
         },
         isNewUser: false,
         duplicate: 'email',
@@ -56,6 +63,13 @@ export default class UserService extends BaseService<IUser> implements IUserServ
           _id: existingUserUsername._id.toString(),
           username: existingUserUsername.username,
           email: existingUserUsername.email,
+          friends: Array.isArray(existingUserUsername.friends)
+            ? (existingUserUsername.friends as mongoose.Types.ObjectId[]).map((id) => id.toString())
+            : [],
+          eloRating: existingUserUsername.eloRating,
+          gamesPlayed: existingUserUsername.gamesPlayed,
+          createdAt: existingUserUsername.createdAt,
+          updatedAt: existingUserUsername.updatedAt,
         },
         isNewUser: false,
         duplicate: 'username',
@@ -71,7 +85,18 @@ export default class UserService extends BaseService<IUser> implements IUserServ
     });
 
     return {
-      user: { _id: newUser._id.toString(), username: newUser.username, email: newUser.email },
+      user: {
+        _id: newUser._id.toString(),
+        username: newUser.username,
+        email: newUser.email,
+        friends: Array.isArray(newUser.friends)
+          ? (newUser.friends as mongoose.Types.ObjectId[]).map((id) => id.toString())
+          : [],
+        eloRating: newUser.eloRating,
+        gamesPlayed: newUser.gamesPlayed,
+        createdAt: newUser.createdAt,
+        updatedAt: newUser.updatedAt,
+      },
       isNewUser: true,
     };
   }

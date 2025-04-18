@@ -100,6 +100,22 @@ router.get(
   asyncWrap(adminController.getAllClubs.bind(adminController))
 );
 
+// CREATE CLUB
+router.post(
+  '/clubs',
+  authenticateToken,
+  isAdmin(),
+  asyncWrap(adminController.createClub.bind(adminController))
+);
+
+// DELETE CLUB
+router.delete(
+  '/clubs/:clubId',
+  authenticateToken,
+  isAdmin(),
+  asyncWrap(adminController.deleteClub.bind(adminController))
+);
+
 // REFRESH TOKEN
 router.post('/refresh', asyncWrap(adminController.refreshToken.bind(adminController)));
 

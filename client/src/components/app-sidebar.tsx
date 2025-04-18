@@ -58,7 +58,7 @@ const data = {
       // ],
     },
     {
-      title: "User Management",
+      title: "Users",
       url: "/dashboard/user-management",
       icon: User,
       // items: [

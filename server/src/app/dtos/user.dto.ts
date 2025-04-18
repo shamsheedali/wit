@@ -10,6 +10,11 @@ export interface UserResponseDTO {
   _id: string;
   username: string;
   email: string;
+  friends: string[] | IUser[];
+  eloRating: number;
+  gamesPlayed: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface LoginUserDTO {

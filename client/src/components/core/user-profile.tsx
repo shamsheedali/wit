@@ -79,7 +79,7 @@ const UserProfile = ({ user }: { user: User }) => {
             src={
               isCurrentUser ? mainUser?.profileImageUrl : user?.profileImageUrl
             }
-            alt={`${user.username} profile image`}
+            alt={`${user?.username} profile image`}
             className="object-cover"
           />
           <AvatarFallback>{user?.username[0].toUpperCase()}</AvatarFallback>

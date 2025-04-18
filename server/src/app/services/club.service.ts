@@ -36,7 +36,7 @@ export default class ClubService implements IClubService {
       adminIds.map(async (id) => {
         const user = await this._userRepository.findById(id);
         if (!user) throw new Error(`Admin with ID ${id} not found`);
-        return new Types.ObjectId(id); // Use Types.ObjectId
+        return new Types.ObjectId(id);
       })
     );
 
@@ -45,7 +45,7 @@ export default class ClubService implements IClubService {
           memberIds.map(async (id) => {
             const user = await this._userRepository.findById(id);
             if (!user) throw new Error(`User with ID ${id} not found`);
-            return new Types.ObjectId(id); // Use Types.ObjectId
+            return new Types.ObjectId(id);
           })
         )
       : [];
@@ -58,7 +58,30 @@ export default class ClubService implements IClubService {
       members: [...validAdmins, ...validMembers],
     };
 
-    log.info('clubData:', clubData); // Debug
+    log.info('clubData:', clubData);
+    return this._clubRepository.create(clubData);
+  }
+
+  async createAdminClub(
+    name: string,
+    description: string | undefined,
+    userId: string
+  ): Promise<IClub> {
+    const existingClub = await this._clubRepository.findByName(name);
+    if (existingClub) throw new Error('Club name already exists');
+
+    const user = await this._userRepository.findById(userId);
+    if (!user) throw new Error(`User with ID ${userId} not found`);
+
+    const clubData: Partial<IClub> = {
+      name,
+      description,
+      clubType: 'public', // Admins can only create public clubs
+      admins: [new Types.ObjectId(userId)],
+      members: [new Types.ObjectId(userId)],
+    };
+
+    log.info('Admin clubData:', clubData);
     return this._clubRepository.create(clubData);
   }
 
@@ -138,6 +161,14 @@ export default class ClubService implements IClubService {
     }
 
     await this._clubRepository.delete(clubId);
+  }
+
+  async deleteAdminClub(clubId: string): Promise<IClub | null> {
+    const club = await this._clubRepository.findById(clubId);
+    if (!club) return null;
+
+    await this._clubRepository.delete(clubId);
+    return club;
   }
 
   async leaveClub(clubId: string, userId: string): Promise<IClub> {

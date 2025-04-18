@@ -76,30 +76,30 @@ export default function GameMessagesPage() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <p>
-                    <strong>Game ID:</strong> {report.gameId._id}
+                    <strong>Game ID:</strong> {report?.gameId?._id}
                   </p>
                   <p>
                     <strong>Reporting User:</strong>{" "}
-                    {report.reportingUserId.username}
+                    {report?.reportingUserId?.username}
                   </p>
                   <p>
                     <strong>Reported User:</strong>{" "}
-                    {report.reportedUserId.username}
+                    {report?.reportedUserId?.username}
                   </p>
                   <p>
                     <strong>Reason:</strong>{" "}
-                    {report.reason === "cheating"
+                    {report?.reason === "cheating"
                       ? "Cheating"
                       : report.reason === "inappropriate_behavior"
                       ? "Inappropriate Behavior"
                       : "Other"}
                   </p>
                   <p>
-                    <strong>Details:</strong> {report.details || "None"}
+                    <strong>Details:</strong> {report?.details || "None"}
                   </p>
                   <p>
                     <strong>Timestamp:</strong>{" "}
-                    {format(new Date(report.timestamp), "MMM d, yyyy HH:mm")}
+                    {format(new Date(report?.timestamp), "MMM d, yyyy HH:mm")}
                   </p>
                   <p>
                     <strong>Status:</strong> {report.status}

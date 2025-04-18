@@ -207,6 +207,30 @@ export default class AdminController {
     });
   }
 
+  async createClub(req: Request, res: Response) {
+    const { name, description, userId } = req.body;
+
+    if (!name) throw new MissingFieldError('name');
+    if (!userId) throw new MissingFieldError('userId');
+
+    const club = await this._clubService.createAdminClub(name, description, userId);
+
+    res.status(HttpStatus.CREATED).json({
+      message: 'Club created successfully',
+      club,
+    });
+  }
+
+  async deleteClub(req: Request, res: Response) {
+    const clubId = req.params.clubId;
+    if (!clubId) throw new BadRequestError('Club ID is required');
+
+    const club = await this._clubService.deleteAdminClub(clubId);
+    if (!club) throw new NotFoundError('Club not found');
+
+    res.status(HttpStatus.OK).json({ message: 'Club deleted successfully' });
+  }
+
   async refreshToken(req: Request, res: Response) {
     const refreshToken = req.cookies.adminRefreshToken;
     if (!refreshToken) throw new UnauthorizedError(HttpResponse.NO_TOKEN);

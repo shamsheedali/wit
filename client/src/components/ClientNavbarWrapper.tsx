@@ -8,7 +8,7 @@ export default function ClientNavbarWrapper() {
   const noNavbarPaths = [
     "/login",
     "/signup/email",
-    "signup/details",
+    "/signup/details",
     "/play/friend",
     "/play/online",
     /^\/tournaments\/[^\/]+\/play\/[^\/]+$/,
