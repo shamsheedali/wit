@@ -19,7 +19,7 @@ export const getPublicClubs = async (search: string = "") => {
   }
 };
 
-// Create a club
+// Create a club (for users)
 export const createClub = async (clubData: {
   name: string;
   description?: string;
@@ -40,6 +40,24 @@ export const createClub = async (clubData: {
   }
 };
 
+// Create a public club (for admins)
+export const createAdminClub = async (clubData: {
+  name: string;
+  description?: string;
+  userId: string;
+}) => {
+  try {
+    const response = await apiClient.post(`${ADMIN_API_URL}/clubs`, clubData);
+    if (response.status === HttpStatus.CREATED) {
+      toast.success(response.data.message);
+      return { success: true, data: response.data.club };
+    }
+  } catch (error) {
+    handleApiError(error);
+    return { success: false, error };
+  }
+};
+
 // Join a club
 export const joinClub = async (clubId: string, userId: string) => {
   try {
@@ -47,7 +65,6 @@ export const joinClub = async (clubId: string, userId: string) => {
       clubId,
       userId,
     });
-    console.log(response);
     if (response.status === HttpStatus.OK) {
       toast.success(response.data.message);
       return { success: true, data: response.data.club };
@@ -58,6 +75,7 @@ export const joinClub = async (clubId: string, userId: string) => {
   }
 };
 
+// Fetch user's clubs
 export const getUserClubs = async (userId: string) => {
   try {
     const response = await apiClient.get(`${CLUB_API_URL}/user-clubs`, {
@@ -69,6 +87,7 @@ export const getUserClubs = async (userId: string) => {
   }
 };
 
+// Fetch all clubs (admin)
 export const getClubs = async (page: number, limit: number) => {
   try {
     const response = await apiClient.get(`${ADMIN_API_URL}/clubs`, {
@@ -81,6 +100,7 @@ export const getClubs = async (page: number, limit: number) => {
   }
 };
 
+// Leave a club
 export const leaveClub = async (clubId: string, userId: string) => {
   try {
     const response = await apiClient.post(`${CLUB_API_URL}/leave`, {
@@ -97,9 +117,18 @@ export const leaveClub = async (clubId: string, userId: string) => {
   }
 };
 
-export const addClubMessage = async (clubId: string, senderId: string, content: string) => {
+// Add a message to a club
+export const addClubMessage = async (
+  clubId: string,
+  senderId: string,
+  content: string
+) => {
   try {
-    const response = await apiClient.post(`${CLUB_API_URL}/message`, { clubId, senderId, content });
+    const response = await apiClient.post(`${CLUB_API_URL}/message`, {
+      clubId,
+      senderId,
+      content,
+    });
     if (response.status === HttpStatus.OK) {
       toast.success(response.data.message);
       return { success: true, data: response.data.club };
@@ -110,9 +139,27 @@ export const addClubMessage = async (clubId: string, senderId: string, content: 
   }
 };
 
+// Delete a club (for users)
 export const deleteClub = async (clubId: string, userId: string) => {
   try {
-    const response = await apiClient.post(`${CLUB_API_URL}/delete`, { clubId, userId });
+    const response = await apiClient.post(`${CLUB_API_URL}/delete`, {
+      clubId,
+      userId,
+    });
+    if (response.status === HttpStatus.OK) {
+      toast.success(response.data.message);
+      return { success: true };
+    }
+  } catch (error) {
+    handleApiError(error);
+    return { success: false, error };
+  }
+};
+
+// Delete a club (for admins)
+export const deleteAdminClub = async (clubId: string) => {
+  try {
+    const response = await apiClient.delete(`${ADMIN_API_URL}/clubs/${clubId}`);
     if (response.status === HttpStatus.OK) {
       toast.success(response.data.message);
       return { success: true };

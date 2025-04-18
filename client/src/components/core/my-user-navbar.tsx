@@ -12,29 +12,31 @@ import {
 } from "../ui/tooltip";
 import { Button } from "../ui/button";
 import { useAuthStore } from "@/stores";
+import { useNotificationStore } from "@/stores/useNotificationStore";
 import { useEffect, useRef, useState } from "react";
-import gsap from 'gsap';
+import gsap from "gsap";
+import { format } from "date-fns";
 
 export default function UserNavbar() {
   const { isAuthenticated } = useAuthStore();
+  const { notifications } = useNotificationStore();
   const [isOpen, setIsOpen] = useState(false);
-
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const navRef = useRef(null);
 
   useEffect(() => {
-    gsap.fromTo(navRef.current, {
-      y: -100,
-      opacity: 0,
-    }, {
-      y: 0,
-      opacity: 1,
-      delay: 0.5,
-      ease: "power3.out"
-    })
-  }, [])
+    gsap.fromTo(
+      navRef.current,
+      { y: -100, opacity: 0 },
+      { y: 0, opacity: 1, delay: 0.5, ease: "power3.out" }
+    );
+  }, []);
 
   return (
-    <div ref={navRef} className="bg-[#09090b] flex justify-between items-center px-4 sm:px-8 md:px-16 py-5 border-b-[1px] text-[#f0f0f0db] font-bold font-clashDisplay text-[15px] w-full fixed z-10">
+    <div
+      ref={navRef}
+      className="bg-[#09090b] flex justify-between items-center px-4 sm:px-8 md:px-16 py-5 border-b-[1px] text-[#f0f0f0db] font-bold font-clashDisplay text-[15px] w-full fixed z-10"
+    >
       {/* Left Section (Logo and Nav) */}
       <div className="flex items-center gap-16">
         <Link href={"/"} className="font-stardom text-xl">
@@ -90,7 +92,7 @@ export default function UserNavbar() {
       </nav>
 
       {/* Right Navigation (Desktop, Original with Icons) */}
-      <nav className="hidden md:flex gap-10 items-center">
+      <nav className="hidden md:flex gap-10 items-center relative">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger>
@@ -119,14 +121,63 @@ export default function UserNavbar() {
 
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger>
-              <Bell className="h-5 w-5" />
+            <TooltipTrigger asChild>
+              <div className="relative">
+                <Bell
+                  className="h-5 w-5 cursor-pointer"
+                  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                />
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    {notifications.length}
+                  </span>
+                )}
+              </div>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Messages</p>
+              <p>Notifications</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
+
+        {isNotificationOpen && (
+          <div className="absolute top-12 right-0 bg-[#262522] w-64 rounded-md shadow-lg z-20 p-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-white font-bold">Notifications</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  useNotificationStore.getState().clearNotifications()
+                }
+              >
+                Clear
+              </Button>
+            </div>
+            {notifications.length === 0 ? (
+              <p className="text-gray-400 text-sm">No notifications</p>
+            ) : (
+              notifications.map((notification) => (
+                <div
+                  key={notification._id}
+                  className="text-white text-sm mb-2 p-2 bg-gray-700 rounded"
+                  onClick={() => {
+                    setIsNotificationOpen(false);
+                    // Optionally navigate to chat or open popup
+                  }}
+                >
+                  <p>{notification.content}</p>
+                  <p className="text-gray-400 text-xs">
+                    {format(
+                      new Date(notification.timestamp),
+                      "MMM d, yyyy HH:mm"
+                    )}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        )}
 
         {isAuthenticated ? (
           <UserAvatar />

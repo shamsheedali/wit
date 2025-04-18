@@ -41,6 +41,13 @@ export default class TournamentService {
     return this._tournamentRepository.create(tournamentData);
   }
 
+  async deleteTournament(tournamentId: string): Promise<ITournament | null> {
+    const tournament = await this._tournamentRepository.findById(tournamentId);
+    if (!tournament) return null;
+    await this._tournamentRepository.delete(tournamentId);
+    return tournament;
+  }
+
   async joinTournament(tournamentId: string, userId: string): Promise<ITournament> {
     const tournament = await this._tournamentRepository.findById(tournamentId);
     if (!tournament) throw new Error('Tournament not found');
@@ -64,6 +71,7 @@ export default class TournamentService {
     if (tournament.status !== 'pending') throw new Error('Tournament already started');
     if (tournament.players.length < 2) throw new Error('Need at least 2 players');
     tournament.status = 'active';
+    tournament.startDate = Date.now();
     const updatedTournament = await this._tournamentRepository.update(tournamentId, tournament);
     if (!updatedTournament) throw new Error('Failed to start tournament');
     return updatedTournament;
@@ -128,7 +136,6 @@ export default class TournamentService {
       player2.draws += 1;
     }
 
-    // Check if all games are done
     const allDone = tournament.players.every((p) => p.gamesPlayed >= tournament.maxGames);
     if (allDone) {
       const maxPoints = Math.max(...tournament.players.map((p) => p.points));
@@ -175,7 +182,12 @@ export default class TournamentService {
   async pairMatch(
     tournamentId: string,
     userId: string
-  ): Promise<{ matchId: string; opponentId: string } | null> {
+  ): Promise<{
+    matchId: string;
+    opponentId: string;
+    opponentUsername: string;
+    timeControl: string;
+  } | null> {
     if (!Types.ObjectId.isValid(userId)) {
       throw new Error('Invalid user ID');
     }
@@ -186,7 +198,6 @@ export default class TournamentService {
     const player = tournament.players.find((p) => p.userId._id.equals(userId));
     if (!player || player.gamesPlayed >= tournament.maxGames) return null;
 
-    // Simple random pairing, avoid recent opponents
     const recentOpponents = tournament.matches
       .filter(
         (m) => (m.player1Id.equals(userId) || m.player2Id.equals(userId)) && m.result !== null
@@ -202,7 +213,6 @@ export default class TournamentService {
 
     if (available.length === 0) return null;
 
-    console.log('available players', available);
     const opponent = available[Math.floor(Math.random() * available.length)];
     const updatedTournament = await this._tournamentRepository.createMatch(
       tournamentId,
@@ -212,6 +222,16 @@ export default class TournamentService {
     if (!updatedTournament) throw new Error('Failed to create match');
 
     const newMatch = updatedTournament.matches[updatedTournament.matches.length - 1];
-    return { matchId: newMatch._id.toString(), opponentId: opponent.userId._id.toString() };
+    const opponentUser = opponent.userId as unknown as { _id: Types.ObjectId; username: string };
+    if (!opponentUser.username) {
+      throw new Error('Opponent username not found');
+    }
+
+    return {
+      matchId: newMatch._id.toString(),
+      opponentId: opponent.userId._id.toString(),
+      opponentUsername: opponentUser.username,
+      timeControl: tournament.timeControl,
+    };
   }
 }

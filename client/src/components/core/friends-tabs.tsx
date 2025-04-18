@@ -19,7 +19,7 @@ import { useAuthStore } from "@/stores";
 import { User } from "@/types/auth";
 import { useFriendStore } from "@/stores/useFriendStore";
 import { useOnlineStatusStore } from "@/stores/useOnlineStatusStore"; // New store
-import { Sword } from "lucide-react";
+// import { Sword } from "lucide-react";
 
 export function FriendsTabs() {
   const { user: mainUser } = useAuthStore();
@@ -110,7 +110,7 @@ export function FriendsTabs() {
 
   const FriendItem = ({ user, showChallenge = false }) => (
     <div
-      className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
+      className="flex items-center space-x-4 p-3 cursor-pointer rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
       onClick={() => handleUserPage(user.username)}
     >
       <div className="relative">
@@ -138,7 +138,7 @@ export function FriendsTabs() {
           {isUserOnline(user._id) ? "Online" : "Offline"}
         </p>
       </div>
-      {showChallenge && (
+      {/* {showChallenge && (
         <Button
           size="sm"
           variant="ghost"
@@ -146,7 +146,7 @@ export function FriendsTabs() {
         >
           <Sword /> Challenge
         </Button>
-      )}
+      )} */}
     </div>
   );
 

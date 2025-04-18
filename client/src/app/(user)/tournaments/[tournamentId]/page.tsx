@@ -7,8 +7,8 @@ import { io } from "socket.io-client";
 import {
   joinTournament,
   startTournament,
-  submitResult,
-  submitPlayoffResult,
+  // submitResult,
+  // submitPlayoffResult,
   pairMatch,
   getTournament,
 } from "@/lib/api/tournament";
@@ -18,6 +18,9 @@ import { DataTable } from "@/components/data-table";
 import { standingsColumns } from "./standings-columns";
 import { matchColumns } from "./match-columns";
 import { toast } from "sonner";
+import { getSocket } from "@/lib/socket";
+import { saveGame } from "@/lib/api/game";
+import { Chess } from "chess.js";
 
 const socket = io(
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"
@@ -47,7 +50,8 @@ export default function TournamentPage() {
   }, [tournament, user]);
 
   useEffect(() => {
-    socket.on("tournamentUpdated", (updatedTournament: any) => {
+    const socketInstance = getSocket();
+    socketInstance.on("tournamentUpdated", (updatedTournament: any) => {
       if (updatedTournament._id === tournamentId) {
         queryClient.setQueryData(
           ["tournament", tournamentId],
@@ -56,10 +60,89 @@ export default function TournamentPage() {
       }
     });
 
+    socketInstance.on(
+      "tournamentPlayRequestReceived",
+      (data: {
+        senderId: string;
+        receiverId: string;
+        senderName: string;
+        senderPfp: string;
+        time: string;
+        tournamentId: string;
+        matchId: string;
+        timestamp: number;
+      }) => {
+        if (
+          data.receiverId === user?._id &&
+          data.tournamentId === tournamentId
+        ) {
+          toast.info(`Tournament match request from ${data.senderName}`, {
+            action: {
+              label: "Accept",
+              onClick: () => handleAcceptPlayRequest(data),
+            },
+          });
+        }
+      }
+    );
+
+    socketInstance.on(
+      "tournamentPlayRequestAccepted",
+      (data: {
+        senderId: string;
+        receiverId: string;
+        opponentId: string;
+        opponentName: string;
+        gameId: string;
+        dbGameId: string;
+        time: string;
+        tournamentId: string;
+        matchId: string;
+        timestamp: number;
+      }) => {
+        if (
+          data.tournamentId === tournamentId &&
+          (data.senderId === user?._id || data.receiverId === user?._id)
+        ) {
+          socketInstance.emit("joinGame", { gameId: data.gameId });
+          router.push(
+            `/tournaments/${tournamentId}/play/${data.matchId}?gameId=${data.gameId}&dbGameId=${data.dbGameId}`
+          );
+        }
+      }
+    );
+
+    socketInstance.on(
+      "tournamentGameStarted",
+      (data: {
+        gameId: string;
+        dbGameId: string;
+        opponentId: string;
+        opponentName: string;
+        time: string;
+        tournamentId: string;
+        matchId: string;
+        timestamp: number;
+      }) => {
+        if (
+          data.tournamentId === tournamentId &&
+          data.opponentId !== user?._id
+        ) {
+          socketInstance.emit("joinGame", { gameId: data.gameId });
+          router.push(
+            `/tournaments/${tournamentId}/play/${data.matchId}?gameId=${data.gameId}&dbGameId=${data.dbGameId}`
+          );
+        }
+      }
+    );
+
     return () => {
-      socket.off("tournamentUpdated");
+      socketInstance.off("tournamentUpdated");
+      socketInstance.off("tournamentPlayRequestReceived");
+      socketInstance.off("tournamentPlayRequestAccepted");
+      socketInstance.off("tournamentGameStarted");
     };
-  }, [queryClient, tournamentId]);
+  }, [queryClient, tournamentId, user, router]);
 
   const handleJoin = async () => {
     if (!user?._id) {
@@ -92,10 +175,68 @@ export default function TournamentPage() {
     }
     const match = await pairMatch(tournamentId);
     if (match) {
-      router.push(`/tournaments/${tournamentId}/play/${match.matchId}`);
+      const socketInstance = getSocket();
+      socketInstance.emit("tournamentPlayRequest", {
+        senderId: user._id,
+        receiverId: match.opponentId,
+        senderName: user.username,
+        senderPfp: user.profileImageUrl || "",
+        time: match.timeControl,
+        tournamentId,
+        matchId: match.matchId,
+      });
+      toast.info("Play request sent to opponent");
     } else {
       toast.info("No available opponents");
     }
+  };
+
+  const handleAcceptPlayRequest = async (data: {
+    senderId: string;
+    receiverId: string;
+    senderName: string;
+    time: string;
+    tournamentId: string;
+    matchId: string;
+  }) => {
+    if (!user?._id) {
+      toast.error("Please log in to accept play request");
+      return;
+    }
+    const gameId = crypto.randomUUID();
+    const gameType =
+      data.time.includes("30sec") || data.time.includes("1min")
+        ? "bullet"
+        : data.time.includes("3min") || data.time.includes("5min")
+        ? "blitz"
+        : "rapid";
+    const savedGame = await saveGame(
+      user._id,
+      data.senderId,
+      Math.random() > 0.5 ? "w" : "b",
+      new Chess().fen(),
+      gameType,
+      data.time
+    );
+    if (!savedGame?._id) {
+      toast.error("Failed to create game");
+      return;
+    }
+    const socketInstance = getSocket();
+    socketInstance.emit("tournamentPlayRequestAccepted", {
+      senderId: data.senderId,
+      receiverId: user._id,
+      senderName: user.username,
+      gameId,
+      dbGameId: savedGame._id,
+      time: data.time,
+      tournamentId: data.tournamentId,
+      matchId: data.matchId,
+    });
+    socketInstance.emit("joinGame", { gameId });
+    router.push(
+      `/tournaments/${tournamentId}/play/${data.matchId}?gameId=${gameId}&dbGameId=${savedGame._id}`
+    );
   };
 
   const handlePlayoff = () => {

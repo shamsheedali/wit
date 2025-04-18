@@ -6,6 +6,8 @@ const TYPES = {
   ClubModel: Symbol.for('ClubModel'),
   GameModel: Symbol.for('GameModel'),
   TournamentModel: Symbol.for('TournamentModel'),
+  MessageModel: Symbol.for('MessageModel'),
+  GameReportModel: Symbol.for('GameReportModel'),
   //Repositories
   UserRepository: Symbol.for('UserRepository'),
   AdminRepository: Symbol.for('AdminRepository'),
@@ -13,6 +15,8 @@ const TYPES = {
   ClubRepository: Symbol.for('ClubRepository'),
   GameRepository: Symbol.for('GameRepository'),
   TournamentRepository: Symbol.for('TournamentRepository'),
+  MessageRepository: Symbol.for('MessageRepository'),
+  GameReportRepository: Symbol.for('GameReportRepository'),
   //Services
   UserService: Symbol.for('UserService'),
   AdminService: Symbol.for('AdminService'),
@@ -22,6 +26,8 @@ const TYPES = {
   TokenService: Symbol.for('TokenService'),
   MailService: Symbol.for('MailService'),
   TournamentService: Symbol.for('TournamentService'),
+  MessageService: Symbol.for('MessageService'),
+  GameReportService: Symbol.for('GameReportService'),
   //Controllers
   UserController: Symbol.for('UserController'),
   AdminController: Symbol.for('AdminController'),
@@ -29,6 +35,8 @@ const TYPES = {
   ClubController: Symbol.for('ClubController'),
   GameController: Symbol.for('GameController'),
   TournamentController: Symbol.for('TournamentController'),
+  MessageController: Symbol.for('MessageController'),
+  GameReportController: Symbol.for('GameReportController'),
 };
 
 export default TYPES;

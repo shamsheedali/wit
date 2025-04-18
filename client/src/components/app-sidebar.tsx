@@ -2,18 +2,18 @@
 
 import * as React from "react"
 import {
-  BookOpen,
-  Bot,
   Command,
   Frame,
   Gamepad,
   LifeBuoy,
+  Mail,
   Map,
   PieChart,
   Send,
   Settings2,
   SquareTerminal,
   User,
+  Users,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -58,7 +58,7 @@ const data = {
       // ],
     },
     {
-      title: "User Management",
+      title: "Users",
       url: "/dashboard/user-management",
       icon: User,
       // items: [
@@ -85,30 +85,7 @@ const data = {
     },
     {
       title: "Tournaments",
-      url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Clubs",
-      url: "/dashboard/club-management",
+      url: "/dashboard/tournament-management",
       icon: Settings2,
       // items: [
       //   {
@@ -130,24 +107,39 @@ const data = {
       // ],
     },
     {
-      title: "Chats",
+      title: "Clubs",
+      url: "/dashboard/club-management",
+      icon: Users,
+      // items: [
+      //   {
+      //     title: "General",
+      //     url: "#",
+      //   },
+      //   {
+      //     title: "Team",
+      //     url: "#",
+      //   },
+      //   {
+      //     title: "Billing",
+      //     url: "#",
+      //   },
+      //   {
+      //     title: "Limits",
+      //     url: "#",
+      //   },
+      // ],
+    },
+    {
+      title: "Messages",
       url: "#",
-      icon: Settings2,
+      icon: Mail,
       items: [
         {
-          title: "General",
-          url: "#",
+          title: "Game",
+          url: "/dashboard/game-messages",
         },
         {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
+          title: "User",
           url: "#",
         },
       ],

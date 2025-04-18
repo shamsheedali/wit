@@ -52,6 +52,30 @@ router.patch(
   asyncWrap(adminController.terminateGame.bind(adminController))
 );
 
+// GET ALL TOURNAMENTS
+router.get(
+  '/tournaments',
+  authenticateToken,
+  isAdmin(),
+  asyncWrap(adminController.getAllTournaments.bind(adminController))
+);
+
+// CREATE TOURNAMENT
+router.post(
+  '/tournaments',
+  authenticateToken,
+  isAdmin(),
+  asyncWrap(adminController.createTournament.bind(adminController))
+);
+
+// DELETE TOURNAMENT
+router.delete(
+  '/tournaments/:tournamentId',
+  authenticateToken,
+  isAdmin(),
+  asyncWrap(adminController.deleteTournament.bind(adminController))
+);
+
 // GET USER GROWTH
 router.get(
   '/growth',
@@ -74,6 +98,22 @@ router.get(
   authenticateToken,
   isAdmin(),
   asyncWrap(adminController.getAllClubs.bind(adminController))
+);
+
+// CREATE CLUB
+router.post(
+  '/clubs',
+  authenticateToken,
+  isAdmin(),
+  asyncWrap(adminController.createClub.bind(adminController))
+);
+
+// DELETE CLUB
+router.delete(
+  '/clubs/:clubId',
+  authenticateToken,
+  isAdmin(),
+  asyncWrap(adminController.deleteClub.bind(adminController))
 );
 
 // REFRESH TOKEN

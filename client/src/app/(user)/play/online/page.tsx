@@ -3,47 +3,61 @@
 import { ChessBoard } from "@/components/chess/chessBoard";
 import { TimeDropdown } from "@/components/chess/time-dropdown";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuthStore } from "@/stores";
 import { useFriendStore } from "@/stores/useFriendStore";
-import { ChessMove } from "@/types/game";
-import { Chess } from "chess.js";
+import { useGameStore } from "@/stores/useGameStore";
 import {
   UserRound,
-  Clock,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  RotateCcw,
   Flag,
   Hand,
   Swords,
+  AlertCircle,
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
-import { saveGame, updateGame, getUserGames } from "@/lib/api/game";
-import { useRouter } from "next/navigation";
+import { saveGame, updateGame } from "@/lib/api/game";
 import { getUsers } from "@/lib/api/user";
+import { ChessMove } from "@/types/game";
+import { Chess } from "chess.js";
 import ChatInterface from "@/components/core/chat-interface";
+import { reportGame } from "@/lib/api/gameReport";
 
 export default function PlayOnline() {
   const { user } = useAuthStore();
-  const router = useRouter();
-  const { fetchFriends } = useFriendStore(); // Keep for consistency
-  const [gameStarted, setGameStarted] = useState<boolean>(false);
-  const [gameId, setGameId] = useState<string | undefined>(undefined);
-  const [dbGameId, setDbGameId] = useState<string | undefined>(undefined);
-  const [playerColor, setPlayerColor] = useState<"w" | "b">("w");
-  const [opponentId, setOpponentId] = useState<string | undefined>(undefined);
+  const { fetchFriends } = useFriendStore();
+  const {
+    gameId,
+    dbGameId,
+    opponentId,
+    opponentName,
+    opponentProfilePicture,
+    playerColor,
+    whiteTime,
+    blackTime,
+    gameStarted,
+    activePlayer,
+    gameStartTime,
+    moves,
+    addMove,
+    resetGame,
+  } = useGameStore();
+
   const [selectedTime, setSelectedTime] = useState<string>("10min");
-  const [whiteTime, setWhiteTime] = useState<number>(600);
-  const [blackTime, setBlackTime] = useState<number>(600);
-  const [activePlayer, setActivePlayer] = useState<"w" | "b">("w");
-  const [moves, setMoves] = useState<ChessMove[]>([]);
-  const [gameStartTime, setGameStartTime] = useState<number | null>(null);
-  const [showHistory, setShowHistory] = useState<boolean>(false);
-  const [gameHistory, setGameHistory] = useState<any[]>([]);
   const [playerNames, setPlayerNames] = useState<{ [key: string]: string }>({});
   const [chess, setChess] = useState<Chess>(new Chess());
   const [currentOpening, setCurrentOpening] = useState<string>("No moves yet");
@@ -51,6 +65,9 @@ export default function PlayOnline() {
   const [matchmakingStatus, setMatchmakingStatus] = useState<
     "idle" | "searching" | "matched"
   >("idle");
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<string>("cheating");
+  const [reportDetails, setReportDetails] = useState<string>("");
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Helper function to pair moves
@@ -149,8 +166,10 @@ export default function PlayOnline() {
         }
         setOpenings(allOpenings);
 
-        const opening = getOpeningFromPGN(newChess);
-        if (opening === "Unknown Opening" && prefixes.length < 5) {
+        if (
+          getOpeningFromPGN(newChess) === "Unknown Opening" &&
+          prefixes.length < 5
+        ) {
           const allPrefixes = ["a", "b", "c", "d", "e"];
           for (const prefix of allPrefixes) {
             if (!prefixes.includes(prefix)) {
@@ -180,11 +199,17 @@ export default function PlayOnline() {
     }
   }, [chess, openings]);
 
-  // Socket and fetch logic
+  // Fetch friends and user names
   useEffect(() => {
     if (user?._id) {
       fetchFriends();
       fetchUserNames();
+    }
+  }, [user?._id, fetchFriends]);
+
+  // Socket and matchmaking logic
+  useEffect(() => {
+    if (user?._id) {
       const socketInstance = getSocket();
       if (socketInstance) {
         socketInstance.on("connect", () => {
@@ -193,27 +218,35 @@ export default function PlayOnline() {
 
         socketInstance.on("gameTerminated", () => {
           toast.info("This game has been terminated by an admin.");
-          router.push("/play");
+          resetGame();
+          setMatchmakingStatus("idle");
         });
 
         socketInstance.on("opponentBanned", () => {
           toast.info("Admin banned your opponent.");
-          router.push("/");
+          resetGame();
+          setMatchmakingStatus("idle");
         });
 
         socketInstance.on(
           "matchFound",
           (data: { opponentId: string; gameId: string; time: string }) => {
             setMatchmakingStatus("matched");
-            setGameId(data.gameId);
-            setOpponentId(data.opponentId);
-            setPlayerColor(Math.random() > 0.5 ? "w" : "b");
+            const newPlayerColor = Math.random() > 0.5 ? "w" : "b";
             const initialTime = timeToSeconds(data.time);
-            setWhiteTime(initialTime);
-            setBlackTime(initialTime);
-            setGameStarted(true);
-            setActivePlayer("w");
-            setGameStartTime(Date.now());
+            useGameStore.setState({
+              gameId: data.gameId,
+              opponentId: data.opponentId,
+              opponentName: playerNames[data.opponentId] || data.opponentId,
+              opponentProfilePicture: null, // Update if available
+              playerColor: newPlayerColor,
+              whiteTime: initialTime,
+              blackTime: initialTime,
+              gameStarted: true,
+              activePlayer: "w",
+              gameStartTime: Date.now(),
+              moves: [],
+            });
             toast.success(
               `Matched with ${playerNames[data.opponentId] || data.opponentId}`
             );
@@ -222,11 +255,13 @@ export default function PlayOnline() {
             saveGame(
               user._id,
               data.opponentId,
-              playerColor,
+              newPlayerColor,
               chess.fen(),
               gameType,
               data.time
-            ).then((savedGame) => setDbGameId(savedGame?._id));
+            ).then((savedGame) =>
+              useGameStore.setState({ dbGameId: savedGame?._id })
+            );
 
             socketInstance.emit("joinGame", { gameId: data.gameId });
           }
@@ -241,22 +276,21 @@ export default function PlayOnline() {
             fen: string;
           }) => {
             if (data.gameId === gameId && data.playerId !== user._id) {
-              setMoves((prev) => {
-                if (
-                  prev.some(
-                    (m) =>
-                      m.san === data.move.san && m.color === data.move.color
-                  )
-                ) {
-                  return prev;
-                }
-                return [...prev, data.move];
+              addMove(data.move);
+              useGameStore.setState({
+                activePlayer: data.move.color === "w" ? "b" : "w",
               });
-              const newActivePlayer = data.move.color === "w" ? "b" : "w";
-              setActivePlayer(newActivePlayer);
             }
           }
         );
+
+        socketInstance.on("opponentResigned", (data) => {
+          if (data.opponentId === opponentId) {
+            toast.info("Your opponent has resigned.");
+            resetGame();
+            setMatchmakingStatus("idle");
+          }
+        });
 
         return () => {
           socketInstance.off("connect");
@@ -264,11 +298,12 @@ export default function PlayOnline() {
           socketInstance.off("moveMade");
           socketInstance.off("gameTerminated");
           socketInstance.off("opponentBanned");
+          socketInstance.off("opponentResigned");
           if (timerRef.current) clearInterval(timerRef.current);
         };
       }
     }
-  }, [user?._id, fetchFriends, playerColor, gameId]);
+  }, [user?._id, gameId, opponentId, playerNames]);
 
   // Timer logic
   useEffect(() => {
@@ -276,24 +311,24 @@ export default function PlayOnline() {
       if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
         if (activePlayer === "w") {
-          setWhiteTime((prev) => {
-            if (prev <= 0) {
-              clearInterval(timerRef.current!);
-              toast.error("White ran out of time!");
-              endGame("blackWin", "timeout", "");
-              return 0;
-            }
-            return prev - 1;
+          if (whiteTime <= 0) {
+            clearInterval(timerRef.current!);
+            toast.error("White ran out of time!");
+            endGame("blackWin", "timeout", chess.fen());
+            return;
+          }
+          useGameStore.setState({
+            whiteTime: whiteTime - 1,
           });
         } else if (activePlayer === "b") {
-          setBlackTime((prev) => {
-            if (prev <= 0) {
-              clearInterval(timerRef.current!);
-              toast.error("Black ran out of time!");
-              endGame("whiteWin", "timeout", "");
-              return 0;
-            }
-            return prev - 1;
+          if (blackTime <= 0) {
+            clearInterval(timerRef.current!);
+            toast.error("Black ran out of time!");
+            endGame("whiteWin", "timeout", chess.fen());
+            return;
+          }
+          useGameStore.setState({
+            blackTime: blackTime - 1,
           });
         }
       }, 1000);
@@ -302,7 +337,7 @@ export default function PlayOnline() {
         if (timerRef.current) clearInterval(timerRef.current);
       };
     }
-  }, [gameStarted, gameId, activePlayer]);
+  }, [gameStarted, gameId, activePlayer, whiteTime, blackTime]);
 
   // Matchmaking handlers
   const joinMatchmaking = () => {
@@ -324,7 +359,6 @@ export default function PlayOnline() {
     toast.info("Matchmaking canceled");
   };
 
-  // Helper functions
   const fetchUserNames = async () => {
     try {
       const limit = 100;
@@ -366,13 +400,16 @@ export default function PlayOnline() {
         lossType,
         gameDuration,
         gameStatus: "completed",
-        fen: fen || chess.fen(),
+        fen,
       });
-      setGameStarted(false);
-      setGameId(undefined);
-      setDbGameId(undefined);
-      setMoves([]);
-      setGameStartTime(null);
+      const socket = getSocket();
+      if (socket) {
+        socket.emit("opponentResigned", {
+          opponentId,
+          result,
+        });
+      }
+      resetGame();
       setMatchmakingStatus("idle");
       toast.success(`Game ended: ${result}`);
     }
@@ -380,21 +417,58 @@ export default function PlayOnline() {
 
   const handleMoveUpdate = async (move: ChessMove | undefined, fen: string) => {
     if (!move) return;
-    setMoves((prev) => [...prev, move]);
+    addMove(move);
     if (dbGameId) {
       await updateGame(dbGameId, { moves: [...moves, move], fen });
     }
     const socket = getSocket();
     if (socket && gameId && user?._id) {
-      socket.emit("moveMade", { gameId, move, playerId: user._id, fen });
+      socket.emit("moveMade", {
+        gameId,
+        move,
+        playerId: user._id,
+        fen,
+      });
     }
   };
 
-  const fetchGameHistory = async () => {
-    if (user?._id) {
-      const games = await getUserGames(user._id);
-      setGameHistory(games || []);
-      setShowHistory(true);
+  const handleReportSubmit = async () => {
+    if (!dbGameId || !user?._id || !opponentId) {
+      toast.error("Cannot submit report - missing game or user details");
+      return;
+    }
+
+    try {
+      const response = await reportGame({
+        gameId: dbGameId,
+        reportedUserId: opponentId,
+        reason: reportReason,
+        details: reportDetails,
+      });
+
+      if (response?.success) {
+        const socket = getSocket();
+        if (socket) {
+          socket.emit("gameReport", {
+            _id: response.data._id,
+            gameId: dbGameId,
+            reportingUserId: user._id,
+            reportedUserId: opponentId,
+            reason: reportReason,
+            details: reportDetails,
+            timestamp: response.data.timestamp,
+          });
+        }
+        toast.success("Game report submitted successfully");
+        setIsReportModalOpen(false);
+        setReportReason("cheating");
+        setReportDetails("");
+      } else {
+        toast.error("Failed to submit report");
+      }
+    } catch (error) {
+      toast.error("Error submitting report");
+      console.error(error);
     }
   };
 
@@ -444,14 +518,14 @@ export default function PlayOnline() {
 
   return (
     <div className="flex flex-col md:flex-row w-full h-screen items-center p-4 font-clashDisplay">
-      {/* Chessboard and Player Info */}
+      {/* Left Section: Chessboard and Player Info */}
       <div className="flex flex-col items-center w-full md:w-1/2 h-full py-[30px]">
         <div className="flex items-center justify-between w-full max-w-[500px] pr-10 py-2 rounded-lg">
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 bg-[#262522] rounded-full flex items-center justify-center">
-              {opponentId && playerNames[opponentId] ? (
+              {opponentProfilePicture ? (
                 <img
-                  src="/placeholder.svg?height=40&width=40" // Replace with actual profile image if available
+                  src={opponentProfilePicture}
                   alt="opponent profile image"
                   className="w-10 h-10 rounded-full"
                 />
@@ -460,7 +534,7 @@ export default function PlayOnline() {
               )}
             </div>
             <h1 className="text-md font-semibold">
-              {opponentId ? playerNames[opponentId] : "Opponent"}
+              {opponentName || playerNames[opponentId || ""] || "Opponent"}
             </h1>
           </div>
           <div className="bg-[#262522] px-8 py-3 rounded-sm">
@@ -472,16 +546,18 @@ export default function PlayOnline() {
           </div>
         </div>
 
+        {/* CHESS BOARD */}
         <div className="flex-grow flex items-center justify-center w-full max-w-[500px] my-2">
           <ChessBoard
-            gameId={gameId}
-            playerColor={playerColor}
-            opponentId={opponentId}
+            gameId={gameId || ""}
+            playerColor={playerColor || "w"}
+            opponentId={opponentId || ""}
             onMove={handleMoveUpdate}
             onGameEnd={endGame}
           />
         </div>
 
+        {/* Player - 01 */}
         <div className="flex items-center justify-between w-full max-w-[500px] pr-10 py-2 rounded-lg">
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 bg-[#262522] rounded-full flex items-center justify-center">
@@ -513,15 +589,12 @@ export default function PlayOnline() {
       </div>
 
       {/* Matchmaking Panel */}
-      {!gameStarted && !showHistory && (
+      {!gameStarted && (
         <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col items-center gap-10 rounded-md">
           <div className="w-full flex justify-center items-center gap-2">
             <Swords width={30} height={30} />
             <h1 className="text-3xl font-bold">Play Online</h1>
           </div>
-          <Button onClick={fetchGameHistory} className="w-full h-11 font-bold">
-            <Clock className="mr-2" /> View History
-          </Button>
           <div className="space-y-2">
             <TimeDropdown onValueChange={setSelectedTime} />
           </div>
@@ -541,43 +614,6 @@ export default function PlayOnline() {
               </Button>
             </>
           )}
-        </div>
-      )}
-
-      {/* Game History Panel */}
-      {showHistory && (
-        <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col gap-10 rounded-md overflow-y-auto">
-          <div className="w-full flex justify-center items-center gap-2">
-            <Clock width={30} height={30} />
-            <h1 className="text-3xl font-bold">Game History</h1>
-          </div>
-          <div>
-            {gameHistory.length > 0 ? (
-              gameHistory.map((game) => (
-                <div key={game._id} className="mb-4 p-2 bg-[#3a3a3a] rounded">
-                  <p>
-                    Opponent:{" "}
-                    {game.playerOne === user?._id
-                      ? playerNames[game.playerTwo] || game.playerTwo
-                      : playerNames[game.playerOne] || game.playerOne}
-                  </p>
-                  <p>Result: {game.result || "Ongoing"}</p>
-                  <p>Type: {game.gameType}</p>
-                  <p>Time: {game.timeControl}</p>
-                  <p>Moves: {game.moves.length}</p>
-                  <p>Status: {game.gameStatus}</p>
-                </div>
-              ))
-            ) : (
-              <p>No games found</p>
-            )}
-          </div>
-          <Button
-            onClick={() => setShowHistory(false)}
-            className="w-full h-11 font-bold"
-          >
-            Back to Play
-          </Button>
         </div>
       )}
 
@@ -642,6 +678,7 @@ export default function PlayOnline() {
               <Button
                 variant="outline"
                 className="w-1/2 bg-gray-700 text-white hover:bg-gray-600"
+                onClick={() => endGame("draw", "resignation", chess.fen())}
               >
                 <Hand className="mr-2" /> Draw
               </Button>
@@ -692,15 +729,80 @@ export default function PlayOnline() {
                 size="icon"
                 variant="outline"
                 className="bg-gray-700 text-white hover:bg-gray-600"
+                onClick={() => setIsReportModalOpen(true)}
               >
-                <RotateCcw />
+                <AlertCircle />
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Chat Panel */}
+      {/* Report Modal */}
+      <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
+        <DialogContent className="bg-[#262522] text-white">
+          <DialogHeader>
+            <DialogTitle>Report Game</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm">Reason for Report</Label>
+              <RadioGroup
+                value={reportReason}
+                onValueChange={setReportReason}
+                className="mt-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="cheating" id="cheating" />
+                  <Label htmlFor="cheating">Cheating</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem
+                    value="inappropriate_behavior"
+                    id="inappropriate_behavior"
+                  />
+                  <Label htmlFor="inappropriate_behavior">
+                    Inappropriate Behavior
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="other" id="other" />
+                  <Label htmlFor="other">Other</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <div>
+              <Label htmlFor="details" className="text-sm">
+                Additional Details
+              </Label>
+              <Input
+                id="details"
+                value={reportDetails}
+                onChange={(e) => setReportDetails(e.target.value)}
+                placeholder="Provide more information..."
+                className="bg-gray-800 text-white border-gray-700 mt-2"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsReportModalOpen(false)}
+              className="bg-gray-700 text-white hover:bg-gray-600"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReportSubmit}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Submit Report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Chat Interface */}
       {gameStarted && (
         <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col gap-10 rounded-md">
           <ChatInterface

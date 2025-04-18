@@ -9,10 +9,10 @@ interface FriendState {
   friendRequests: FriendRequest[];
   friends: Friend[];
   fetchFriendRequests: () => Promise<void>;
-  sendFriendRequest: (receiverId: string) => Promise<void>;
+  sendFriendRequest: (receiverId: string) => Promise<{receiverId: string}>;
   updateFriendRequest: (requestId: string, status: "accepted" | "ignored") => Promise<void>;
   fetchFriends: () => Promise<void>;
-  sendPlayRequest: (receiverId: string, time?: string) => void;
+  sendPlayRequest: (receiverId: string, senderName: string, senderPfp: string, time?: string) => void;
   initializeSocket: () => Socket | null;
 }
 
@@ -61,6 +61,7 @@ export const useFriendStore = create<FriendState>((set) => ({
       set((state) => ({
         friendRequests: [...state.friendRequests, result.data],
       }));
+      return result?.data?.receiverId;
     } else {
       console.error("Failed to send friend request:", result.error || result.message);
       throw new Error(result.message || "Failed to send friend request");
@@ -93,7 +94,7 @@ export const useFriendStore = create<FriendState>((set) => ({
     }
   },
 
-  sendPlayRequest: (receiverId: string, time = "10min") => {
+  sendPlayRequest: (receiverId: string, senderName: string, senderPfp: string, time = "10min") => {
     const userId = useAuthStore.getState().user?._id;
     if (!userId) {
       console.log("No authenticated user for play request");
@@ -107,6 +108,8 @@ export const useFriendStore = create<FriendState>((set) => ({
     socket.emit("playRequest", {
       senderId: userId,
       receiverId,
+      senderName,
+      senderPfp,
       time,
     });
     console.log(`Play request sent to ${receiverId}`);

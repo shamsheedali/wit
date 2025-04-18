@@ -33,6 +33,10 @@ export default class TournamentRepository extends BaseRepository<ITournament> {
       .exec();
   }
 
+  async delete(tournamentId: string): Promise<ITournament | null> {
+    return this.model.findByIdAndDelete(tournamentId).exec();
+  }
+
   async findByUserId(userId: string): Promise<ITournament[]> {
     return this.model
       .find({ 'players.userId': new Types.ObjectId(userId) })
@@ -60,6 +64,8 @@ export default class TournamentRepository extends BaseRepository<ITournament> {
         { new: true }
       )
       .populate('players.userId', 'username')
+      .populate('matches.player1Id', 'username')
+      .populate('matches.player2Id', 'username')
       .exec();
   }
 
@@ -80,6 +86,10 @@ export default class TournamentRepository extends BaseRepository<ITournament> {
   }
 
   async findByIdWithPopulation(id: string): Promise<ITournament | null> {
-    return this.model.findById(id).populate('players.userId', 'username').exec();
+    const tournament = await this.model.findById(id).populate('players.userId', 'username').exec();
+    if (!tournament) {
+      throw new Error('Tournament not found');
+    }
+    return tournament;
   }
 }
