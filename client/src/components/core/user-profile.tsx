@@ -10,7 +10,7 @@ import {
   Send,
   Sword,
   Swords,
-  TrendingUp,
+  // TrendingUp,
   UsersRound,
 } from "lucide-react";
 import Link from "next/link";
@@ -22,6 +22,12 @@ import { toast } from "sonner";
 import { removeFriend } from "@/lib/api/friend";
 import { useRouter } from "next/navigation";
 import ChatPopup from "@/components/core/ChatPopup";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 
 const UserProfile = ({ user }: { user: User }) => {
   const router = useRouter();
@@ -104,20 +110,53 @@ const UserProfile = ({ user }: { user: User }) => {
           </div>
 
           <div className="flex gap-14 lg:gap-20 text-center">
-            <div className="flex flex-col items-center gap-3">
+            {/* <div className="flex flex-col items-center gap-3">
               <TrendingUp />
               Online Now
-            </div>
+            </div> */}
             <div className="flex flex-col items-center gap-3">
-              <Calendar1 />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                      <Calendar1 />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Joined</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               {formatDate}
             </div>
+
             <div className="flex flex-col items-center gap-3">
-              <UsersRound />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Link href={`/${user.username}/friends`}>
+                      <UsersRound />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Friends</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               {isCurrentUser ? mainUser?.friends.length : user?.friends.length}
             </div>
+
             <div className="flex flex-col items-center gap-3">
-              <Swords />
+
+            <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Swords />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Games Played</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
               {isCurrentUser ? mainUser?.gamesPlayed : user?.gamesPlayed}
             </div>
           </div>

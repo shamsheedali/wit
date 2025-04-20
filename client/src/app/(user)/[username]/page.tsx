@@ -4,7 +4,6 @@ import NotFoundPage from "@/app/not-found";
 import UserProfile from "@/components/core/user-profile";
 import { getUser } from "@/lib/api/user";
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 
 export default function ProfilePage() {
