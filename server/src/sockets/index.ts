@@ -320,6 +320,12 @@ export default function socketHandler(io: Server) {
       });
     });
 
+    socket.on('clubDeleted', (data: { clubName: string }) => {
+      const { clubName } = data;
+      log.info(`Club deleted: ${clubName}`);
+      io.to(clubName).emit('clubDeleted');
+    });
+
     socket.on('disconnect', async () => {
       log.info('User disconnected:', socket.id);
       const userId = [...onlineUsers.entries()].find(([, sId]) => sId === socket.id)?.[0];

@@ -6,18 +6,22 @@ import { IClub } from '../models/club.model';
 import { Types } from 'mongoose';
 import { IClubService } from './interface/IClubService';
 import log from '../../utils/logger';
+import AdminRepository from '../repositories/admin.repository';
 
 @injectable()
 export default class ClubService implements IClubService {
   private _clubRepository: ClubRepository;
   private _userRepository: UserRepository;
+  private _adminRepository: AdminRepository;
 
   constructor(
     @inject(TYPES.ClubRepository) clubRepository: ClubRepository,
-    @inject(TYPES.UserRepository) userRepository: UserRepository
+    @inject(TYPES.UserRepository) userRepository: UserRepository,
+    @inject(TYPES.AdminRepository) adminRepository: AdminRepository
   ) {
     this._clubRepository = clubRepository;
     this._userRepository = userRepository;
+    this._adminRepository = adminRepository;
   }
 
   async createClub(
@@ -141,7 +145,7 @@ export default class ClubService implements IClubService {
     const existingClub = await this._clubRepository.findByName(name);
     if (existingClub) throw new Error('Club name already exists');
 
-    const user = await this._userRepository.findById(userId);
+    const user = await this._adminRepository.findById(userId);
     if (!user) throw new Error(`User with ID ${userId} not found`);
 
     const clubData: Partial<IClub> = {
@@ -150,6 +154,7 @@ export default class ClubService implements IClubService {
       clubType: 'public',
       admins: [new Types.ObjectId(userId)],
       members: [new Types.ObjectId(userId)],
+      createdBy: 'admin',
       maxMembers: 100,
     };
 
@@ -213,7 +218,9 @@ export default class ClubService implements IClubService {
     const club = await this._clubRepository.findById(clubId);
     if (!club) throw new Error('Club not found');
 
-    const user = await this._userRepository.findById(senderId);
+    const user =
+      (await this._userRepository.findById(senderId)) ||
+      (await this._adminRepository.findById(senderId));
     if (!user) throw new Error('User not found');
 
     const userObjectId = new Types.ObjectId(senderId);

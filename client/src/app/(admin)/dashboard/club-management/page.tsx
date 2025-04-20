@@ -4,10 +4,10 @@ import { DataTable } from "@/components/data-table";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { getClubs, createAdminClub } from "@/lib/api/club";
-import { clubColumns } from "./club-columns";
+import { getClubs, createAdminClub, addClubMessage } from "@/lib/api/club";
+import { clubColumns } from "./club-columns"; // Updated import
 import {
   Dialog,
   DialogContent,
@@ -17,8 +17,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Send } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores";
+import { getSocket } from "@/lib/socket";
+import { cn } from "@/lib/utils";
 
 const LIMIT = 7;
 
@@ -28,6 +32,15 @@ export type ClubData = {
   clubType: "public" | "private";
   admins: { _id: string; username: string }[];
   members: { _id: string; username: string }[];
+  createdBy: "user" | "admin";
+  messages?: { senderId: string; content: string; timestamp: number }[];
+};
+
+type Message = {
+  id: string;
+  senderId: string;
+  content: string;
+  timestamp: number;
 };
 
 export default function ClubManagementPage() {
@@ -37,9 +50,14 @@ export default function ClubManagementPage() {
   const [description, setDescription] = useState("");
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedClub, setSelectedClub] = useState<ClubData | null>(null);
+  const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
+  const [newMessage, setNewMessage] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const { admin } = useAuthStore();
+  const socket = getSocket();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["clubs", page],
@@ -47,8 +65,70 @@ export default function ClubManagementPage() {
     keepPreviousData: true,
   });
 
+  // Initialize socket and load messages for selected club
+  useEffect(() => {
+    if (!socket || !admin?._id) return;
+
+    socket.on(
+      "clubMessageReceived",
+      (data: { senderId: string; content: string; timestamp: number }) => {
+        const newMsg: Message = {
+          id: `${data.timestamp}-${data.senderId}`,
+          senderId: data.senderId,
+          content: data.content,
+          timestamp: data.timestamp,
+        };
+        setMessages((prev) => {
+          if (prev.some((msg) => msg.id === newMsg.id)) return prev;
+          return [...prev, newMsg];
+        });
+      }
+    );
+
+    socket.on("clubChatError", (data: { message: string }) => {
+      console.error("Club chat error:", data.message);
+      toast.error(data.message);
+    });
+
+    return () => {
+      socket.off("clubMessageReceived");
+      socket.off("clubChatError");
+    };
+  }, [socket, admin?._id]);
+
+  // Load messages when chat dialog opens
+  useEffect(() => {
+    if (isChatDialogOpen && selectedClub?.messages) {
+      const loadedMessages: Message[] = selectedClub.messages.map((msg) => ({
+        id: `${msg.timestamp}-${msg.senderId}`,
+        senderId: msg.senderId,
+        content: msg.content,
+        timestamp: msg.timestamp,
+      }));
+      setMessages(loadedMessages);
+    } else if (!isChatDialogOpen) {
+      setMessages([]);
+      setNewMessage("");
+    }
+  }, [isChatDialogOpen, selectedClub?.messages]);
+
+  // Scroll to bottom when messages update
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Join club chat when opening chat dialog
+  useEffect(() => {
+    if (isChatDialogOpen && selectedClub?.name && admin?._id) {
+      socket.emit("joinClubChat", {
+        clubName: selectedClub.name,
+        userId: admin._id,
+      });
+    }
+  }, [isChatDialogOpen, selectedClub?.name, admin?._id, socket]);
+
   const handleCreateClub = async () => {
-    if (!user?._id) {
+    if (!admin?._id) {
       toast.error("Please log in to create a club");
       return;
     }
@@ -56,7 +136,7 @@ export default function ClubManagementPage() {
       const response = await createAdminClub({
         name: clubName,
         description,
-        userId: user._id,
+        userId: admin._id,
       });
       if (response?.success) {
         toast.success("Club created successfully");
@@ -76,6 +156,62 @@ export default function ClubManagementPage() {
   const handleViewDetails = (club: ClubData) => {
     setSelectedClub(club);
     setIsDetailsDialogOpen(true);
+  };
+
+  // Send message to club (persist in DB and emit via socket)
+  const sendClubMessage = async (clubId: string, message: string) => {
+    if (!admin?._id || !selectedClub?.name) {
+      toast.error("Authentication or club details missing");
+      return { success: false };
+    }
+
+    try {
+      // Persist message in backend
+      const response = await addClubMessage(clubId, admin._id, message);
+      if (!response?.success) {
+        toast.error("Failed to save message");
+        return { success: false };
+      }
+
+      // Emit message via socket
+      socket.emit("sendClubMessage", {
+        clubName: selectedClub.name,
+        userId: admin._id,
+        message,
+      });
+
+      toast.success("Message sent successfully");
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      toast.error(error.response?.data?.message || "Failed to send message");
+      return { success: false };
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!selectedClub?._id || !newMessage.trim()) {
+      toast.error("Club ID and message are required");
+      return;
+    }
+    const response = await sendClubMessage(selectedClub._id, newMessage);
+    if (response?.success) {
+      setNewMessage("");
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const formatTime = (timestamp: number) => {
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   if (isLoading) return <div>Loading clubs...</div>;
@@ -210,6 +346,14 @@ export default function ClubManagementPage() {
             )}
           </div>
           <DialogFooter>
+            {selectedClub?.createdBy === "admin" && (
+              <Button
+                onClick={() => setIsChatDialogOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Send Message
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => setIsDetailsDialogOpen(false)}
@@ -218,6 +362,92 @@ export default function ClubManagementPage() {
               Close
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Chat Interface Dialog */}
+      <Dialog
+        open={isChatDialogOpen}
+        onOpenChange={(open) => {
+          setIsChatDialogOpen(open);
+          if (!open) setNewMessage(""); // Clear message when closing
+        }}
+      >
+        <DialogContent className="bg-[#262522] text-white max-w-lg sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Chat - {selectedClub?.name}</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] p-4 bg-gray-900 rounded-lg">
+            <div className="space-y-4">
+              {messages.length > 0 ? (
+                messages.map((message) => {
+                  const isAdminMessage = message.senderId === admin?._id;
+                  return (
+                    <div
+                      key={message.id}
+                      className={cn(
+                        "flex items-start gap-3 max-w-[80%]",
+                        isAdminMessage
+                          ? "ml-auto flex-row-reverse"
+                          : "mr-auto flex-row"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "rounded-lg p-3",
+                          isAdminMessage
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-800 text-white"
+                        )}
+                      >
+                        {!isAdminMessage && (
+                          <p className="text-xs font-medium mb-1">
+                            {selectedClub?.members.find(
+                              (m) => m._id === message.senderId
+                            )?.username || "Unknown"}
+                          </p>
+                        )}
+                        <p>{message.content}</p>
+                        <p
+                          className={cn(
+                            "text-xs mt-1 text-right",
+                            isAdminMessage ? "text-blue-200" : "text-gray-400"
+                          )}
+                        >
+                          {formatTime(message.timestamp)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-gray-400 text-center">
+                  No messages in this club yet.
+                </p>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </ScrollArea>
+          <div className="p-4 border-t border-gray-700">
+            <div className="flex items-center gap-2">
+              <Input
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your message..."
+                className="flex-1 bg-gray-800 text-white border-gray-700"
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={!newMessage.trim()}
+                size="icon"
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Send className="h-5 w-5" />
+                <span className="sr-only">Send message</span>
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </>

@@ -74,7 +74,7 @@ interface Club {
 }
 
 export default function ClubChat() {
-  const { user: mainUser } = useAuthStore();
+  const { user: mainUser, admin } = useAuthStore();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [playerNames, setPlayerNames] = useState<{ [key: string]: string }>({});
@@ -186,11 +186,18 @@ export default function ClubChat() {
       router.push("/clubs");
     });
 
+    socket.on("clubDeleted", () => {
+      toast.error("This club has been deleted");
+      queryClient.invalidateQueries({ queryKey: ["userClubs", mainUser?._id] });
+      router.push("/clubs");
+    });
+
     return () => {
       socket.off("clubMessageReceived");
       socket.off("clubChatError");
+      socket.off("clubDeleted");
     };
-  }, [socket, clubName, mainUser?._id, router]);
+  }, [socket, clubName, mainUser?._id, router, queryClient]);
 
   useEffect(() => {
     scrollToBottom();
@@ -242,18 +249,22 @@ export default function ClubChat() {
   };
 
   const handleDeleteClub = async () => {
-    if (!club?._id || !mainUser?._id) return;
+    if (!club?._id || !mainUser?._id || !clubName) return;
 
     try {
       const response = await deleteClub(club._id, mainUser._id);
       if (response?.success) {
+        // Emit clubDeleted event to notify other members
+        socket.emit("clubDeleted", { clubName });
         await queryClient.invalidateQueries({
           queryKey: ["userClubs", mainUser._id],
         });
+        toast.success("Club deleted successfully");
         router.push("/clubs");
       }
     } catch (error) {
       console.error("Failed to delete club:", error);
+      toast.error(error.response?.data?.message || "Failed to delete club");
     }
   };
 
@@ -656,7 +667,11 @@ export default function ClubChat() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">
-                    {member._id === mainUser?._id ? "You" : member.username}
+                    {member._id === admin?._id
+                      ? "Wit Official"
+                      : member._id === mainUser?._id
+                      ? "You"
+                      : member.username}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                     {member._id === mainUser?._id
@@ -741,7 +756,9 @@ export default function ClubChat() {
                   >
                     {!isCurrentUser && (
                       <p className="text-xs font-medium mb-1">
-                        {sender?.username || "Unknown"}
+                        {sender?._id === admin?._id
+                          ? "Wit Official"
+                          : sender?.username || "Unknown"}
                       </p>
                     )}
                     <p>{message.content}</p>
