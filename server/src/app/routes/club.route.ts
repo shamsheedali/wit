@@ -3,6 +3,7 @@ import TYPES from '../../config/types';
 import container from '../../config/inversify.config';
 import ClubController from '../controllers/club.controller';
 import asyncWrap from '../../middleware/asyncWrapper';
+import { authenticateToken } from '../../middleware/auth.middleware';
 
 const router = express.Router();
 const clubController = container.get<ClubController>(TYPES.ClubController);
@@ -19,6 +20,9 @@ router.get('/public', asyncWrap(clubController.getPublicClubs.bind(clubControlle
 router.get('/user-clubs', asyncWrap(clubController.getUserClubs.bind(clubController)));
 //Leave Club
 router.post('/leave', asyncWrap(clubController.leaveClub.bind(clubController)));
+
+router.put('/update', authenticateToken, asyncWrap(clubController.updateClub.bind(clubController)));
+
 // Add message
 router.post('/message', asyncWrap(clubController.addMessage.bind(clubController)));
 // Delete club

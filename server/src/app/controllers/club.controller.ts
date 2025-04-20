@@ -75,6 +75,25 @@ export default class ClubController {
     res.status(HttpStatus.OK).json({ message: 'Left club successfully', club: updatedClub });
   }
 
+  async updateClub(req: Request, res: Response) {
+    const { clubId, userId, name, description, maxMembers, memberIds } = req.body;
+
+    if (!clubId) throw new MissingFieldError('clubId');
+    if (!userId) throw new MissingFieldError('userId');
+    if (!name) throw new MissingFieldError('name');
+
+    const updatedClub = await this._clubService.updateClub(
+      clubId,
+      userId,
+      name,
+      description,
+      maxMembers,
+      memberIds || []
+    );
+
+    res.status(HttpStatus.OK).json({ message: 'Club updated successfully', club: updatedClub });
+  }
+
   async addMessage(req: Request, res: Response) {
     const { clubId, senderId, content } = req.body;
 

@@ -25,9 +25,10 @@ export default class ClubService implements IClubService {
     description: string | undefined,
     clubType: 'public' | 'private',
     adminIds: string[],
-    memberIds: string[]
+    memberIds: string[],
+    maxMembers?: number
   ): Promise<IClub> {
-    log.info('Service data:', name, description, clubType, adminIds, memberIds);
+    log.info('Service data:', { name, description, clubType, adminIds, memberIds, maxMembers });
 
     const existingClub = await this._clubRepository.findByName(name);
     if (existingClub) throw new Error('Club name already exists');
@@ -50,16 +51,86 @@ export default class ClubService implements IClubService {
         )
       : [];
 
+    const effectiveMaxMembers =
+      maxMembers !== undefined ? maxMembers : clubType === 'public' ? 100 : 50;
+
     const clubData: Partial<IClub> = {
       name,
       description,
       clubType,
       admins: validAdmins,
       members: [...validAdmins, ...validMembers],
+      maxMembers: effectiveMaxMembers,
     };
 
     log.info('clubData:', clubData);
     return this._clubRepository.create(clubData);
+  }
+
+  async updateClub(
+    clubId: string,
+    userId: string,
+    name: string,
+    description: string | undefined,
+    maxMembers: number | undefined,
+    memberIds: string[]
+  ): Promise<IClub> {
+    const club = await this._clubRepository.findById(clubId);
+    if (!club) throw new Error('Club not found');
+
+    const user = await this._userRepository.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    const userObjectId = new Types.ObjectId(userId);
+    if (!club.admins?.some((id) => id.equals(userObjectId))) {
+      throw new Error('Only admins can update the club');
+    }
+
+    // Check for duplicate club name
+    if (name !== club.name) {
+      const existingClub = await this._clubRepository.findByName(name);
+      if (existingClub) throw new Error('Club name already exists');
+    }
+
+    // Validate maxMembers
+    const maxLimit = club.clubType === 'public' ? 100 : 50;
+    const effectiveMaxMembers = maxMembers !== undefined ? maxMembers : club.maxMembers;
+    if (effectiveMaxMembers && effectiveMaxMembers > maxLimit) {
+      throw new Error(`Maximum members cannot exceed ${maxLimit} for ${club.clubType} clubs`);
+    }
+
+    // Check if new members exceed maxMembers
+    const newMembers = memberIds.filter(
+      (id) => !club.members?.some((m) => m.equals(new Types.ObjectId(id)))
+    );
+    const totalMembers = (club.members?.length || 0) + newMembers.length;
+    if (effectiveMaxMembers && totalMembers > effectiveMaxMembers) {
+      throw new Error(
+        `Total members (${totalMembers}) exceed the maximum limit (${effectiveMaxMembers})`
+      );
+    }
+
+    // Validate new members
+    const validNewMembers = newMembers.length
+      ? await Promise.all(
+          newMembers.map(async (id) => {
+            const user = await this._userRepository.findById(id);
+            if (!user) throw new Error(`User with ID ${id} not found`);
+            return new Types.ObjectId(id);
+          })
+        )
+      : [];
+
+    const updatedClub = await this._clubRepository.update(clubId, {
+      name,
+      description,
+      maxMembers: effectiveMaxMembers,
+      $addToSet: { members: { $each: validNewMembers } },
+    });
+
+    if (!updatedClub) throw new Error('Failed to update club');
+
+    return updatedClub;
   }
 
   async createAdminClub(
@@ -76,9 +147,10 @@ export default class ClubService implements IClubService {
     const clubData: Partial<IClub> = {
       name,
       description,
-      clubType: 'public', // Admins can only create public clubs
+      clubType: 'public',
       admins: [new Types.ObjectId(userId)],
       members: [new Types.ObjectId(userId)],
+      maxMembers: 100,
     };
 
     log.info('Admin clubData:', clubData);
@@ -94,6 +166,10 @@ export default class ClubService implements IClubService {
     const user = await this._userRepository.findById(userId);
     if (!user) {
       throw new Error('User not found');
+    }
+
+    if (club.maxMembers && club.members && club.members.length >= club.maxMembers) {
+      throw new Error('Club is full');
     }
 
     if (club.clubType === 'private' && !club.members?.includes(userId as any)) {
@@ -184,15 +260,12 @@ export default class ClubService implements IClubService {
 
     const userObjectId = new Types.ObjectId(userId);
 
-    // Check if user is a member
     if (!club.members?.some((id) => id.equals(userObjectId))) {
       throw new Error('User is not a member of this club');
     }
 
-    // Check if user is an admin
     const isAdmin = club.admins?.some((id) => id.equals(userObjectId));
     if (isAdmin) {
-      // Prevent the last admin from leaving
       if (club.admins?.length === 1) {
         throw new Error(
           'Cannot leave club: You are the only admin. Please assign another admin or delete the club.'
@@ -200,7 +273,6 @@ export default class ClubService implements IClubService {
       }
     }
 
-    // Remove user from members and admins
     const updatedClub = await this._clubRepository.removeMember(clubId, userId);
     if (!updatedClub) {
       throw new Error('Failed to leave club');
