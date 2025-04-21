@@ -1,8 +1,10 @@
 import { Schema, model, models, Document, Types } from 'mongoose';
+import { GameType } from './game.model';
 
 export interface ITournament extends Document {
   name: string;
   type: 'league';
+  gameType: GameType;
   timeControl: string;
   maxGames: number;
   players: {
@@ -21,6 +23,7 @@ export interface ITournament extends Document {
   }[];
   status: 'pending' | 'active' | 'playoff' | 'completed';
   createdBy: Types.ObjectId;
+  createdByAdmin: boolean;
   startDate?: number;
   playoffMatch?: {
     player1Id: Types.ObjectId;
@@ -32,6 +35,7 @@ export interface ITournament extends Document {
 const tournamentSchema = new Schema<ITournament>({
   name: { type: String, required: true },
   type: { type: String, enum: ['league'], default: 'league' },
+  gameType: { type: String, enum: Object.values(GameType), required: true },
   timeControl: { type: String, required: true },
   maxGames: { type: Number, required: true },
   players: [
@@ -53,6 +57,7 @@ const tournamentSchema = new Schema<ITournament>({
     },
   ],
   status: { type: String, enum: ['pending', 'active', 'playoff', 'completed'], default: 'pending' },
+  createdByAdmin: { type: Boolean, default: false },
   createdBy: { type: Schema.Types.ObjectId, ref: 'Users', required: true },
   startDate: { type: Number },
   playoffMatch: {

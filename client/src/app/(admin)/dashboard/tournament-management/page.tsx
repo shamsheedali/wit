@@ -20,6 +20,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { createTournament } from "@/lib/api/admin";
 import { useAuthStore } from "@/stores";
+import { getGameType } from "@/lib/utils";
+import { TimeDropdown } from "@/components/chess/time-dropdown";
 
 const LIMIT = 7;
 
@@ -27,11 +29,11 @@ export default function TournamentManagementPage() {
   const [page, setPage] = useState(1);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [tournamentName, setTournamentName] = useState("");
-  const [timeControl, setTimeControl] = useState("5|0");
   const [maxGames, setMaxGames] = useState("5");
 
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const { admin } = useAuthStore();
+  const [selectedTime, setSelectedTime] = useState<string>("10min");
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["tournaments", page],
@@ -40,22 +42,22 @@ export default function TournamentManagementPage() {
   });
 
   const handleCreateTournament = async () => {
-    if (!user?._id) {
+    if (!admin?._id) {
       toast.error("Please log in to create a tournament");
       return;
     }
     try {
       const response = await createTournament({
         name: tournamentName,
-        timeControl,
+        gameType: getGameType(selectedTime),
+        timeControl: selectedTime,
         maxGames: parseInt(maxGames),
-        createdBy: user._id,
+        createdBy: admin._id,
       });
       if (response?.success) {
         toast.success("Tournament created successfully");
         setIsCreateDialogOpen(false);
         setTournamentName("");
-        setTimeControl("5|0");
         setMaxGames("5");
         await queryClient.invalidateQueries({ queryKey: ["tournaments"] });
       } else {
@@ -65,6 +67,10 @@ export default function TournamentManagementPage() {
       toast.error("Error creating tournament");
       console.error(error);
     }
+  };
+
+  const handleTimeChange = (value: string) => {
+    setSelectedTime(value);
   };
 
   if (isLoading) return <div>Loading tournaments...</div>;
@@ -139,13 +145,7 @@ export default function TournamentManagementPage() {
               <Label htmlFor="timeControl" className="text-sm">
                 Time Control (e.g., 5|0)
               </Label>
-              <Input
-                id="timeControl"
-                value={timeControl}
-                onChange={(e) => setTimeControl(e.target.value)}
-                placeholder="Enter time control"
-                className="bg-gray-800 text-white border-gray-700 mt-2"
-              />
+              <TimeDropdown onValueChange={handleTimeChange} />
             </div>
             <div>
               <Label htmlFor="maxGames" className="text-sm">

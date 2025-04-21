@@ -14,15 +14,16 @@ export default class TournamentController {
   }
 
   async createTournament(req: Request, res: Response) {
-    const { name, timeControl, maxGames, createdBy } = req.body;
-    if (!name || !timeControl || !maxGames || !createdBy) {
-      throw new MissingFieldError('name, timeControl, maxGames, or createdBy');
+    const { name, gameType, timeControl, maxGames, createdBy } = req.body;
+    if (!name || !gameType || !timeControl || !maxGames || !createdBy) {
+      throw new MissingFieldError('name, gameType, timeControl, maxGames, or createdBy');
     }
     const tournament = await this._tournamentService.createTournament(
       name,
+      gameType,
       timeControl,
       maxGames,
-      createdBy
+      createdBy,
     );
     res.status(HttpStatus.CREATED).json({ message: 'Tournament created', tournament });
   }

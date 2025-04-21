@@ -7,6 +7,7 @@ const TOURNAMENT_API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tournament`;
 
 export const createTournament = async (data: {
   name: string;
+  gameType: string;
   timeControl: string;
   maxGames: number;
   createdBy: string;

@@ -276,7 +276,7 @@ export default function TournamentPage() {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Created By</p>
-            <p className="font-medium">{tournament.createdBy.username}</p>
+            <p className="font-medium">{tournament.createdBy?.username}</p>
           </div>
         </div>
 
@@ -285,7 +285,7 @@ export default function TournamentPage() {
             <Button onClick={handleJoin}>Join Tournament</Button>
           )}
           {tournament.status === "pending" &&
-            user?._id === tournament.createdBy._id && (
+            user?._id === tournament.createdBy?._id && (
               <Button onClick={handleStart}>Start Tournament</Button>
             )}
           {tournament.status === "active" && isJoined && (

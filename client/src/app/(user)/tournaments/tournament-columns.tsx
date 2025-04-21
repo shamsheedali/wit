@@ -66,12 +66,12 @@ export const tournamentColumns: ColumnDef<TournamentData>[] = [
 
       return (
         <div className="flex gap-2">
-          {tournament.status === "pending" &&
+          {/* {tournament.status === "pending" &&
             !tournament.players.some((p) => p.userId._id === user?._id) && (
               <Button variant="outline" onClick={handleJoin}>
                 Join
               </Button>
-            )}
+            )} */}
           <Button
             variant="outline"
             onClick={() => router.push(`/tournaments/${tournament._id}`)}

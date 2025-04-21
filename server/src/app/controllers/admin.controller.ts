@@ -151,18 +151,21 @@ export default class AdminController {
   }
 
   async createTournament(req: Request, res: Response) {
-    const { name, timeControl, maxGames, createdBy } = req.body;
+    const { name, gameType, timeControl, maxGames, createdBy } = req.body;
 
     if (!name) throw new MissingFieldError('name');
+    if (!gameType) throw new MissingFieldError('gameType');
     if (!timeControl) throw new MissingFieldError('timeControl');
     if (!maxGames) throw new MissingFieldError('maxGames');
     if (!createdBy) throw new MissingFieldError('createdBy');
 
     const tournament = await this._tournamentService.createTournament(
       name,
+      gameType,
       timeControl,
       maxGames,
-      createdBy
+      createdBy,
+      true,
     );
 
     res.status(HttpStatus.OK).json({

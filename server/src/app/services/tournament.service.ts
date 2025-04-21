@@ -4,41 +4,57 @@ import TYPES from '../../config/types';
 import TournamentRepository from '../repositories/tournament.repository';
 import UserRepository from '../repositories/user.repository';
 import { ITournament } from '../models/tournament.model';
+import { GameType } from '../models/game.model';
+import AdminRepository from '../repositories/admin.repository';
 
 @injectable()
 export default class TournamentService {
   private _tournamentRepository: TournamentRepository;
   private _userRepository: UserRepository;
+  private _adminRepository: AdminRepository;
   private _tournamentModel: Model<ITournament>;
 
   constructor(
     @inject(TYPES.TournamentRepository) tournamentRepository: TournamentRepository,
     @inject(TYPES.UserRepository) userRepository: UserRepository,
+    @inject(TYPES.AdminRepository) adminRepository: AdminRepository,
     @inject(TYPES.TournamentModel) tournamentModel: Model<ITournament>
   ) {
     this._tournamentRepository = tournamentRepository;
     this._userRepository = userRepository;
+    this._adminRepository = adminRepository;
     this._tournamentModel = tournamentModel;
   }
 
   async createTournament(
     name: string,
+    gameType: GameType,
     timeControl: string,
     maxGames: number,
-    createdBy: string
+    createdBy: string,
+    createdByAdmin = false,
   ): Promise<ITournament> {
-    const user = await this._userRepository.findById(createdBy);
+    const user =
+      (await this._userRepository.findById(createdBy)) ||
+      (await this._adminRepository.findById(createdBy));
     if (!user) throw new Error('User not found');
     const tournamentData: Partial<ITournament> = {
       name,
       type: 'league',
+      gameType,
       timeControl,
       maxGames,
       createdBy: new Types.ObjectId(createdBy),
+      createdByAdmin,
       players: [],
       matches: [],
     };
-    return this._tournamentRepository.create(tournamentData);
+
+    const tournament = await this._tournamentRepository.create(tournamentData);
+    if(!createdByAdmin) {
+      await this._tournamentRepository.addPlayer(tournament._id as string, createdBy);
+    }
+    return tournament;
   }
 
   async deleteTournament(tournamentId: string): Promise<ITournament | null> {

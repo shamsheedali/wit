@@ -381,48 +381,10 @@ export default function PlayFriend() {
     }
   };
 
-  const timeToSeconds = (time: string): number => {
-    switch (time) {
-      case "30sec":
-        return 30;
-      case "1min":
-        return 60;
-      case "3min":
-        return 180;
-      case "5min":
-        return 300;
-      case "10min":
-        return 600;
-      case "15min":
-        return 900;
-      case "30min":
-        return 1800;
-      default:
-        return 600;
-    }
-  };
-
   const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${minutes}:${secs < 10 ? "0" + secs : secs}`;
-  };
-
-  const getGameType = (time: string): "blitz" | "bullet" | "rapid" => {
-    switch (time) {
-      case "30sec":
-      case "1min":
-        return "bullet";
-      case "3min":
-      case "5min":
-        return "blitz";
-      case "10min":
-      case "15min":
-      case "30min":
-        return "rapid";
-      default:
-        return "rapid";
-    }
   };
 
   return (

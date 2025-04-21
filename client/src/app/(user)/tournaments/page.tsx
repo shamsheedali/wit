@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/dialog";
 import { DataTable } from "@/components/data-table";
 import { tournamentColumns } from "./tournament-columns";
+import { TimeDropdown } from "@/components/chess/time-dropdown";
+import { getGameType } from "@/lib/utils";
 
 const LIMIT = 10;
 
@@ -30,9 +32,9 @@ export default function TournamentsPage() {
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
-    timeControl: "5|0",
     maxGames: "10",
   });
+  const [selectedTime, setSelectedTime] = useState<string>("10min");
 
   const { data: publicTournaments, isLoading: publicLoading } = useQuery({
     queryKey: ["tournaments", page],
@@ -50,6 +52,8 @@ export default function TournamentsPage() {
     if (!user?._id) return;
     const tournament = await createTournament({
       ...formData,
+      gameType: getGameType(selectedTime),
+      timeControl: selectedTime,
       maxGames: parseInt(formData.maxGames),
       createdBy: user._id,
     });
@@ -57,8 +61,12 @@ export default function TournamentsPage() {
       queryClient.invalidateQueries({ queryKey: ["tournaments"] });
       queryClient.invalidateQueries({ queryKey: ["userTournaments"] });
       setOpenCreateDialog(false);
-      setFormData({ name: "", timeControl: "5|0", maxGames: "10" });
+      setFormData({ name: "", maxGames: "10" });
     }
+  };
+
+  const handleTimeChange = (value: string) => {
+    setSelectedTime(value);
   };
 
   if (publicLoading || userLoading) return <div>Loading tournaments...</div>;
@@ -126,13 +134,12 @@ export default function TournamentsPage() {
                   setFormData({ ...formData, name: e.target.value })
                 }
               />
-              <Input
-                placeholder="Time Control (e.g., 5|0)"
-                value={formData.timeControl}
-                onChange={(e) =>
-                  setFormData({ ...formData, timeControl: e.target.value })
-                }
-              />
+
+              <h1>Time Control</h1>
+              <TimeDropdown onValueChange={handleTimeChange} />
+
+              <h1>Max Games</h1>
+
               <Input
                 placeholder="Max Games (e.g., 10)"
                 type="number"
