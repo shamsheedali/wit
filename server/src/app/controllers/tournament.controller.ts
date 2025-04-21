@@ -23,7 +23,7 @@ export default class TournamentController {
       gameType,
       timeControl,
       maxGames,
-      createdBy,
+      createdBy
     );
     res.status(HttpStatus.CREATED).json({ message: 'Tournament created', tournament });
   }
@@ -40,6 +40,20 @@ export default class TournamentController {
     if (!tournamentId || !userId) throw new MissingFieldError('tournamentId or userId');
     const tournament = await this._tournamentService.startTournament(tournamentId, userId);
     res.status(HttpStatus.OK).json({ message: 'Tournament started', tournament });
+  }
+
+  async leaveTournament(req: Request, res: Response) {
+    const { tournamentId, userId } = req.body;
+    if (!tournamentId || !userId) throw new MissingFieldError('tournamentId or userId');
+    const tournament = await this._tournamentService.leaveTournament(tournamentId, userId);
+    res.status(HttpStatus.OK).json({ message: 'Left tournament', tournament });
+  }
+
+  async deleteTournament(req: Request, res: Response) {
+    const { tournamentId, userId } = req.body;
+    if (!tournamentId || !userId) throw new MissingFieldError('tournamentId or userId');
+    const tournament = await this._tournamentService.deleteTournament(tournamentId, userId);
+    res.status(HttpStatus.OK).json({ message: 'Tournament deleted', tournament });
   }
 
   async getTournaments(req: Request, res: Response) {

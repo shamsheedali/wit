@@ -7,10 +7,10 @@ import { io } from "socket.io-client";
 import {
   joinTournament,
   startTournament,
-  // submitResult,
-  // submitPlayoffResult,
   pairMatch,
   getTournament,
+  leaveTournament,
+  deleteTournament,
 } from "@/lib/api/tournament";
 import { useAuthStore } from "@/stores";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,13 @@ import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
 import { saveGame } from "@/lib/api/game";
 import { Chess } from "chess.js";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const socket = io(
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"
@@ -39,109 +46,124 @@ export default function TournamentPage() {
     enabled: !!tournamentId,
   });
 
+  console.log("tournament", tournament);
+
   const [isJoined, setIsJoined] = useState(false);
+  const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (tournament && user?._id) {
-      setIsJoined(
-        tournament.players.some((p: any) => p.userId._id === user._id)
+      const joined = tournament.players.some(
+        (p: any) => p.userId?._id === user._id || p.userId === user._id
+      );
+      setIsJoined(joined);
+      console.log(
+        "isJoined",
+        joined,
+        "userId",
+        user._id,
+        "players",
+        tournament.players
       );
     }
   }, [tournament, user]);
 
   useEffect(() => {
     const socketInstance = getSocket();
-    socketInstance.on("tournamentUpdated", (updatedTournament: any) => {
-      if (updatedTournament._id === tournamentId) {
-        queryClient.setQueryData(
-          ["tournament", tournamentId],
-          updatedTournament
-        );
-      }
-    });
-
-    socketInstance.on(
-      "tournamentPlayRequestReceived",
-      (data: {
-        senderId: string;
-        receiverId: string;
-        senderName: string;
-        senderPfp: string;
-        time: string;
-        tournamentId: string;
-        matchId: string;
-        timestamp: number;
-      }) => {
-        if (
-          data.receiverId === user?._id &&
-          data.tournamentId === tournamentId
-        ) {
-          toast.info(`Tournament match request from ${data.senderName}`, {
-            action: {
-              label: "Accept",
-              onClick: () => handleAcceptPlayRequest(data),
-            },
-          });
-        }
-      }
-    );
-
-    socketInstance.on(
-      "tournamentPlayRequestAccepted",
-      (data: {
-        senderId: string;
-        receiverId: string;
-        opponentId: string;
-        opponentName: string;
-        gameId: string;
-        dbGameId: string;
-        time: string;
-        tournamentId: string;
-        matchId: string;
-        timestamp: number;
-      }) => {
-        if (
-          data.tournamentId === tournamentId &&
-          (data.senderId === user?._id || data.receiverId === user?._id)
-        ) {
-          socketInstance.emit("joinGame", { gameId: data.gameId });
-          router.push(
-            `/tournaments/${tournamentId}/play/${data.matchId}?gameId=${data.gameId}&dbGameId=${data.dbGameId}`
+    if (socketInstance) {
+      socketInstance?.on("tournamentUpdated", (updatedTournament: any) => {
+        if (updatedTournament._id === tournamentId) {
+          queryClient.setQueryData(
+            ["tournament", tournamentId],
+            updatedTournament
           );
         }
-      }
-    );
+      });
 
-    socketInstance.on(
-      "tournamentGameStarted",
-      (data: {
-        gameId: string;
-        dbGameId: string;
-        opponentId: string;
-        opponentName: string;
-        time: string;
-        tournamentId: string;
-        matchId: string;
-        timestamp: number;
-      }) => {
-        if (
-          data.tournamentId === tournamentId &&
-          data.opponentId !== user?._id
-        ) {
-          socketInstance.emit("joinGame", { gameId: data.gameId });
-          router.push(
-            `/tournaments/${tournamentId}/play/${data.matchId}?gameId=${data.gameId}&dbGameId=${data.dbGameId}`
-          );
+      socketInstance?.on(
+        "tournamentPlayRequestReceived",
+        (data: {
+          senderId: string;
+          receiverId: string;
+          senderName: string;
+          senderPfp: string;
+          time: string;
+          tournamentId: string;
+          matchId: string;
+          timestamp: number;
+        }) => {
+          if (
+            data.receiverId === user?._id &&
+            data.tournamentId === tournamentId
+          ) {
+            toast.info(`Tournament match request from ${data.senderName}`, {
+              action: {
+                label: "Accept",
+                onClick: () => handleAcceptPlayRequest(data),
+              },
+            });
+          }
         }
-      }
-    );
+      );
 
-    return () => {
-      socketInstance.off("tournamentUpdated");
-      socketInstance.off("tournamentPlayRequestReceived");
-      socketInstance.off("tournamentPlayRequestAccepted");
-      socketInstance.off("tournamentGameStarted");
-    };
+      socketInstance?.on(
+        "tournamentPlayRequestAccepted",
+        (data: {
+          senderId: string;
+          receiverId: string;
+          opponentId: string;
+          opponentName: string;
+          gameId: string;
+          dbGameId: string;
+          time: string;
+          tournamentId: string;
+          matchId: string;
+          timestamp: number;
+        }) => {
+          if (
+            data.tournamentId === tournamentId &&
+            (data.senderId === user?._id || data.receiverId === user?._id)
+          ) {
+            socketInstance?.emit("joinGame", { gameId: data.gameId });
+            router.push(
+              `/tournaments/${tournamentId}/play/${data.matchId}?gameId=${data.gameId}&dbGameId=${data.dbGameId}`
+            );
+          }
+        }
+      );
+
+      socketInstance?.on(
+        "tournamentGameStarted",
+        (data: {
+          gameId: string;
+          dbGameId: string;
+          opponentId: string;
+          opponentName: string;
+          time: string;
+          tournamentId: string;
+          matchId: string;
+          timestamp: number;
+        }) => {
+          if (
+            data.tournamentId === tournamentId &&
+            data.opponentId !== user?._id
+          ) {
+            socketInstance?.emit("joinGame", { gameId: data.gameId });
+            router.push(
+              `/tournaments/${tournamentId}/play/${data.matchId}?gameId=${data.gameId}&dbGameId=${data.dbGameId}`
+            );
+          }
+        }
+      );
+
+      return () => {
+        socketInstance?.off("tournamentUpdated");
+        socketInstance?.off("tournamentPlayRequestReceived");
+        socketInstance?.off("tournamentPlayRequestAccepted");
+        socketInstance?.off("tournamentGameStarted");
+      };
+    }
   }, [queryClient, tournamentId, user, router]);
 
   const handleJoin = async () => {
@@ -247,10 +269,38 @@ export default function TournamentPage() {
     router.push(`/tournaments/${tournamentId}/play/playoff`);
   };
 
+  const handleExit = async () => {
+    if (!user?._id) {
+      toast.error("Please log in to exit the tournament");
+      return;
+    }
+    const result = await leaveTournament(tournamentId, user._id);
+    if (result) {
+      socket.emit("tournamentUpdate", result);
+      setIsExitDialogOpen(false);
+      setIsJoined(false);
+      queryClient.invalidateQueries({ queryKey: ["tournament", tournamentId] });
+      toast.success("You have left the tournament");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!user?._id) {
+      toast.error("Please log in to delete the tournament");
+      return;
+    }
+    const result = await deleteTournament(tournamentId, user._id);
+    if (result) {
+      socket.emit("tournamentUpdate", result);
+      setIsDeleteDialogOpen(false);
+      router.push("/tournaments");
+    }
+  };
+
   if (isLoading || !tournament) return <div>Loading tournament...</div>;
 
   const userMatches = tournament.matches.filter(
-    (m: any) => m.player1Id._id === user?._id || m.player2Id._id === user?._id
+    (m: any) => m.player1Id?._id === user?._id || m.player2Id?._id === user?._id
   );
 
   return (
@@ -276,7 +326,11 @@ export default function TournamentPage() {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Created By</p>
-            <p className="font-medium">{tournament.createdBy?.username}</p>
+            <p className="font-medium">
+              {tournament.createdByAdmin
+                ? "Admin"
+                : tournament.createdBy?.username || "Unknown"}
+            </p>
           </div>
         </div>
 
@@ -285,16 +339,38 @@ export default function TournamentPage() {
             <Button onClick={handleJoin}>Join Tournament</Button>
           )}
           {tournament.status === "pending" &&
-            user?._id === tournament.createdBy?._id && (
+            (user?._id === tournament.createdBy?._id ||
+              (tournament.createdByAdmin && user?.isAdmin)) && (
               <Button onClick={handleStart}>Start Tournament</Button>
             )}
           {tournament.status === "active" && isJoined && (
             <Button onClick={handlePlay}>Play Next Game</Button>
           )}
+          {(tournament.status === "pending" ||
+            tournament.status === "active") &&
+            isJoined && (
+              <Button
+                variant="destructive"
+                onClick={() => setIsExitDialogOpen(true)}
+              >
+                Exit Tournament
+              </Button>
+            )}
+          {(tournament.status === "pending" ||
+            tournament.status === "cancelled") &&
+            !tournament.createdByAdmin &&
+            user?._id === tournament.createdBy?._id && (
+              <Button
+                variant="destructive"
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                Delete Tournament
+              </Button>
+            )}
           {tournament.status === "playoff" &&
             tournament.playoffMatch &&
-            (tournament.playoffMatch.player1Id._id === user?._id ||
-              tournament.playoffMatch.player2Id._id === user?._id) && (
+            (tournament.playoffMatch.player1Id?._id === user?._id ||
+              tournament.playoffMatch.player2Id?._id === user?._id) && (
               <Button onClick={handlePlayoff}>Play Playoff</Button>
             )}
         </div>
@@ -313,6 +389,66 @@ export default function TournamentPage() {
           </>
         )}
       </div>
+
+      <Dialog open={isExitDialogOpen} onOpenChange={setIsExitDialogOpen}>
+        <DialogContent className="bg-[#262522] text-white max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Exit Tournament</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-gray-300">
+              Are you sure you want to exit the tournament? This action cannot
+              be undone.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsExitDialogOpen(false)}
+              className="bg-gray-700 text-white hover:bg-gray-600"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleExit}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Exit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="bg-[#262522] text-white max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Tournament</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-gray-300">
+              Are you sure you want to delete this tournament? This action
+              cannot be undone.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              className="bg-gray-700 text-white hover:bg-gray-600"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

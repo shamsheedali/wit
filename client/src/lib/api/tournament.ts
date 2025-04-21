@@ -56,6 +56,25 @@ export const startTournament = async (tournamentId: string, userId: string) => {
   }
 };
 
+export const deleteTournament = async (
+  tournamentId: string,
+  userId: string
+) => {
+  try {
+    const response = await apiClient.post(`${TOURNAMENT_API_URL}/delete`, {
+      tournamentId,
+      userId,
+    });
+    if (response.status === HttpStatus.OK) {
+      toast.success(response.data.message);
+      return response.data.tournament;
+    }
+  } catch (error) {
+    handleApiError(error);
+    return null;
+  }
+};
+
 export const getTournaments = async (page: number, limit: number) => {
   try {
     const response = await apiClient.get(`${TOURNAMENT_API_URL}`, {
@@ -146,6 +165,22 @@ export const pairMatch = async (tournamentId: string) => {
     });
     if (response.status === HttpStatus.OK) {
       return response.data.match;
+    }
+  } catch (error) {
+    handleApiError(error);
+    return null;
+  }
+};
+
+export const leaveTournament = async (tournamentId: string, userId: string) => {
+  try {
+    const response = await apiClient.post(`${TOURNAMENT_API_URL}/leave`, {
+      tournamentId,
+      userId,
+    });
+    if (response.status === HttpStatus.OK) {
+      toast.success(response.data.message);
+      return response.data.tournament;
     }
   } catch (error) {
     handleApiError(error);

@@ -165,7 +165,7 @@ export default class AdminController {
       timeControl,
       maxGames,
       createdBy,
-      true,
+      true
     );
 
     res.status(HttpStatus.OK).json({

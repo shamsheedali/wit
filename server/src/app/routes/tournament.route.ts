@@ -23,6 +23,16 @@ router.post(
   authenticateToken,
   asyncWrap(tournamentController.startTournament.bind(tournamentController))
 );
+router.post(
+  '/leave',
+  authenticateToken,
+  asyncWrap(tournamentController.leaveTournament.bind(tournamentController))
+);
+router.post(
+  '/delete',
+  authenticateToken,
+  asyncWrap(tournamentController.deleteTournament.bind(tournamentController))
+);
 router.get('/', asyncWrap(tournamentController.getTournaments.bind(tournamentController)));
 router.get(
   '/user',

@@ -21,7 +21,7 @@ export interface ITournament extends Document {
     result?: '1-0' | '0-1' | '0.5-0.5' | null;
     _id: Types.ObjectId;
   }[];
-  status: 'pending' | 'active' | 'playoff' | 'completed';
+  status: 'pending' | 'active' | 'playoff' | 'completed' | 'cancelled';
   createdBy: Types.ObjectId;
   createdByAdmin: boolean;
   startDate?: number;

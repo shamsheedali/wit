@@ -5,7 +5,7 @@ import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export type PlayerData = {
-  userId: { _id: string; username: string };
+  userId: string | { _id: string; username: string };
   points: number;
   gamesPlayed: number;
   wins: number;
@@ -15,16 +15,14 @@ export type PlayerData = {
 
 export const standingsColumns: ColumnDef<PlayerData>[] = [
   {
-    accessorKey: "userId.username",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Player
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
+    accessorKey: "userId",
+    header: "Player",
+    cell: ({ row }) => {
+      const userId = row.getValue("userId");
+      const username =
+        typeof userId === "string" ? "Unknown" : userId.username || "Unknown";
+      return <span>{username}</span>;
+    },
   },
   {
     accessorKey: "points",
@@ -32,26 +30,33 @@ export const standingsColumns: ColumnDef<PlayerData>[] = [
       <Button
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="flex items-center"
       >
         Points
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-  },
-  {
-    accessorKey: "wins",
-    header: "Wins",
-  },
-  {
-    accessorKey: "draws",
-    header: "Draws",
-  },
-  {
-    accessorKey: "losses",
-    header: "Losses",
+    cell: ({ row }) => <span>{row.getValue("points")}</span>,
+    sortingFn: "basic",
   },
   {
     accessorKey: "gamesPlayed",
     header: "Games Played",
+    cell: ({ row }) => <span>{row.getValue("gamesPlayed")}</span>,
+  },
+  {
+    accessorKey: "wins",
+    header: "Wins",
+    cell: ({ row }) => <span>{row.getValue("wins")}</span>,
+  },
+  {
+    accessorKey: "draws",
+    header: "Draws",
+    cell: ({ row }) => <span>{row.getValue("draws")}</span>,
+  },
+  {
+    accessorKey: "losses",
+    header: "Losses",
+    cell: ({ row }) => <span>{row.getValue("losses")}</span>,
   },
 ];
