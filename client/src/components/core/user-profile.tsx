@@ -28,6 +28,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
+import GameHistoryTable from "@/components/core/game-history-table";
 
 const UserProfile = ({ user }: { user: User }) => {
   const router = useRouter();
@@ -78,7 +79,7 @@ const UserProfile = ({ user }: { user: User }) => {
   };
 
   return (
-    <div className="w-full flex items-center justify-center">
+    <div className="w-full flex flex-col items-center justify-center">
       <div className="border-2 rounded-lg flex justify-center items-center w-fit p-5 md:py-8 md:px-14 gap-5 lg:gap-20">
         <Avatar className="cursor-pointer w-32 h-32 md:w-40 md:h-40">
           <AvatarImage
@@ -118,7 +119,7 @@ const UserProfile = ({ user }: { user: User }) => {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
-                      <Calendar1 />
+                    <Calendar1 />
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Joined</p>
@@ -145,8 +146,7 @@ const UserProfile = ({ user }: { user: User }) => {
             </div>
 
             <div className="flex flex-col items-center gap-3">
-
-            <TooltipProvider>
+              <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
                     <Swords />
@@ -205,6 +205,10 @@ const UserProfile = ({ user }: { user: User }) => {
           onClose={() => setIsChatOpen(false)}
         />
       )}
+
+      <div className="my-20">
+        <GameHistoryTable user={user} />
+      </div>
     </div>
   );
 };

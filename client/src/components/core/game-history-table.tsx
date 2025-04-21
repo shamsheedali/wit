@@ -12,16 +12,16 @@ import {
 import {
   ChevronDown,
   ChevronUp,
-  User,
+  User as UserIcon,
   Zap,
   MoveUpRight,
   Timer,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getUserGames } from "@/lib/api/game";
-import { useAuthStore } from "@/stores";
 import { getUsers } from "@/lib/api/user";
-import { Button } from "@/components/ui/button"; // Assuming you have a Button component
+import { Button } from "@/components/ui/button";
+import { User } from "@/types/auth";
 
 type Game = {
   _id: string;
@@ -48,21 +48,22 @@ interface PlayerInfo {
 interface GameHistoryTableProps {
   initialGames?: Game[];
   playerNames?: { [key: string]: PlayerInfo };
+  user: User;
 }
 
 export default function GameHistoryTable({
   initialGames = [],
   playerNames: initialPlayerNames = {},
+  user,
 }: GameHistoryTableProps) {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [games, setGames] = useState<Game[]>(initialGames);
   const [playerNames, setPlayerNames] = useState<{ [key: string]: PlayerInfo }>(
-    initialPlayerNames
+    initialPlayerNames,
   );
-  const { user } = useAuthStore();
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [limit] = useState(10); // Number of games per page
+  const [limit] = useState(5); // Number of games per page
 
   useEffect(() => {
     const fetchData = async () => {
@@ -217,7 +218,7 @@ export default function GameHistoryTable({
                                 className="h-full w-full object-cover"
                               />
                             ) : (
-                              <User className="h-full w-full object-cover text-gray-500" />
+                              <UserIcon className="h-full w-full object-cover text-gray-500" />
                             )}
                           </div>
                           <span className={getResultClass(game)}>
@@ -236,7 +237,7 @@ export default function GameHistoryTable({
                                 className="h-full w-full object-cover"
                               />
                             ) : (
-                              <User className="h-full w-full object-cover text-gray-500" />
+                              <UserIcon className="h-full w-full object-cover text-gray-500" />
                             )}
                           </div>
                           <span className={getResultClass(game)}>

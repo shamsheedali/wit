@@ -27,7 +27,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="px-56 w-full h-screen overflow-hidden pt-[120px] font-clashDisplay">
+    <div className="px-56 w-full h-screen pt-[120px] font-clashDisplay">
       <UserProfile user={user} />
     </div>
   );

@@ -56,7 +56,7 @@ export const updateGame = async (
 
 export const getUserGames = async (userId: string, page: number = 1, limit: number = 10) => {
   try {
-    const response = await apiClient.get(`${GAME_API_URL}/user`, {
+    const response = await apiClient.get(`${GAME_API_URL}/user/${userId}`, {
       params: { page, limit },
     });
     return response.data;
