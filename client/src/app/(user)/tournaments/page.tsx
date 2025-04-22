@@ -108,14 +108,13 @@ export default function TournamentsPage() {
   if (publicLoading || userLoading) return <div>Loading tournaments...</div>;
 
   return (
-    <div className="lg:px-56 w-full h-screen pt-[80px] font-clashDisplay text-[#f0f0f0db] bg-[#1a1a1a]">
+    <div className="lg:px-56 w-full h-screen pt-[80px] font-clashDisplay text-[#f0f0f0db] bg-[#09090b]">
       <div className="p-6 max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Tournaments</h1>
           {user && (
             <Button
               onClick={() => setOpenCreateDialog(true)}
-              className="bg-green-600 hover:bg-green-700"
             >
               Create Tournament
             </Button>
@@ -123,7 +122,7 @@ export default function TournamentsPage() {
         </div>
 
         <Tabs defaultValue="public" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4 bg-gray-800">
+          <TabsList className="grid w-full grid-cols-2 mb-4 bg-[#27272a]">
             <TabsTrigger value="public">Public Tournaments</TabsTrigger>
             <TabsTrigger value="my">My Tournaments</TabsTrigger>
           </TabsList>

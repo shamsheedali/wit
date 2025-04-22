@@ -37,8 +37,6 @@ import { getUsers } from "@/lib/api/user";
 import { ChessMove } from "@/types/game";
 import { Chess } from "chess.js";
 import ChatInterface from "@/components/core/chat-interface";
-import { reportGame } from "@/lib/api/gameReport";
-import { Socket } from "socket.io-client";
 
 export default function PlayFriend() {
   const { user } = useAuthStore();
@@ -58,6 +56,7 @@ export default function PlayFriend() {
     moves,
     addMove,
     resetGame,
+    setGameState,
   } = useGameStore();
 
   const [playAs, setPlayAs] = useState<boolean>(false);
@@ -74,7 +73,7 @@ export default function PlayFriend() {
 
   // Helper function to pair moves
   const getMovePairs = (
-    moves: ChessMove[]
+    moves: ChessMove[],
   ): { white: ChessMove | null; black: ChessMove | null }[] => {
     const pairs: { white: ChessMove | null; black: ChessMove | null }[] = [];
     for (let i = 0; i < moves.length; i += 2) {
@@ -213,6 +212,11 @@ export default function PlayFriend() {
   // Timer logic
   useEffect(() => {
     if (gameStarted && gameId) {
+      // Ensure activePlayer is set to "w" when game starts
+      if (!activePlayer) {
+        setGameState({ activePlayer: "w" });
+      }
+
       if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
         if (activePlayer === "w") {
@@ -222,9 +226,7 @@ export default function PlayFriend() {
             endGame("blackWin", "timeout", chess.fen());
             return;
           }
-          useGameStore.setState({
-            whiteTime: whiteTime - 1,
-          });
+          setGameState({ whiteTime: whiteTime - 1 });
         } else if (activePlayer === "b") {
           if (blackTime <= 0) {
             clearInterval(timerRef.current!);
@@ -232,9 +234,7 @@ export default function PlayFriend() {
             endGame("whiteWin", "timeout", chess.fen());
             return;
           }
-          useGameStore.setState({
-            blackTime: blackTime - 1,
-          });
+          setGameState({ blackTime: blackTime - 1 });
         }
       }, 1000);
 
@@ -242,7 +242,49 @@ export default function PlayFriend() {
         if (timerRef.current) clearInterval(timerRef.current);
       };
     }
-  }, [gameStarted, gameId, activePlayer, whiteTime, blackTime]);
+  }, [gameStarted, gameId, activePlayer, whiteTime, blackTime, setGameState]);
+
+  // Socket listener for opponent moves
+  useEffect(() => {
+    const socket = getSocket();
+    socket.on(
+      "moveMade",
+      (data: {
+        gameId: string;
+        move: ChessMove;
+        playerId: string;
+        fen: string;
+      }) => {
+        if (data.gameId === gameId && data.playerId !== user?._id) {
+          // Update chess instance
+          const newChess = new Chess(data.fen);
+          setChess(newChess);
+          // Add opponent's move
+          addMove(data.move);
+          // Update activePlayer based on whose turn it is now
+          setGameState({ activePlayer: newChess.turn() });
+        }
+      },
+    );
+
+    socket.on(
+      "opponentResigned",
+      (data: {
+        opponentId: string;
+        result: "whiteWin" | "blackWin" | "draw";
+      }) => {
+        if (data.opponentId === opponentId) {
+          toast.success(`Opponent resigned: ${data.result}`);
+          resetGame();
+        }
+      },
+    );
+
+    return () => {
+      socket.off("moveMade");
+      socket.off("opponentResigned");
+    };
+  }, [gameId, user?._id, opponentId, addMove, setGameState, resetGame]);
 
   const fetchUserNames = async () => {
     try {
@@ -275,7 +317,7 @@ export default function PlayFriend() {
   const endGame = async (
     result: "whiteWin" | "blackWin" | "draw",
     lossType: "checkmate" | "resignation" | "timeout",
-    fen: string
+    fen: string,
   ) => {
     if (dbGameId && gameStartTime) {
       const gameDuration = Math.floor((Date.now() - gameStartTime) / 1000);
@@ -287,7 +329,6 @@ export default function PlayFriend() {
         gameStatus: "completed",
         fen,
       });
-      resetGame();
       const socket = getSocket();
       if (socket) {
         socket.emit("opponentResigned", {
@@ -296,15 +337,24 @@ export default function PlayFriend() {
         });
       }
       toast.success(`Game ended: ${result}`);
+      resetGame();
     }
   };
 
   const handleMoveUpdate = async (move: ChessMove | undefined, fen: string) => {
     if (!move) return;
+    // Update chess instance
+    const newChess = new Chess(fen);
+    setChess(newChess);
+    // Add move to store
     addMove(move);
+    // Update activePlayer for next turn
+    setGameState({ activePlayer: newChess.turn() });
+    // Update game in database
     if (dbGameId) {
       await updateGame(dbGameId, { moves: [...moves, move], fen });
     }
+    // Emit move to opponent
     const socket = getSocket();
     if (socket && gameId && user?._id) {
       socket.emit("moveMade", {
@@ -326,14 +376,20 @@ export default function PlayFriend() {
       toast.error("Cannot send play request - missing user or friend");
       return;
     }
+    // Set initial timers based on selected time
+    const timeInSeconds = parseTimeToSeconds(selectedTime);
+    setGameState({
+      whiteTime: timeInSeconds,
+      blackTime: timeInSeconds,
+    });
     sendPlayRequest(
       selectedFriend._id,
       user.username,
       user.profileImageUrl as string,
-      selectedTime
+      selectedTime,
     );
     toast.success(
-      `Play request sent to ${selectedFriend.username} (${selectedTime})`
+      `Play request sent to ${selectedFriend.username} (${selectedTime})`,
     );
   };
 
@@ -379,6 +435,15 @@ export default function PlayFriend() {
       toast.error("Error submitting report");
       console.error(error);
     }
+  };
+
+  const parseTimeToSeconds = (time: string): number => {
+    if (time.includes("sec")) {
+      return parseInt(time.replace("sec", ""));
+    } else if (time.includes("min")) {
+      return parseInt(time.replace("min", "")) * 60;
+    }
+    return 600; // Default to 10 minutes
   };
 
   const formatTime = (seconds: number): string => {
@@ -565,7 +630,7 @@ export default function PlayFriend() {
                             <span className="inline-block w-4 h-4 mr-1">
                               {getPieceIcon(
                                 pair.white.piece,
-                                pair.white.color || "w"
+                                pair.white.color || "w",
                               )}
                             </span>
                             {pair.white.san}
@@ -578,7 +643,7 @@ export default function PlayFriend() {
                             <span className="inline-block w-4 h-4 mr-1">
                               {getPieceIcon(
                                 pair.black.piece,
-                                pair.black.color || "b"
+                                pair.black.color || "b",
                               )}
                             </span>
                             {pair.black.san}
@@ -608,7 +673,7 @@ export default function PlayFriend() {
                   endGame(
                     playerColor === "w" ? "blackWin" : "whiteWin",
                     "resignation",
-                    chess.fen()
+                    chess.fen(),
                   )
                 }
               >

@@ -29,7 +29,7 @@ export const useGameStore = create<GameState>((set) => ({
   whiteTime: 600,
   blackTime: 600,
   gameStarted: false,
-  activePlayer: null,
+  activePlayer: null, // Will be set to "w" when game starts
   gameStartTime: null,
   moves: [],
   addMove: (move) =>

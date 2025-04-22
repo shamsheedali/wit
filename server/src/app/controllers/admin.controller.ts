@@ -10,14 +10,12 @@ import TYPES from '../../config/types';
 import AdminService from '../services/admin.service';
 import Role from '../../constants/role';
 import {
-  ApplicationError,
   MissingFieldError,
   BadRequestError,
   NotFoundError,
   UnauthorizedError,
 } from '../../utils/http-error.util';
 import HttpResponse from '../../constants/response-message.constant';
-import log from '../../utils/logger';
 
 @injectable()
 export default class AdminController {
@@ -93,8 +91,7 @@ export default class AdminController {
     if (!user) throw new NotFoundError(HttpResponse.USER_NOT_FOUND);
 
     const updatedUser = await this._userService.update(userId, { isBanned: !user.isBanned });
-    if (!updatedUser)
-      throw new ApplicationError(HttpStatus.INTERNAL_SERVER_ERROR, 'Failed to toggle ban status');
+    if (!updatedUser) throw new BadRequestError('Failed to toggle ban status');
 
     res.status(HttpStatus.OK).json({
       message: updatedUser.isBanned ? 'User banned successfully' : 'User unbanned successfully',
@@ -121,7 +118,7 @@ export default class AdminController {
     if (!gameId) throw new BadRequestError('Game ID is required');
 
     const game = await this._gameService.deleteGame(gameId);
-    if (!game) throw new NotFoundError('Game not found');
+    if (!game) throw new NotFoundError(HttpResponse.GAME_NOT_FOUND);
 
     res.status(HttpStatus.OK).json({ message: 'Game deleted successfully' });
   }
@@ -131,7 +128,7 @@ export default class AdminController {
     if (!gameId) throw new BadRequestError('Game ID is required');
 
     const game = await this._gameService.terminateGame(gameId);
-    if (!game) throw new NotFoundError('Game not found');
+    if (!game) throw new NotFoundError(HttpResponse.GAME_NOT_FOUND);
 
     res.status(HttpStatus.OK).json({ message: 'Game terminated successfully', game });
   }
@@ -160,37 +157,31 @@ export default class AdminController {
     if (!maxPlayers) throw new MissingFieldError('maxPlayers');
     if (!createdBy) throw new MissingFieldError('createdBy');
 
-    try {
-      const tournament = await this._tournamentService.createTournament(
-        name,
-        gameType,
-        timeControl,
-        maxGames,
-        createdBy,
-        maxPlayers,
-        undefined, // No password for admin-created tournaments
-        true
-      );
-      res.status(HttpStatus.OK).json({
-        message: 'Tournament created successfully',
-        tournament,
-      });
-    } catch (error: any) {
-      res.status(HttpStatus.BAD_REQUEST).json({ message: error.message });
-    }
+    const tournament = await this._tournamentService.createTournament(
+      name,
+      gameType,
+      timeControl,
+      maxGames,
+      createdBy,
+      maxPlayers,
+      undefined,
+      true
+    );
+
+    res.status(HttpStatus.OK).json({
+      message: 'Tournament created successfully',
+      tournament,
+    });
   }
 
   async deleteTournament(req: Request, res: Response) {
     const tournamentId = req.params.tournamentId;
     if (!tournamentId) throw new BadRequestError('Tournament ID is required');
 
-    try {
-      const tournament = await this._tournamentService.deleteTournament(tournamentId);
-      if (!tournament) throw new NotFoundError('Tournament not found');
-      res.status(HttpStatus.OK).json({ message: 'Tournament deleted successfully' });
-    } catch (error: any) {
-      res.status(HttpStatus.BAD_REQUEST).json({ message: error.message });
-    }
+    const tournament = await this._tournamentService.deleteTournament(tournamentId);
+    if (!tournament) throw new NotFoundError('Tournament not found');
+
+    res.status(HttpStatus.OK).json({ message: 'Tournament deleted successfully' });
   }
 
   async getUserGrowth(req: Request, res: Response) {
@@ -247,13 +238,7 @@ export default class AdminController {
     const refreshToken = req.cookies.adminRefreshToken;
     if (!refreshToken) throw new UnauthorizedError(HttpResponse.NO_TOKEN);
 
-    let decoded;
-    try {
-      decoded = this._tokenService.verifyToken(refreshToken, process.env.REFRESH_JWT_SECRET!);
-    } catch (error) {
-      log.error(error);
-      throw new UnauthorizedError(HttpResponse.TOKEN_EXPIRED);
-    }
+    const decoded = this._tokenService.verifyToken(refreshToken, process.env.REFRESH_JWT_SECRET!);
     const { userId, email, role } = decoded as { userId: string; email: string; role: string };
 
     const newAccessToken = this._tokenService.generateAccessToken(userId, email, role);
