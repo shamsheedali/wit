@@ -7,6 +7,8 @@ export interface ITournament extends Document {
   gameType: GameType;
   timeControl: string;
   maxGames: number;
+  maxPlayers: number;
+  password?: string;
   players: {
     userId: Types.ObjectId;
     points: number;
@@ -38,6 +40,8 @@ const tournamentSchema = new Schema<ITournament>({
   gameType: { type: String, enum: Object.values(GameType), required: true },
   timeControl: { type: String, required: true },
   maxGames: { type: Number, required: true },
+  maxPlayers: { type: Number, required: true, min: 2, max: 20 },
+  password: { type: String, required: false },
   players: [
     {
       userId: { type: Schema.Types.ObjectId, ref: 'Users', required: true },
@@ -56,7 +60,11 @@ const tournamentSchema = new Schema<ITournament>({
       _id: { type: Schema.Types.ObjectId, auto: true },
     },
   ],
-  status: { type: String, enum: ['pending', 'active', 'playoff', 'completed'], default: 'pending' },
+  status: {
+    type: String,
+    enum: ['pending', 'active', 'playoff', 'completed', 'cancelled'],
+    default: 'pending',
+  },
   createdByAdmin: { type: Boolean, default: false },
   createdBy: { type: Schema.Types.ObjectId, ref: 'Users', required: true },
   startDate: { type: Number },

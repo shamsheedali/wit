@@ -151,37 +151,46 @@ export default class AdminController {
   }
 
   async createTournament(req: Request, res: Response) {
-    const { name, gameType, timeControl, maxGames, createdBy } = req.body;
+    const { name, gameType, timeControl, maxGames, maxPlayers, createdBy } = req.body;
 
     if (!name) throw new MissingFieldError('name');
     if (!gameType) throw new MissingFieldError('gameType');
     if (!timeControl) throw new MissingFieldError('timeControl');
     if (!maxGames) throw new MissingFieldError('maxGames');
+    if (!maxPlayers) throw new MissingFieldError('maxPlayers');
     if (!createdBy) throw new MissingFieldError('createdBy');
 
-    const tournament = await this._tournamentService.createTournament(
-      name,
-      gameType,
-      timeControl,
-      maxGames,
-      createdBy,
-      true
-    );
-
-    res.status(HttpStatus.OK).json({
-      message: 'Tournament created successfully',
-      tournament,
-    });
+    try {
+      const tournament = await this._tournamentService.createTournament(
+        name,
+        gameType,
+        timeControl,
+        maxGames,
+        createdBy,
+        maxPlayers,
+        undefined, // No password for admin-created tournaments
+        true
+      );
+      res.status(HttpStatus.OK).json({
+        message: 'Tournament created successfully',
+        tournament,
+      });
+    } catch (error: any) {
+      res.status(HttpStatus.BAD_REQUEST).json({ message: error.message });
+    }
   }
 
   async deleteTournament(req: Request, res: Response) {
     const tournamentId = req.params.tournamentId;
     if (!tournamentId) throw new BadRequestError('Tournament ID is required');
 
-    const tournament = await this._tournamentService.deleteTournament(tournamentId);
-    if (!tournament) throw new NotFoundError('Tournament not found');
-
-    res.status(HttpStatus.OK).json({ message: 'Tournament deleted successfully' });
+    try {
+      const tournament = await this._tournamentService.deleteTournament(tournamentId);
+      if (!tournament) throw new NotFoundError('Tournament not found');
+      res.status(HttpStatus.OK).json({ message: 'Tournament deleted successfully' });
+    } catch (error: any) {
+      res.status(HttpStatus.BAD_REQUEST).json({ message: error.message });
+    }
   }
 
   async getUserGrowth(req: Request, res: Response) {

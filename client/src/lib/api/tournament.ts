@@ -10,7 +10,10 @@ export const createTournament = async (data: {
   gameType: string;
   timeControl: string;
   maxGames: number;
+  maxPlayers: number;
   createdBy: string;
+  password?: string;
+  createdByAdmin?: boolean;
 }) => {
   try {
     const response = await apiClient.post(`${TOURNAMENT_API_URL}/create`, data);
@@ -24,11 +27,16 @@ export const createTournament = async (data: {
   }
 };
 
-export const joinTournament = async (tournamentId: string, userId: string) => {
+export const joinTournament = async (
+  tournamentId: string,
+  userId: string,
+  password?: string
+) => {
   try {
     const response = await apiClient.post(`${TOURNAMENT_API_URL}/join`, {
       tournamentId,
       userId,
+      password,
     });
     if (response.status === HttpStatus.OK) {
       toast.success(response.data.message);

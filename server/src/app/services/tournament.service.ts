@@ -6,6 +6,7 @@ import UserRepository from '../repositories/user.repository';
 import AdminRepository from '../repositories/admin.repository';
 import { ITournament } from '../models/tournament.model';
 import { GameType } from '../models/game.model';
+import * as bcrypt from 'bcrypt';
 
 @injectable()
 export default class TournamentService {
@@ -32,6 +33,8 @@ export default class TournamentService {
     timeControl: string,
     maxGames: number,
     createdBy: string,
+    maxPlayers: number,
+    password?: string,
     createdByAdmin = false
   ): Promise<ITournament> {
     let creator;
@@ -43,17 +46,29 @@ export default class TournamentService {
       if (!creator) throw new Error('User not found');
     }
 
+    if (maxPlayers < 2 || maxPlayers > 20) {
+      throw new Error('Max players must be between 2 and 20');
+    }
+
     const tournamentData: Partial<ITournament> = {
       name,
       type: 'league',
       gameType,
       timeControl,
       maxGames,
+      maxPlayers,
       createdBy: new Types.ObjectId(createdBy),
       createdByAdmin,
       players: [],
       matches: [],
     };
+
+    if (password && !createdByAdmin) {
+      if (password.length !== 6) {
+        throw new Error('Password must be exactly 6 characters');
+      }
+      tournamentData.password = await bcrypt.hash(password, 10);
+    }
 
     const tournament = await this._tournamentRepository.create(tournamentData);
     if (!createdByAdmin) {
@@ -76,7 +91,11 @@ export default class TournamentService {
     return deletedTournament;
   }
 
-  async joinTournament(tournamentId: string, userId: string): Promise<ITournament> {
+  async joinTournament(
+    tournamentId: string,
+    userId: string,
+    password?: string
+  ): Promise<ITournament> {
     const tournament = await this._tournamentRepository.findById(tournamentId);
     if (!tournament) throw new Error('Tournament not found');
     if (tournament.status !== 'pending') throw new Error('Tournament is not open for joining');
@@ -84,6 +103,18 @@ export default class TournamentService {
     if (!user) throw new Error('User not found');
     if (tournament.players.some((p) => p.userId.equals(userId))) {
       throw new Error('User already joined');
+    }
+    if (tournament.players.length >= tournament.maxPlayers) {
+      throw new Error('Tournament is full');
+    }
+    if (!tournament.createdByAdmin && tournament.password) {
+      if (!password) {
+        throw new Error('Password is required');
+      }
+      const isPasswordValid = await bcrypt.compare(password, tournament.password);
+      if (!isPasswordValid) {
+        throw new Error('Invalid password');
+      }
     }
     const updatedTournament = await this._tournamentRepository.addPlayer(tournamentId, userId);
     if (!updatedTournament) throw new Error('Failed to join tournament');
