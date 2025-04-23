@@ -37,6 +37,7 @@ import { getUsers } from "@/lib/api/user";
 import { ChessMove } from "@/types/game";
 import { Chess } from "chess.js";
 import ChatInterface from "@/components/core/chat-interface";
+import { reportGame } from "@/lib/api/gameReport";
 
 export default function PlayFriend() {
   const { user } = useAuthStore();
@@ -47,6 +48,7 @@ export default function PlayFriend() {
     opponentId,
     opponentName,
     opponentProfilePicture,
+    opponentEloRating,
     playerColor,
     whiteTime,
     blackTime,
@@ -70,10 +72,163 @@ export default function PlayFriend() {
   const [reportReason, setReportReason] = useState<string>("cheating");
   const [reportDetails, setReportDetails] = useState<string>("");
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [moveIndex, setMoveIndex] = useState(-1); // -1 means current position
+  const [viewMode, setViewMode] = useState(false); // Whether we're in view mode or play mode
+
+  //to reset the chess-board after the game
+  const [boardKey, setBoardKey] = useState(0);
+
+  // Update the chess instance when moves or moveIndex changes
+  useEffect(() => {
+    const newChess = new Chess();
+
+    if (moveIndex === -1) {
+      // Show current position (all moves)
+      moves.forEach((move) => {
+        try {
+          newChess.move({
+            from: move.from,
+            to: move.to,
+            promotion: move.promotion || "q",
+          });
+        } catch (e) {
+          console.error("Invalid move:", move, e);
+        }
+      });
+    } else if (moveIndex >= 0 && moveIndex < moves.length) {
+      // Show position up to the selected move
+      for (let i = 0; i <= moveIndex; i++) {
+        try {
+          newChess.move({
+            from: moves[i].from,
+            to: moves[i].to,
+            promotion: moves[i].promotion || "q",
+          });
+        } catch (e) {
+          console.error("Invalid move:", moves[i], e);
+        }
+      }
+    }
+
+    setChess(newChess);
+  }, [moves, moveIndex]);
+
+  // Handle navigation button clicks
+  const handleFirstMove = () => {
+    setMoveIndex(-2); // Special index for initial position
+    setViewMode(true);
+    setChess(new Chess()); // Reset to initial position
+  };
+
+  const handlePreviousMove = () => {
+    setViewMode(true);
+    if (moveIndex === -1) {
+      // If at current position, go to last move
+      setMoveIndex(moves.length - 1);
+    } else if (moveIndex > -2) {
+      // Go back one move
+      setMoveIndex(Math.max(-2, moveIndex - 1));
+    }
+
+    // Create a new game instance and replay moves up to the current index
+    const newChess = new Chess();
+    if (moveIndex > -2) {
+      const targetIndex = moveIndex === -1 ? moves.length - 2 : moveIndex - 1;
+      for (let i = 0; i <= targetIndex; i++) {
+        try {
+          newChess.move({
+            from: moves[i].from,
+            to: moves[i].to,
+            promotion: moves[i].promotion || "q",
+          });
+        } catch (e) {
+          console.error("Invalid move:", moves[i], e);
+        }
+      }
+    }
+    setChess(newChess);
+  };
+
+  const handleNextMove = () => {
+    setViewMode(true);
+    if (moveIndex === -2) {
+      // From initial position, go to first move
+      setMoveIndex(0);
+    } else if (moveIndex < moves.length - 1) {
+      // Go forward one move
+      setMoveIndex(moveIndex + 1);
+    } else {
+      // If at last move, go to current position
+      setMoveIndex(-1);
+      setViewMode(false);
+    }
+
+    // Create a new game instance and replay moves up to the current index
+    const newChess = new Chess();
+    if (moveIndex === -2) {
+      // Just show first move
+      try {
+        newChess.move({
+          from: moves[0].from,
+          to: moves[0].to,
+          promotion: moves[0].promotion || "q",
+        });
+      } catch (e) {
+        console.error("Invalid move:", moves[0], e);
+      }
+    } else if (moveIndex >= 0 && moveIndex < moves.length - 1) {
+      // Show up to next move
+      for (let i = 0; i <= moveIndex + 1; i++) {
+        try {
+          newChess.move({
+            from: moves[i].from,
+            to: moves[i].to,
+            promotion: moves[i].promotion || "q",
+          });
+        } catch (e) {
+          console.error("Invalid move:", moves[i], e);
+        }
+      }
+    } else if (moveIndex === moves.length - 1) {
+      // Show all moves (current position)
+      for (let i = 0; i < moves.length; i++) {
+        try {
+          newChess.move({
+            from: moves[i].from,
+            to: moves[i].to,
+            promotion: moves[i].promotion || "q",
+          });
+        } catch (e) {
+          console.error("Invalid move:", moves[i], e);
+        }
+      }
+    }
+    setChess(newChess);
+  };
+
+  const handleLastMove = () => {
+    setMoveIndex(-1); // Go to current position
+    setViewMode(false);
+
+    // Create a new game instance with all moves
+    const newChess = new Chess();
+    moves.forEach((move) => {
+      try {
+        newChess.move({
+          from: move.from,
+          to: move.to,
+          promotion: move.promotion || "q",
+        });
+      } catch (e) {
+        console.error("Invalid move:", move, e);
+      }
+    });
+    setChess(newChess);
+  };
 
   // Helper function to pair moves
   const getMovePairs = (
-    moves: ChessMove[],
+    moves: ChessMove[]
   ): { white: ChessMove | null; black: ChessMove | null }[] => {
     const pairs: { white: ChessMove | null; black: ChessMove | null }[] = [];
     for (let i = 0; i < moves.length; i += 2) {
@@ -247,43 +402,45 @@ export default function PlayFriend() {
   // Socket listener for opponent moves
   useEffect(() => {
     const socket = getSocket();
-    socket.on(
-      "moveMade",
-      (data: {
-        gameId: string;
-        move: ChessMove;
-        playerId: string;
-        fen: string;
-      }) => {
-        if (data.gameId === gameId && data.playerId !== user?._id) {
-          // Update chess instance
-          const newChess = new Chess(data.fen);
-          setChess(newChess);
-          // Add opponent's move
-          addMove(data.move);
-          // Update activePlayer based on whose turn it is now
-          setGameState({ activePlayer: newChess.turn() });
+    if (socket) {
+      socket.on(
+        "moveMade",
+        (data: {
+          gameId: string;
+          move: ChessMove;
+          playerId: string;
+          fen: string;
+        }) => {
+          if (data.gameId === gameId && data.playerId !== user?._id) {
+            // Update chess instance
+            const newChess = new Chess(data.fen);
+            setChess(newChess);
+            // Add opponent's move
+            addMove(data.move);
+            // Update activePlayer based on whose turn it is now
+            setGameState({ activePlayer: newChess.turn() });
+          }
         }
-      },
-    );
+      );
 
-    socket.on(
-      "opponentResigned",
-      (data: {
-        opponentId: string;
-        result: "whiteWin" | "blackWin" | "draw";
-      }) => {
-        if (data.opponentId === opponentId) {
-          toast.success(`Opponent resigned: ${data.result}`);
-          resetGame();
+      socket.on(
+        "opponentResigned",
+        (data: {
+          opponentId: string;
+          result: "whiteWin" | "blackWin" | "draw";
+        }) => {
+          if (data.opponentId === opponentId) {
+            toast.success(`Opponent resigned: ${data.result}`);
+            resetGame();
+          }
         }
-      },
-    );
+      );
 
-    return () => {
-      socket.off("moveMade");
-      socket.off("opponentResigned");
-    };
+      return () => {
+        socket.off("moveMade");
+        socket.off("opponentResigned");
+      };
+    }
   }, [gameId, user?._id, opponentId, addMove, setGameState, resetGame]);
 
   const fetchUserNames = async () => {
@@ -317,7 +474,7 @@ export default function PlayFriend() {
   const endGame = async (
     result: "whiteWin" | "blackWin" | "draw",
     lossType: "checkmate" | "resignation" | "timeout",
-    fen: string,
+    fen: string
   ) => {
     if (dbGameId && gameStartTime) {
       const gameDuration = Math.floor((Date.now() - gameStartTime) / 1000);
@@ -337,23 +494,39 @@ export default function PlayFriend() {
         });
       }
       toast.success(`Game ended: ${result}`);
+
+      // Reset all chess-related states
       resetGame();
+      setChess(new Chess());
+      setMoveIndex(-1);
+      setViewMode(false);
+      setCurrentOpening("No moves yet");
+      setBoardKey((prevKey) => prevKey + 1);
     }
   };
 
   const handleMoveUpdate = async (move: ChessMove | undefined, fen: string) => {
     if (!move) return;
+
+    // Reset view mode when a new move is made
+    setViewMode(false);
+    setMoveIndex(-1);
+
     // Update chess instance
     const newChess = new Chess(fen);
     setChess(newChess);
+
     // Add move to store
     addMove(move);
+
     // Update activePlayer for next turn
     setGameState({ activePlayer: newChess.turn() });
+
     // Update game in database
     if (dbGameId) {
       await updateGame(dbGameId, { moves: [...moves, move], fen });
     }
+
     // Emit move to opponent
     const socket = getSocket();
     if (socket && gameId && user?._id) {
@@ -386,10 +559,11 @@ export default function PlayFriend() {
       selectedFriend._id,
       user.username,
       user.profileImageUrl as string,
-      selectedTime,
+      user.eloRating,
+      selectedTime
     );
     toast.success(
-      `Play request sent to ${selectedFriend.username} (${selectedTime})`,
+      `Play request sent to ${selectedFriend.username} (${selectedTime})`
     );
   };
 
@@ -479,6 +653,13 @@ export default function PlayFriend() {
               {gameStarted && selectedFriend
                 ? selectedFriend.username
                 : opponentName || "Opponent"}
+              <span className="text-gray-500 ml-1">
+                (
+                {gameStarted && selectedFriend
+                  ? selectedFriend.eloRating
+                  : opponentEloRating || 500}
+                )
+              </span>
             </h1>
           </div>
           <div className="bg-[#262522] px-8 py-3 rounded-sm">
@@ -493,11 +674,14 @@ export default function PlayFriend() {
         {/* CHESS BOARD */}
         <div className="flex-grow flex items-center justify-center w-full max-w-[500px] my-2">
           <ChessBoard
+            key={boardKey}
             gameId={gameId || ""}
             playerColor={playerColor || "w"}
             opponentId={opponentId || ""}
             onMove={handleMoveUpdate}
             onGameEnd={endGame}
+            viewMode={viewMode}
+            position={gameStarted ? chess.fen() : undefined}
           />
         </div>
 
@@ -630,7 +814,7 @@ export default function PlayFriend() {
                             <span className="inline-block w-4 h-4 mr-1">
                               {getPieceIcon(
                                 pair.white.piece,
-                                pair.white.color || "w",
+                                pair.white.color || "w"
                               )}
                             </span>
                             {pair.white.san}
@@ -643,7 +827,7 @@ export default function PlayFriend() {
                             <span className="inline-block w-4 h-4 mr-1">
                               {getPieceIcon(
                                 pair.black.piece,
-                                pair.black.color || "b",
+                                pair.black.color || "b"
                               )}
                             </span>
                             {pair.black.san}
@@ -673,7 +857,7 @@ export default function PlayFriend() {
                   endGame(
                     playerColor === "w" ? "blackWin" : "whiteWin",
                     "resignation",
-                    chess.fen(),
+                    chess.fen()
                   )
                 }
               >
@@ -685,6 +869,7 @@ export default function PlayFriend() {
                 size="icon"
                 variant="outline"
                 className="bg-gray-700 text-white hover:bg-gray-600"
+                onClick={handleFirstMove}
               >
                 <ChevronsLeft />
               </Button>
@@ -692,6 +877,7 @@ export default function PlayFriend() {
                 size="icon"
                 variant="outline"
                 className="bg-gray-700 text-white hover:bg-gray-600"
+                onClick={handlePreviousMove}
               >
                 <ChevronLeft />
               </Button>
@@ -699,6 +885,7 @@ export default function PlayFriend() {
                 size="icon"
                 variant="outline"
                 className="bg-gray-700 text-white hover:bg-gray-600"
+                onClick={handleNextMove}
               >
                 <ChevronRight />
               </Button>
@@ -706,6 +893,7 @@ export default function PlayFriend() {
                 size="icon"
                 variant="outline"
                 className="bg-gray-700 text-white hover:bg-gray-600"
+                onClick={handleLastMove}
               >
                 <ChevronsRight />
               </Button>

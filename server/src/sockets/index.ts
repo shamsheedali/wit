@@ -71,15 +71,17 @@ export default function socketHandler(io: Server) {
         receiverId: string;
         senderName: string;
         senderPfp: string;
+        senderEloRating: number;
         time: string;
       }) => {
-        const { senderId, receiverId, senderName, senderPfp, time } = data;
+        const { senderId, receiverId, senderName, senderPfp, senderEloRating, time } = data;
         // log.info(`Friend play request from ${senderId} to ${receiverId}`);
         io.to(receiverId).emit('playRequestReceived', {
           senderId,
           receiverId,
           senderName,
           senderPfp,
+          senderEloRating,
           time,
           timestamp: Date.now(),
         });
