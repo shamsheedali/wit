@@ -15,6 +15,9 @@ interface GameState {
   activePlayer: "w" | "b" | null;
   gameStartTime: number | null;
   moves: ChessMove[];
+  isTournamentGame: boolean;
+  tournamentId: string | null;
+  matchId: string | null;
   addMove: (move: ChessMove) => void;
   resetGame: () => void;
   setGameState: (state: Partial<GameState>) => void;
@@ -31,9 +34,12 @@ export const useGameStore = create<GameState>((set) => ({
   whiteTime: 600,
   blackTime: 600,
   gameStarted: false,
-  activePlayer: null, // Will be set to "w" when game starts
+  activePlayer: null,
   gameStartTime: null,
   moves: [],
+  isTournamentGame: false,
+  tournamentId: null,
+  matchId: null,
   addMove: (move) =>
     set((state) => ({
       moves: [...state.moves, move],
@@ -53,6 +59,9 @@ export const useGameStore = create<GameState>((set) => ({
       activePlayer: null,
       gameStartTime: null,
       moves: [],
+      isTournamentGame: false,
+      tournamentId: null,
+      matchId: null,
     }),
   setGameState: (newState) => set((state) => ({ ...state, ...newState })),
 }));

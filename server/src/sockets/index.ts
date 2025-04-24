@@ -19,12 +19,10 @@ export default function socketHandler(io: Server) {
     socket.on('join', async (userId: string) => {
       onlineUsers.set(userId, socket.id);
       socket.join(userId);
-      // log.info(`${userId} joined their room`);
 
       const admin = await Admin.findOne({ userId });
       if (admin) {
         socket.join('adminRoom');
-        // log.info(`${userId} joined admin room`);
       }
 
       const friends = await User.findById(userId).populate('friends', 'username');
@@ -41,13 +39,11 @@ export default function socketHandler(io: Server) {
 
     socket.on('joinMatchmaking', (data: { userId: string; time: string }) => {
       const { userId, time } = data;
-      // log.info(`${userId} joined matchmaking with time ${time}`);
       matchmakingQueue.set(userId, { userId, time, socket });
 
       for (const [queuedUserId, queuedData] of matchmakingQueue) {
         if (queuedUserId !== userId && queuedData.time === time) {
           const gameId = uuidv4();
-          // log.info(`Matched ${userId} with ${queuedUserId}, gameId: ${gameId}`);
           socket.emit('matchFound', { opponentId: queuedUserId, gameId, time });
           queuedData.socket.emit('matchFound', { opponentId: userId, gameId, time });
           matchmakingQueue.delete(userId);
@@ -55,15 +51,12 @@ export default function socketHandler(io: Server) {
           return;
         }
       }
-      log.info(`${userId} waiting in queue...`);
     });
 
     socket.on('cancelMatchmaking', (userId: string) => {
       matchmakingQueue.delete(userId);
-      // log.info(`${userId} canceled matchmaking`);
     });
 
-    // Friend game play request
     socket.on(
       'playRequest',
       (data: {
@@ -75,7 +68,6 @@ export default function socketHandler(io: Server) {
         time: string;
       }) => {
         const { senderId, receiverId, senderName, senderPfp, senderEloRating, time } = data;
-        // log.info(`Friend play request from ${senderId} to ${receiverId}`);
         io.to(receiverId).emit('playRequestReceived', {
           senderId,
           receiverId,
@@ -88,7 +80,6 @@ export default function socketHandler(io: Server) {
       }
     );
 
-    // Friend game accept play request
     socket.on(
       'acceptPlayRequest',
       (data: {
@@ -100,7 +91,6 @@ export default function socketHandler(io: Server) {
         time: string;
       }) => {
         const { senderId, receiverId, senderName, gameId, dbGameId, time } = data;
-        // log.info(`Friend play request accepted by ${receiverId} for game ${gameId}`);
         io.to(senderId).emit('playRequestAccepted', {
           senderId,
           receiverId,
@@ -121,7 +111,6 @@ export default function socketHandler(io: Server) {
       }
     );
 
-    // Tournament play request
     socket.on(
       'tournamentPlayRequest',
       (data: {
@@ -134,25 +123,13 @@ export default function socketHandler(io: Server) {
         tournamentId: string;
         matchId: string;
       }) => {
-        const { senderId, receiverId, senderName, senderPfp, senderEloRating, time, tournamentId, matchId } = data;
-        // log.info(
-        //   `Tournament play request from ${senderId} to ${receiverId} for tournament ${tournamentId}`
-        // );
-        io.to(receiverId).emit('tournamentPlayRequestReceived', {
-          senderId,
-          receiverId,
-          senderName,
-          senderPfp,
-          senderEloRating,
-          time,
-          tournamentId,
-          matchId,
+        io.to(data.receiverId).emit('tournamentPlayRequestReceived', {
+          ...data,
           timestamp: Date.now(),
         });
       }
     );
 
-    // Tournament accept play request
     socket.on(
       'tournamentPlayRequestAccepted',
       (data: {
@@ -165,49 +142,43 @@ export default function socketHandler(io: Server) {
         tournamentId: string;
         matchId: string;
       }) => {
-        const { senderId, receiverId, senderName, gameId, dbGameId, time, tournamentId, matchId } =
-          data;
-        // log.info(`Tournament play request accepted by ${receiverId} for game ${gameId}`);
-        io.to(senderId).emit('tournamentPlayRequestAccepted', {
-          senderId,
-          receiverId,
-          opponentId: receiverId,
-          opponentName: senderName,
-          gameId,
-          dbGameId,
-          time,
-          tournamentId,
-          matchId,
+        io.to(data.senderId).emit('tournamentPlayRequestAccepted', {
+          ...data,
+          opponentId: data.receiverId,
+          opponentName: data.senderName,
           timestamp: Date.now(),
         });
-        io.to(receiverId).emit('tournamentGameStarted', {
-          gameId,
-          dbGameId,
-          opponentId: senderId,
-          opponentName: senderName,
-          time,
-          tournamentId,
-          matchId,
+        io.to(data.receiverId).emit('tournamentGameStarted', {
+          gameId: data.gameId,
+          dbGameId: data.dbGameId,
+          opponentId: data.senderId,
+          opponentName: data.senderName,
+          time: data.time,
+          tournamentId: data.tournamentId,
+          matchId: data.matchId,
           timestamp: Date.now(),
         });
       }
     );
 
+    socket.on('tournamentStarted', (data) => {
+      data.players.forEach((playerId: string) => {
+        io.to(playerId).emit('tournamentStarted', data);
+      });
+    });
+
     socket.on('joinGame', (data: { gameId: string }) => {
       const { gameId } = data;
       socket.join(gameId);
-      // log.info(`User joined game room: ${gameId}`);
     });
 
     socket.on('makeMove', (data: { gameId: string; playerId: string; fen: string; move: any }) => {
       const { gameId, playerId, fen, move } = data;
-      // log.info(`Move made in game ${gameId} by player ${playerId}`);
       io.to(gameId).emit('moveMade', { gameId, playerId, fen, move });
     });
 
     socket.on('sendChatMessage', (data: { gameId: string; userId: string; message: string }) => {
       const { gameId, userId, message } = data;
-      // log.info(`Chat message in game ${gameId} from ${userId}: ${message}`);
       io.to(gameId).emit('chatMessageReceived', {
         senderId: userId,
         content: message,
@@ -225,8 +196,6 @@ export default function socketHandler(io: Server) {
         timestamp: string;
       }) => {
         const { senderId, receiverId, content, _id, timestamp } = data;
-        // log.info(`Message from ${senderId} to ${receiverId}: ${content}`);
-
         io.to(receiverId).emit('messageReceived', {
           senderId,
           receiverId,
@@ -256,10 +225,6 @@ export default function socketHandler(io: Server) {
         timestamp: string;
       }) => {
         const { gameId, reportingUserId, reportedUserId, reason, details, _id, timestamp } = data;
-        // log.info(
-        //   `Game report from ${reportingUserId} against ${reportedUserId} for game ${gameId}`
-        // );
-
         io.to('adminRoom').emit('gameReportReceived', {
           _id,
           gameId,
@@ -275,7 +240,6 @@ export default function socketHandler(io: Server) {
     socket.on('gameTerminated', (data) => {
       const { gameId, playerOne, playerTwo } = data;
       io.to(playerOne).to(playerTwo).emit('gameTerminated', { gameId });
-      log.info(`Terminated game ${gameId} for ${playerOne} and ${playerTwo}`);
     });
 
     socket.on('userBanned', (data) => {
@@ -295,7 +259,6 @@ export default function socketHandler(io: Server) {
 
     socket.on('tournamentUpdate', (updatedTournament: any) => {
       io.emit('tournamentUpdated', updatedTournament);
-      // log.info(`Tournament updated: ${updatedTournament._id}`);
     });
 
     socket.on('joinClubChat', async (data: { clubName: string; userId: string }) => {
@@ -311,12 +274,10 @@ export default function socketHandler(io: Server) {
         return;
       }
       socket.join(clubName);
-      // log.info(`${userId} joined club chat: ${clubName}`);
     });
 
     socket.on('sendClubMessage', (data: { clubName: string; userId: string; message: string }) => {
       const { clubName, userId, message } = data;
-      // log.info(`Club message in ${clubName} from ${userId}: ${message}`);
       io.to(clubName).emit('clubMessageReceived', {
         senderId: userId,
         content: message,
@@ -326,12 +287,10 @@ export default function socketHandler(io: Server) {
 
     socket.on('clubDeleted', (data: { clubName: string }) => {
       const { clubName } = data;
-      log.info(`Club deleted: ${clubName}`);
       io.to(clubName).emit('clubDeleted');
     });
 
     socket.on('disconnect', async () => {
-      log.info('User disconnected:', socket.id);
       const userId = [...onlineUsers.entries()].find(([, sId]) => sId === socket.id)?.[0];
       if (userId) {
         onlineUsers.delete(userId);
