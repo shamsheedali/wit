@@ -10,7 +10,11 @@ const gameController = container.get<GameController>(TYPES.GameController);
 
 router.post('/save', asyncWrap(gameController.saveGame.bind(gameController)));
 router.put('/update/:gameId', asyncWrap(gameController.updateGame.bind(gameController)));
-router.get('/user', authenticateToken, asyncWrap(gameController.getUserGames.bind(gameController)));
+router.get(
+  '/user/:userId',
+  authenticateToken,
+  asyncWrap(gameController.getUserGames.bind(gameController))
+);
 router.get('/total', asyncWrap(gameController.getTotalGames.bind(gameController)));
 router.get(
   '/ongoing/:userId',

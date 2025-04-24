@@ -58,7 +58,7 @@ export default class GameController {
   }
 
   async getUserGames(req: Request, res: Response) {
-    const userId = req.user?.userId;
+    const userId = req.params.userId;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
 

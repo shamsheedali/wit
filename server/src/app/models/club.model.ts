@@ -6,6 +6,8 @@ export interface IClub extends Document {
   clubType: 'public' | 'private';
   admins: Types.ObjectId[];
   members?: Types.ObjectId[];
+  maxMembers?: number;
+  createdBy: 'user' | 'admin';
   messages?: {
     senderId: Types.ObjectId;
     content: string;
@@ -41,6 +43,14 @@ const clubSchema = new Schema<IClub>(
         ref: 'Users',
       },
     ],
+    maxMembers: {
+      type: Number,
+    },
+    createdBy: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
     messages: [
       {
         senderId: { type: Schema.Types.ObjectId, ref: 'User', required: true },

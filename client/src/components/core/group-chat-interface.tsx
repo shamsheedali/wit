@@ -1,23 +1,24 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send } from "lucide-react";
+import { Send, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   getUserClubs,
   leaveClub,
   addClubMessage,
   deleteClub,
+  updateClub,
 } from "@/lib/api/club";
 import { useAuthStore } from "@/stores";
 import { getSocket } from "@/lib/socket";
 import { useRouter, useParams } from "next/navigation";
-import { getUsers } from "@/lib/api/user";
+import { getUsers, searchFriend } from "@/lib/api/user";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +29,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { debounce } from "lodash";
 
 type Message = {
   id: string;
@@ -49,13 +62,25 @@ interface User {
   profileImageUrl?: string;
 }
 
+interface Club {
+  _id: string;
+  name: string;
+  description?: string;
+  clubType: "public" | "private";
+  admins: string[];
+  members?: string[];
+  maxMembers?: number;
+  messages?: { senderId: string; content: string; timestamp: number }[];
+}
+
 export default function ClubChat() {
-  const { user: mainUser } = useAuthStore();
+  const { user: mainUser, admin } = useAuthStore();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [playerNames, setPlayerNames] = useState<{ [key: string]: string }>({});
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socket = getSocket();
   const router = useRouter();
@@ -161,11 +186,18 @@ export default function ClubChat() {
       router.push("/clubs");
     });
 
+    socket.on("clubDeleted", () => {
+      toast.error("This club has been deleted");
+      queryClient.invalidateQueries({ queryKey: ["userClubs", mainUser?._id] });
+      router.push("/clubs");
+    });
+
     return () => {
       socket.off("clubMessageReceived");
       socket.off("clubChatError");
+      socket.off("clubDeleted");
     };
-  }, [socket, clubName, mainUser?._id, router]);
+  }, [socket, clubName, mainUser?._id, router, queryClient]);
 
   useEffect(() => {
     scrollToBottom();
@@ -205,7 +237,7 @@ export default function ClubChat() {
 
     try {
       const response = await leaveClub(club._id, mainUser._id);
-      if (response.success) {
+      if (response?.success) {
         await queryClient.invalidateQueries({
           queryKey: ["userClubs", mainUser._id],
         });
@@ -217,18 +249,22 @@ export default function ClubChat() {
   };
 
   const handleDeleteClub = async () => {
-    if (!club?._id || !mainUser?._id) return;
+    if (!club?._id || !mainUser?._id || !clubName) return;
 
     try {
       const response = await deleteClub(club._id, mainUser._id);
-      if (response.success) {
+      if (response?.success) {
+        // Emit clubDeleted event to notify other members
+        socket.emit("clubDeleted", { clubName });
         await queryClient.invalidateQueries({
           queryKey: ["userClubs", mainUser._id],
         });
+        toast.success("Club deleted successfully");
         router.push("/clubs");
       }
     } catch (error) {
       console.error("Failed to delete club:", error);
+      toast.error(error.response?.data?.message || "Failed to delete club");
     }
   };
 
@@ -238,6 +274,320 @@ export default function ClubChat() {
       minute: "2-digit",
     });
   };
+
+  // EditClubDialog Component
+  function EditClubDialog({
+    open,
+    onOpenChange,
+    club,
+  }: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    club: Club;
+  }) {
+    const [formData, setFormData] = useState({
+      name: club.name,
+      description: club.description || "",
+      maxMembers: club.maxMembers?.toString() || "",
+    });
+    const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [maxMembersError, setMaxMembersError] = useState<string | null>(null);
+    const [nameError, setNameError] = useState<string | null>(null);
+
+    // Debounced search for users
+    const debouncedSetQuery = useCallback(
+      debounce((val: string) => setSearchQuery(val), 500),
+      []
+    );
+
+    const { data: searchResults = [] } = useQuery({
+      queryKey: ["searchFriend", searchQuery],
+      queryFn: () => searchFriend(searchQuery),
+      enabled: !!searchQuery,
+    });
+
+    const filteredSearchResults = searchResults.filter(
+      (user: User) =>
+        !selectedUsers.some((u) => u._id === user._id) &&
+        user._id !== mainUser?._id &&
+        !club.members?.includes(user._id)
+    );
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      debouncedSetQuery(e.target.value);
+    };
+
+    const addUser = (user: User) => {
+      if (club.members?.includes(user._id)) {
+        toast.error(`${user.username} is already a member of the club`);
+        return;
+      }
+      setSelectedUsers([...selectedUsers, user]);
+      setSearchQuery("");
+      validateMaxMembers([...selectedUsers, user]);
+    };
+
+    const removeUser = (userId: string) => {
+      const updatedUsers = selectedUsers.filter((user) => user._id !== userId);
+      setSelectedUsers(updatedUsers);
+      validateMaxMembers(updatedUsers);
+    };
+
+    const handleChange = (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+      const { name, value } = e.target;
+      if (name === "name") {
+        // Validate no spaces in club name
+        if (/\s/.test(value)) {
+          setNameError("Club name cannot contain spaces");
+        } else {
+          setNameError(null);
+        }
+      }
+      setFormData((prev) => ({ ...prev, [name]: value }));
+      if (name === "maxMembers") {
+        validateMaxMembers(selectedUsers, value);
+      }
+    };
+
+    // Validate max members
+    const validateMaxMembers = (
+      users: User[],
+      maxMembersValue = formData.maxMembers
+    ) => {
+      const maxLimit = club.clubType === "public" ? 100 : 50;
+      const max = maxMembersValue ? parseInt(maxMembersValue, 10) : maxLimit;
+      const totalMembers = (club.members?.length || 0) + users.length; // Existing + new members
+
+      if (max > maxLimit) {
+        setMaxMembersError(
+          `Maximum members cannot exceed ${maxLimit} for ${club.clubType} clubs.`
+        );
+      } else if (maxMembersValue && !isNaN(max) && totalMembers > max) {
+        setMaxMembersError(
+          `Total members (${totalMembers}) exceed the maximum limit (${max}).`
+        );
+      } else {
+        setMaxMembersError(null);
+      }
+    };
+
+    const updateClubMutation = useMutation({
+      mutationFn: () =>
+        updateClub({
+          clubId: club._id,
+          userId: mainUser!._id,
+          name: formData.name,
+          description: formData.description || undefined,
+          maxMembers: formData.maxMembers
+            ? parseInt(formData.maxMembers)
+            : undefined,
+          memberIds: selectedUsers.map((user) => user._id),
+        }),
+      onSuccess: (response) => {
+        if (response?.success) {
+          // Update userClubs cache
+          queryClient.setQueryData(
+            ["userClubs", mainUser?._id],
+            (oldData: Club[] | undefined) => {
+              if (!oldData) return oldData;
+              return oldData.map((c) =>
+                c._id === club._id
+                  ? {
+                      ...c,
+                      name: formData.name,
+                      description: formData.description || undefined,
+                      maxMembers: formData.maxMembers
+                        ? parseInt(formData.maxMembers)
+                        : club.maxMembers,
+                      members: [
+                        ...(c.members || []),
+                        ...selectedUsers.map((user) => user._id),
+                      ],
+                    }
+                  : c
+              );
+            }
+          );
+
+          // Invalidate queries
+          queryClient.invalidateQueries({ queryKey: ["userClubs"] });
+          queryClient.invalidateQueries({ queryKey: ["publicClubs"] });
+
+          // If club name changed, update the URL
+          if (formData.name !== club.name) {
+            router.push(`/clubs/${encodeURIComponent(formData.name)}`);
+          }
+
+          // Close dialog and reset
+          onOpenChange(false);
+          setFormData({
+            name: club.name,
+            description: club.description || "",
+            maxMembers: club.maxMembers?.toString() || "",
+          });
+          setSelectedUsers([]);
+          setMaxMembersError(null);
+          setNameError(null);
+          toast.success("Club updated successfully!");
+        }
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || "Failed to update club");
+        console.error(error);
+      },
+    });
+
+    const handleSubmit = () => {
+      if (!formData.name || !mainUser?._id) {
+        toast.error("Club name and authentication are required");
+        return;
+      }
+      if (nameError) {
+        toast.error(nameError);
+        return;
+      }
+      if (maxMembersError) {
+        toast.error(maxMembersError);
+        return;
+      }
+      updateClubMutation.mutate();
+    };
+
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Club</DialogTitle>
+            <DialogDescription>
+              Modify the details of {club.name}. Add members and update
+              settings.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="clubName" className="text-right">
+                Club Name
+              </Label>
+              <div className="col-span-3 space-y-1">
+                <Input
+                  id="clubName"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Enter club name"
+                  className="w-full"
+                />
+                {nameError && (
+                  <p className="text-sm text-red-500">{nameError}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="description" className="text-right">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Describe your club"
+                className="col-span-3 min-h-[100px]"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="maxMembers" className="text-right">
+                Max Members
+              </Label>
+              <div className="col-span-3 space-y-1">
+                <Input
+                  id="maxMembers"
+                  name="maxMembers"
+                  type="number"
+                  min="1"
+                  max={club.clubType === "public" ? 100 : 50}
+                  value={formData.maxMembers}
+                  onChange={handleChange}
+                  placeholder={`Max ${
+                    club.clubType === "public" ? 100 : 50
+                  } members`}
+                  className="w-full"
+                />
+                {maxMembersError && (
+                  <p className="text-sm text-red-500">{maxMembersError}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="members" className="text-right pt-2">
+                Add Members
+              </Label>
+              <div className="col-span-3 space-y-2">
+                <div className="relative">
+                  <Input
+                    id="members"
+                    placeholder="Search users..."
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                  />
+                  {filteredSearchResults.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                      {filteredSearchResults.map((user) => (
+                        <div
+                          key={user._id}
+                          className="p-2 hover:bg-muted cursor-pointer"
+                          onClick={() => addUser(user)}
+                        >
+                          {user.username}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {selectedUsers.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {selectedUsers.map((user) => (
+                      <div
+                        key={user._id}
+                        className="flex items-center gap-1 bg-muted px-2 py-1 rounded-full text-sm"
+                      >
+                        {user.username}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-4 w-4 rounded-full"
+                          onClick={() => removeUser(user._id)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={handleSubmit}
+              disabled={
+                updateClubMutation.isPending || !!maxMembersError || !!nameError
+              }
+            >
+              {updateClubMutation.isPending ? "Updating..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (usersLoading || userClubsLoading) return <div>Loading...</div>;
   if (!clubName) return <div>No club name provided</div>;
@@ -284,6 +634,12 @@ export default function ClubChat() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <EditClubDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        club={club}
+      />
+
       {/* Left sidebar - Member list */}
       <div className="w-80 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-[#09090b] hidden md:block">
         <div className="p-[26px] border-b border-gray-200 dark:border-gray-800">
@@ -311,7 +667,11 @@ export default function ClubChat() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">
-                    {member._id === mainUser?._id ? "You" : member.username}
+                    {member._id === admin?._id
+                      ? "Wit Official"
+                      : member._id === mainUser?._id
+                      ? "You"
+                      : member.username}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                     {member._id === mainUser?._id
@@ -337,6 +697,11 @@ export default function ClubChat() {
             </p>
           </div>
           <div className="flex gap-2">
+            {isAdmin && (
+              <Button variant="success" onClick={() => setShowEditDialog(true)}>
+                Edit Club
+              </Button>
+            )}
             <Button
               variant="destructive"
               onClick={() => setShowLeaveDialog(true)}
@@ -391,7 +756,9 @@ export default function ClubChat() {
                   >
                     {!isCurrentUser && (
                       <p className="text-xs font-medium mb-1">
-                        {sender?.username || "Unknown"}
+                        {sender?._id === admin?._id
+                          ? "Wit Official"
+                          : sender?.username || "Unknown"}
                       </p>
                     )}
                     <p>{message.content}</p>

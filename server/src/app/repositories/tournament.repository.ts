@@ -29,7 +29,27 @@ export default class TournamentRepository extends BaseRepository<ITournament> {
         { new: true }
       )
       .populate('players.userId', 'username')
-      .populate('createdBy', 'username')
+      .populate({ path: 'createdBy', select: 'username', model: 'Users', strictPopulate: false })
+      .exec();
+  }
+
+  async removePlayer(tournamentId: string, userId: string): Promise<ITournament | null> {
+    return this.model
+      .findByIdAndUpdate(
+        tournamentId,
+        {
+          $pull: {
+            players: { userId: new Types.ObjectId(userId) },
+          },
+        },
+        { new: true }
+      )
+      .populate('players.userId', 'username')
+      .populate({ path: 'createdBy', select: 'username', model: 'Users', strictPopulate: false })
+      .populate('matches.player1Id', 'username')
+      .populate('matches.player2Id', 'username')
+      .populate('playoffMatch.player1Id', 'username')
+      .populate('playoffMatch.player2Id', 'username')
       .exec();
   }
 
@@ -41,7 +61,7 @@ export default class TournamentRepository extends BaseRepository<ITournament> {
     return this.model
       .find({ 'players.userId': new Types.ObjectId(userId) })
       .populate('players.userId', 'username')
-      .populate('createdBy', 'username')
+      .populate({ path: 'createdBy', select: 'username', model: 'Users', strictPopulate: false })
       .exec();
   }
 
@@ -76,17 +96,55 @@ export default class TournamentRepository extends BaseRepository<ITournament> {
   async findById(id: string): Promise<ITournament | null> {
     return this.model
       .findById(id)
-      .populate('players.userId', 'username')
-      .populate('createdBy', 'username')
-      .populate('matches.player1Id', 'username')
-      .populate('matches.player2Id', 'username')
-      .populate('playoffMatch.player1Id', 'username')
-      .populate('playoffMatch.player2Id', 'username')
+      .populate({
+        path: 'players.userId',
+        select: 'username',
+        model: 'Users',
+      })
+      .populate({
+        path: 'createdBy',
+        select: 'username',
+        model: 'Users',
+        strictPopulate: false,
+      })
+      .populate({
+        path: 'matches.player1Id',
+        select: 'username',
+        model: 'Users',
+      })
+      .populate({
+        path: 'matches.player2Id',
+        select: 'username',
+        model: 'Users',
+      })
+      .populate({
+        path: 'playoffMatch.player1Id',
+        select: 'username',
+        model: 'Users',
+      })
+      .populate({
+        path: 'playoffMatch.player2Id',
+        select: 'username',
+        model: 'Users',
+      })
       .exec();
   }
 
   async findByIdWithPopulation(id: string): Promise<ITournament | null> {
-    const tournament = await this.model.findById(id).populate('players.userId', 'username').exec();
+    const tournament = await this.model
+      .findById(id)
+      .populate({
+        path: 'players.userId',
+        select: 'username',
+        model: 'Users',
+      })
+      .populate({
+        path: 'createdBy',
+        select: 'username',
+        model: 'Users',
+        strictPopulate: false,
+      })
+      .exec();
     if (!tournament) {
       throw new Error('Tournament not found');
     }

@@ -1,4 +1,3 @@
-// components/create-club-dialog.tsx
 "use client";
 
 import * as React from "react";
@@ -22,7 +21,6 @@ import { createClub } from "@/lib/api/club";
 import { useAuthStore } from "@/stores";
 import { useQuery } from "@tanstack/react-query";
 import { debounce } from "lodash";
-import { searchFriend } from "@/lib/api/user";
 
 interface CreateClubDialogProps {
   open: boolean;
@@ -34,7 +32,20 @@ interface User {
   username: string;
 }
 
-export function CreateClubDialog({ open, onOpenChange }: CreateClubDialogProps) {
+interface IClub {
+  _id: string;
+  name: string;
+  description?: string;
+  clubType: "public" | "private";
+  admins: string[];
+  members?: string[];
+  maxMembers?: number;
+}
+
+export function CreateClubDialog({
+  open,
+  onOpenChange,
+}: CreateClubDialogProps) {
   const { user: mainUser } = useAuthStore();
   const queryClient = useQueryClient();
 
@@ -42,9 +53,14 @@ export function CreateClubDialog({ open, onOpenChange }: CreateClubDialogProps) 
     name: "",
     description: "",
     clubType: "public" as "public" | "private",
+    maxMembers: "",
   });
   const [selectedUsers, setSelectedUsers] = React.useState<User[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [maxMembersError, setMaxMembersError] = React.useState<string | null>(
+    null
+  );
+  const [nameError, setNameError] = React.useState<string | null>(null);
 
   // Debounced search for users
   const debouncedSetQuery = React.useCallback(
@@ -52,14 +68,16 @@ export function CreateClubDialog({ open, onOpenChange }: CreateClubDialogProps) 
     []
   );
 
-  const { data: searchResults = [], isLoading: searchLoading } = useQuery({
+  const { data: searchResults = [] } = useQuery({
     queryKey: ["searchFriend", searchQuery],
     queryFn: () => searchFriend(searchQuery),
     enabled: !!searchQuery,
   });
 
   const filteredSearchResults = searchResults.filter(
-    (user: User) => !selectedUsers.some((u) => u._id === user._id) && user._id !== mainUser?._id
+    (user: User) =>
+      !selectedUsers.some((u) => u._id === user._id) &&
+      user._id !== mainUser?._id
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,21 +87,58 @@ export function CreateClubDialog({ open, onOpenChange }: CreateClubDialogProps) 
   const addUser = (user: User) => {
     setSelectedUsers([...selectedUsers, user]);
     setSearchQuery("");
+    validateMaxMembers([...selectedUsers, user]);
   };
 
   const removeUser = (userId: string) => {
-    setSelectedUsers(selectedUsers.filter((user) => user._id !== userId));
+    const updatedUsers = selectedUsers.filter((user) => user._id !== userId);
+    setSelectedUsers(updatedUsers);
+    validateMaxMembers(updatedUsers);
   };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+    if (name === "name") {
+      // Validate no spaces in club name
+      if (/\s/.test(value)) {
+        setNameError("Club name cannot contain spaces");
+      } else {
+        setNameError(null);
+      }
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "maxMembers") {
+      validateMaxMembers(selectedUsers, value);
+    }
   };
 
   const handleClubTypeChange = (value: "public" | "private") => {
     setFormData((prev) => ({ ...prev, clubType: value }));
+    validateMaxMembers(selectedUsers); // Re-validate with new club type
+  };
+
+  // Validate max members based on club type
+  const validateMaxMembers = (
+    users: User[],
+    maxMembersValue = formData.maxMembers
+  ) => {
+    const maxLimit = formData.clubType === "public" ? 100 : 50;
+    const max = maxMembersValue ? parseInt(maxMembersValue, 10) : maxLimit;
+    const totalMembers = users.length + 1; // Include the creator (mainUser)
+
+    if (max > maxLimit) {
+      setMaxMembersError(
+        `Maximum members cannot exceed ${maxLimit} for ${formData.clubType} clubs.`
+      );
+    } else if (maxMembersValue && !isNaN(max) && totalMembers > max) {
+      setMaxMembersError(
+        `Selected members (${totalMembers}) exceed the maximum limit (${max}).`
+      );
+    } else {
+      setMaxMembersError(null);
+    }
   };
 
   const createClubMutation = useMutation({
@@ -92,23 +147,74 @@ export function CreateClubDialog({ open, onOpenChange }: CreateClubDialogProps) 
         name: formData.name,
         description: formData.description || undefined,
         clubType: formData.clubType,
-        adminIds: [mainUser!._id], // Current user as admin
+        maxMembers: formData.maxMembers
+          ? parseInt(formData.maxMembers)
+          : undefined,
+        adminIds: [mainUser!._id],
         memberIds: selectedUsers.map((user) => user._id),
         userId: mainUser?._id as string,
       }),
     onSuccess: (response) => {
       if (response?.success) {
+        // Update the userClubs cache manually
+        queryClient.setQueryData(
+          ["userClubs", mainUser?._id],
+          (oldData: IClub[] | undefined) => {
+            const newClub: IClub = {
+              _id: response.data._id,
+              name: formData.name,
+              description: formData.description || undefined,
+              clubType: formData.clubType,
+              admins: [mainUser!._id],
+              members: [
+                mainUser!._id,
+                ...selectedUsers.map((user) => user._id),
+              ],
+              maxMembers: formData.maxMembers
+                ? parseInt(formData.maxMembers)
+                : formData.clubType === "public"
+                ? 100
+                : 50, // Set default maxMembers
+            };
+            return oldData ? [...oldData, newClub] : [newClub];
+          }
+        );
+
+        // Invalidate queries to refetch in the background
         queryClient.invalidateQueries({ queryKey: ["publicClubs"] });
-        onOpenChange(false); // Close dialog
-        setFormData({ name: "", description: "", clubType: "public" });
+        queryClient.invalidateQueries({ queryKey: ["userClubs"] });
+
+        // Close dialog and reset form
+        onOpenChange(false);
+        setFormData({
+          name: "",
+          description: "",
+          clubType: "public",
+          maxMembers: "",
+        });
         setSelectedUsers([]);
+        setMaxMembersError(null);
+        setNameError(null);
+        toast.success("Club created successfully!");
       }
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Failed to create club");
+      console.error(error);
     },
   });
 
   const handleSubmit = () => {
     if (!formData.name || !mainUser?._id) {
       toast.error("Club name and authentication are required");
+      return;
+    }
+    if (nameError) {
+      toast.error(nameError);
+      return;
+    }
+    if (maxMembersError) {
+      toast.error(maxMembersError);
       return;
     }
     createClubMutation.mutate();
@@ -120,7 +226,8 @@ export function CreateClubDialog({ open, onOpenChange }: CreateClubDialogProps) 
         <DialogHeader>
           <DialogTitle>Create New Club</DialogTitle>
           <DialogDescription>
-            Fill in the details to create your new club. Add members and set privacy options.
+            Fill in the details to create your new club. Add members and set
+            privacy options.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -128,14 +235,17 @@ export function CreateClubDialog({ open, onOpenChange }: CreateClubDialogProps) 
             <Label htmlFor="clubName" className="text-right">
               Club Name
             </Label>
-            <Input
-              id="clubName"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Enter club name"
-              className="col-span-3"
-            />
+            <div className="col-span-3 space-y-1">
+              <Input
+                id="clubName"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Enter club name"
+                className="w-full"
+              />
+              {nameError && <p className="text-sm text-red-500">{nameError}</p>}
+            </div>
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
@@ -150,6 +260,30 @@ export function CreateClubDialog({ open, onOpenChange }: CreateClubDialogProps) 
               placeholder="Describe your club"
               className="col-span-3 min-h-[100px]"
             />
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="maxMembers" className="text-right">
+              Max Members
+            </Label>
+            <div className="col-span-3 space-y-1">
+              <Input
+                id="maxMembers"
+                name="maxMembers"
+                type="number"
+                min="1"
+                max={formData.clubType === "public" ? 100 : 50}
+                value={formData.maxMembers}
+                onChange={handleChange}
+                placeholder={`Max ${
+                  formData.clubType === "public" ? 100 : 50
+                } members`}
+                className="w-full"
+              />
+              {maxMembersError && (
+                <p className="text-sm text-red-500">{maxMembersError}</p>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
@@ -226,7 +360,9 @@ export function CreateClubDialog({ open, onOpenChange }: CreateClubDialogProps) 
         <DialogFooter>
           <Button
             onClick={handleSubmit}
-            disabled={createClubMutation.isPending}
+            disabled={
+              createClubMutation.isPending || !!maxMembersError || !!nameError
+            }
           >
             {createClubMutation.isPending ? "Creating..." : "Create Club"}
           </Button>

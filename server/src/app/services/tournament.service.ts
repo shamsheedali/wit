@@ -3,52 +3,99 @@ import { Model, Types } from 'mongoose';
 import TYPES from '../../config/types';
 import TournamentRepository from '../repositories/tournament.repository';
 import UserRepository from '../repositories/user.repository';
+import AdminRepository from '../repositories/admin.repository';
 import { ITournament } from '../models/tournament.model';
+import { GameType } from '../models/game.model';
+import * as bcrypt from 'bcrypt';
 
 @injectable()
 export default class TournamentService {
   private _tournamentRepository: TournamentRepository;
   private _userRepository: UserRepository;
+  private _adminRepository: AdminRepository;
   private _tournamentModel: Model<ITournament>;
 
   constructor(
     @inject(TYPES.TournamentRepository) tournamentRepository: TournamentRepository,
     @inject(TYPES.UserRepository) userRepository: UserRepository,
+    @inject(TYPES.AdminRepository) adminRepository: AdminRepository,
     @inject(TYPES.TournamentModel) tournamentModel: Model<ITournament>
   ) {
     this._tournamentRepository = tournamentRepository;
     this._userRepository = userRepository;
+    this._adminRepository = adminRepository;
     this._tournamentModel = tournamentModel;
   }
 
   async createTournament(
     name: string,
+    gameType: GameType,
     timeControl: string,
     maxGames: number,
-    createdBy: string
+    createdBy: string,
+    maxPlayers: number,
+    password?: string,
+    createdByAdmin = false
   ): Promise<ITournament> {
-    const user = await this._userRepository.findById(createdBy);
-    if (!user) throw new Error('User not found');
+    let creator;
+    if (createdByAdmin) {
+      creator = await this._adminRepository.findById(createdBy);
+      if (!creator) throw new Error('Admin not found');
+    } else {
+      creator = await this._userRepository.findById(createdBy);
+      if (!creator) throw new Error('User not found');
+    }
+
+    if (maxPlayers < 2 || maxPlayers > 20) {
+      throw new Error('Max players must be between 2 and 20');
+    }
+
     const tournamentData: Partial<ITournament> = {
       name,
       type: 'league',
+      gameType,
       timeControl,
       maxGames,
+      maxPlayers,
       createdBy: new Types.ObjectId(createdBy),
+      createdByAdmin,
       players: [],
       matches: [],
     };
-    return this._tournamentRepository.create(tournamentData);
-  }
 
-  async deleteTournament(tournamentId: string): Promise<ITournament | null> {
-    const tournament = await this._tournamentRepository.findById(tournamentId);
-    if (!tournament) return null;
-    await this._tournamentRepository.delete(tournamentId);
+    if (password && !createdByAdmin) {
+      if (password.length !== 6) {
+        throw new Error('Password must be exactly 6 characters');
+      }
+      tournamentData.password = await bcrypt.hash(password, 10);
+    }
+
+    const tournament = await this._tournamentRepository.create(tournamentData);
+    if (!createdByAdmin) {
+      await this._tournamentRepository.addPlayer(tournament._id as string, createdBy);
+    }
     return tournament;
   }
 
-  async joinTournament(tournamentId: string, userId: string): Promise<ITournament> {
+  async deleteTournament(tournamentId: string, userId?: string): Promise<ITournament | null> {
+    const tournament = await this._tournamentRepository.findById(tournamentId);
+    if (!tournament) throw new Error('Tournament not found');
+    if (tournament.createdByAdmin) throw new Error('Cannot delete admin-created tournament');
+    if (!tournament.createdBy || !tournament.createdBy.equals(new Types.ObjectId(userId))) {
+      throw new Error('Only the creator can delete the tournament');
+    }
+    if (tournament.status === 'active' || tournament.status === 'playoff') {
+      throw new Error('Cannot delete tournament in active or playoff status');
+    }
+    const deletedTournament = await this._tournamentRepository.delete(tournamentId);
+    return deletedTournament;
+  }
+
+  async joinTournament(
+    tournamentId: string,
+    userId: string,
+    password?: string
+  ): Promise<ITournament> {
     const tournament = await this._tournamentRepository.findById(tournamentId);
     if (!tournament) throw new Error('Tournament not found');
     if (tournament.status !== 'pending') throw new Error('Tournament is not open for joining');
@@ -57,15 +104,53 @@ export default class TournamentService {
     if (tournament.players.some((p) => p.userId.equals(userId))) {
       throw new Error('User already joined');
     }
+    if (tournament.players.length >= tournament.maxPlayers) {
+      throw new Error('Tournament is full');
+    }
+    if (!tournament.createdByAdmin && tournament.password) {
+      if (!password) {
+        throw new Error('Password is required');
+      }
+      const isPasswordValid = await bcrypt.compare(password, tournament.password);
+      if (!isPasswordValid) {
+        throw new Error('Invalid password');
+      }
+    }
     const updatedTournament = await this._tournamentRepository.addPlayer(tournamentId, userId);
     if (!updatedTournament) throw new Error('Failed to join tournament');
+    return updatedTournament;
+  }
+
+  async leaveTournament(tournamentId: string, userId: string): Promise<ITournament> {
+    const tournament = await this._tournamentRepository.findById(tournamentId);
+    if (!tournament) throw new Error('Tournament not found');
+    if (tournament.status !== 'pending' && tournament.status !== 'active') {
+      throw new Error('Cannot leave tournament in this state');
+    }
+    if (tournament.createdByAdmin && !tournament.createdBy) {
+      // Admin-created tournaments allow leaving without creator check
+    } else if (tournament.createdBy && tournament.createdBy.equals(new Types.ObjectId(userId))) {
+      throw new Error('Tournament creator cannot leave');
+    }
+    if (!tournament.players.some((p) => p.userId.equals(userId))) {
+      throw new Error('User not in tournament');
+    }
+    const updatedTournament = await this._tournamentRepository.removePlayer(tournamentId, userId);
+    if (!updatedTournament) throw new Error('Failed to leave tournament');
+    if (tournament.status === 'active' && updatedTournament.players.length < 2) {
+      updatedTournament.status = 'cancelled';
+      await this._tournamentRepository.update(tournamentId, updatedTournament);
+    }
     return updatedTournament;
   }
 
   async startTournament(tournamentId: string, userId: string): Promise<ITournament> {
     const tournament = await this._tournamentRepository.findById(tournamentId);
     if (!tournament) throw new Error('Tournament not found');
-    if (!tournament.createdBy.equals(new Types.ObjectId(userId))) {
+    if (tournament.createdByAdmin) {
+      const admin = await this._adminRepository.findById(userId);
+      if (!admin) throw new Error('Only an admin can start this tournament');
+    } else if (!tournament.createdBy || !tournament.createdBy.equals(new Types.ObjectId(userId))) {
       throw new Error('Only creator can start tournament');
     }
     if (tournament.status !== 'pending') throw new Error('Tournament already started');

@@ -29,7 +29,7 @@ export default class FriendRepository
   }
 
   async findUserById(userId: string): Promise<IUser | null> {
-    return User.findById(userId).populate('friends', 'username profileImageUrl').exec();
+    return User.findById(userId).populate('friends', 'username profileImageUrl eloRating').exec();
   }
 
   async findPending(senderId: string, receiverId: string): Promise<IFriendRequest | null> {

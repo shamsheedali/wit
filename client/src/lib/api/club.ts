@@ -2,6 +2,7 @@ import HttpStatus from "../constants/httpStatus";
 import { toast } from "sonner";
 import { handleApiError } from "../constants/errorHandler";
 import apiClient from "../apiClient";
+import { AxiosError } from "axios";
 
 const CLUB_API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/club`;
 const ADMIN_API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin`;
@@ -24,6 +25,7 @@ export const createClub = async (clubData: {
   name: string;
   description?: string;
   clubType: "public" | "private";
+  maxMembers?: number;
   adminIds?: string[];
   memberIds?: string[];
   userId: string;
@@ -69,9 +71,15 @@ export const joinClub = async (clubId: string, userId: string) => {
       toast.success(response.data.message);
       return { success: true, data: response.data.club };
     }
-  } catch (error) {
-    handleApiError(error);
-    return { success: false, error };
+  } catch (error: unknown) {
+    if (error instanceof AxiosError) {
+      if (error.response?.data?.message === "Club is full") {
+        toast.error("This club is full and cannot accept more members.");
+        return { success: false, error: "Club is full" };
+      }
+      toast.error(error.response?.data?.message || "Failed to join club");
+      return { success: false, error };
+    }
   }
 };
 
@@ -107,6 +115,27 @@ export const leaveClub = async (clubId: string, userId: string) => {
       clubId,
       userId,
     });
+    if (response.status === HttpStatus.OK) {
+      toast.success(response.data.message);
+      return { success: true, data: response.data.club };
+    }
+  } catch (error) {
+    handleApiError(error);
+    return { success: false, error };
+  }
+};
+
+// Update a club
+export const updateClub = async (clubData: {
+  clubId: string;
+  userId: string;
+  name: string;
+  description?: string;
+  maxMembers?: number;
+  memberIds?: string[];
+}) => {
+  try {
+    const response = await apiClient.put(`${CLUB_API_URL}/update`, clubData);
     if (response.status === HttpStatus.OK) {
       toast.success(response.data.message);
       return { success: true, data: response.data.club };

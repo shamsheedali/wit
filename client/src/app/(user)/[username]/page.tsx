@@ -4,7 +4,6 @@ import NotFoundPage from "@/app/not-found";
 import UserProfile from "@/components/core/user-profile";
 import { getUser } from "@/lib/api/user";
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 
 export default function ProfilePage() {
@@ -28,7 +27,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="px-56 w-full h-screen overflow-hidden pt-[120px] font-clashDisplay">
+    <div className="px-56 w-full h-screen pt-[120px] font-clashDisplay">
       <UserProfile user={user} />
     </div>
   );

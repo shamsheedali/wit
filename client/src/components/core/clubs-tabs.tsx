@@ -26,6 +26,7 @@ interface IClub {
   clubType: "public" | "private";
   admins: string[];
   members?: string[];
+  maxMembers?: number; // Added maxMembers field
 }
 
 export function ClubsTabs() {
@@ -73,8 +74,8 @@ export function ClubsTabs() {
   };
 
   const handlePageChange = (clubName: string) => {
-    router.push(`/clubs/${clubName}`)
-  }
+    router.push(`/clubs/${clubName}`);
+  };
 
   return (
     <Tabs defaultValue="clubs" className="w-full flex flex-col items-end">
@@ -109,15 +110,6 @@ export function ClubsTabs() {
                   onClick={() => handlePageChange(club.name)}
                   className="flex items-center space-x-4 p-3 cursor-pointer rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
                 >
-                  {/* <div className="relative">
-                    <img
-                      src="/placeholder.svg?height=40&width=40"
-                      alt="Club avatar"
-                      className="rounded-full w-10 h-10 object-cover"
-                      width={40}
-                      height={40}
-                    />
-                  </div> */}
                   <div className="flex-1">
                     <p className="text-sm font-medium">{club.name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -159,19 +151,11 @@ export function ClubsTabs() {
                     key={club._id}
                     className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
                   >
-                    {/* <div className="relative">
-                      <img
-                        src="/placeholder.svg?height=40&width=40"
-                        alt="Club avatar"
-                        className="rounded-full w-10 h-10 object-cover"
-                        width={40}
-                        height={40}
-                      />
-                    </div> */}
                     <div className="flex-1">
                       <p className="text-sm font-medium">{club.name}</p>
                       <p className="text-xs text-muted-foreground">
                         Total Members: {club.members?.length || "No members"}
+                        {club.maxMembers ? ` / ${club.maxMembers}` : ""}
                       </p>
                     </div>
                     <Button

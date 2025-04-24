@@ -27,6 +27,17 @@ export default class ClubRepository extends BaseRepository<IClub> implements ICl
       .exec();
   }
 
+  async update(
+    clubId: string,
+    updateData: Partial<IClub> & { $addToSet?: { members?: { $each: Types.ObjectId[] } } }
+  ): Promise<IClub | null> {
+    return this.model
+      .findByIdAndUpdate(clubId, updateData, { new: true })
+      .populate('admins', 'username email')
+      .populate('members', 'username email')
+      .exec();
+  }
+
   async findPublicClubs(query: any): Promise<IClub[]> {
     return this.model.find(query).exec();
   }

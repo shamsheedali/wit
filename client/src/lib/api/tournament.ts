@@ -7,9 +7,13 @@ const TOURNAMENT_API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tournament`;
 
 export const createTournament = async (data: {
   name: string;
+  gameType: string;
   timeControl: string;
   maxGames: number;
+  maxPlayers: number;
   createdBy: string;
+  password?: string;
+  createdByAdmin?: boolean;
 }) => {
   try {
     const response = await apiClient.post(`${TOURNAMENT_API_URL}/create`, data);
@@ -23,11 +27,16 @@ export const createTournament = async (data: {
   }
 };
 
-export const joinTournament = async (tournamentId: string, userId: string) => {
+export const joinTournament = async (
+  tournamentId: string,
+  userId: string,
+  password?: string
+) => {
   try {
     const response = await apiClient.post(`${TOURNAMENT_API_URL}/join`, {
       tournamentId,
       userId,
+      password,
     });
     if (response.status === HttpStatus.OK) {
       toast.success(response.data.message);
@@ -42,6 +51,25 @@ export const joinTournament = async (tournamentId: string, userId: string) => {
 export const startTournament = async (tournamentId: string, userId: string) => {
   try {
     const response = await apiClient.post(`${TOURNAMENT_API_URL}/start`, {
+      tournamentId,
+      userId,
+    });
+    if (response.status === HttpStatus.OK) {
+      toast.success(response.data.message);
+      return response.data.tournament;
+    }
+  } catch (error) {
+    handleApiError(error);
+    return null;
+  }
+};
+
+export const deleteTournament = async (
+  tournamentId: string,
+  userId: string
+) => {
+  try {
+    const response = await apiClient.post(`${TOURNAMENT_API_URL}/delete`, {
       tournamentId,
       userId,
     });
@@ -145,6 +173,22 @@ export const pairMatch = async (tournamentId: string) => {
     });
     if (response.status === HttpStatus.OK) {
       return response.data.match;
+    }
+  } catch (error) {
+    handleApiError(error);
+    return null;
+  }
+};
+
+export const leaveTournament = async (tournamentId: string, userId: string) => {
+  try {
+    const response = await apiClient.post(`${TOURNAMENT_API_URL}/leave`, {
+      tournamentId,
+      userId,
+    });
+    if (response.status === HttpStatus.OK) {
+      toast.success(response.data.message);
+      return response.data.tournament;
     }
   } catch (error) {
     handleApiError(error);

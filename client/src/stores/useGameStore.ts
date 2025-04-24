@@ -7,6 +7,7 @@ interface GameState {
   opponentId: string | null;
   opponentName: string | null;
   opponentProfilePicture: string | null;
+  opponentEloRating: number | null;
   playerColor: "w" | "b" | null;
   whiteTime: number;
   blackTime: number;
@@ -25,11 +26,12 @@ export const useGameStore = create<GameState>((set) => ({
   opponentId: null,
   opponentName: null,
   opponentProfilePicture: null,
+  opponentEloRating: null,
   playerColor: null,
   whiteTime: 600,
   blackTime: 600,
   gameStarted: false,
-  activePlayer: null,
+  activePlayer: null, // Will be set to "w" when game starts
   gameStartTime: null,
   moves: [],
   addMove: (move) =>
@@ -43,6 +45,7 @@ export const useGameStore = create<GameState>((set) => ({
       opponentId: null,
       opponentName: null,
       opponentProfilePicture: null,
+      opponentEloRating: null,
       playerColor: null,
       whiteTime: 600,
       blackTime: 600,

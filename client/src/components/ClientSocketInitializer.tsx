@@ -84,6 +84,7 @@ export default function ClientSocketInitializer() {
                       opponentId: data.senderId,
                       opponentName: data.senderName,
                       opponentProfilePicture: data.senderPfp,
+                      opponentEloRating: data.senderEloRating,
                       playerColor: "b",
                       whiteTime: timeToSeconds(data.time),
                       blackTime: timeToSeconds(data.time),
@@ -162,6 +163,9 @@ export default function ClientSocketInitializer() {
           toast.success(`Game ended: ${data.result}`);
           resetGame();
         });
+
+        //TOURNAMENT
+        
 
         socket.on("notification", (data) => {
           addNotification({

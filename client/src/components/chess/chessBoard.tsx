@@ -9,15 +9,45 @@ interface ChessBoardProps {
   gameId?: string;
   playerColor: "w" | "b";
   opponentId?: string;
+  viewMode?: boolean;
+  position?: string;
   onMove?: (move: any, fen: string) => void;
-  onGameEnd?: (result: "whiteWin" | "blackWin" | "draw", lossType: "checkmate" | "resignation" | "timeout", fen: string) => void;
+  onGameEnd?: (
+    result: "whiteWin" | "blackWin" | "draw",
+    lossType: "checkmate" | "resignation" | "timeout",
+    fen: string
+  ) => void;
 }
 
-export const ChessBoard: React.FC<ChessBoardProps> = ({ gameId, playerColor, opponentId, onMove, onGameEnd }) => {
+export const ChessBoard: React.FC<ChessBoardProps> = ({
+  gameId,
+  playerColor,
+  opponentId,
+  viewMode = false,
+  position,
+  onMove,
+  onGameEnd,
+}) => {
   const [game, setGame] = useState<Chess>(new Chess());
   const boardContainerRef = useRef<HTMLDivElement>(null);
   const [boardSize, setBoardSize] = useState(500);
   const { initializeSocket } = useFriendStore();
+
+  // Update game state when position prop changes
+  useEffect(() => {
+    try {
+      if (position) {
+        const newGame = new Chess(position);
+        setGame(newGame);
+      } else {
+        // Handle reset case when position is undefined
+        setGame(new Chess());
+      }
+    } catch (e) {
+      console.error("Error setting chess position:", e);
+      setGame(new Chess());
+    }
+  }, [position]);
 
   useEffect(() => {
     const socket = initializeSocket();
@@ -42,12 +72,21 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({ gameId, playerColor, opp
   }, [gameId, opponentId, initializeSocket, onMove]);
 
   const handleMove = (sourceSquare: string, targetSquare: string) => {
+    // Prevent moves in view mode
+    if (viewMode) {
+      return false;
+    }
+
     if (game.turn() !== playerColor) {
       return false;
     }
 
     const newGame = new Chess(game.fen());
-    const move = newGame.move({ from: sourceSquare, to: targetSquare, promotion: "q" });
+    const move = newGame.move({
+      from: sourceSquare,
+      to: targetSquare,
+      promotion: "q",
+    });
 
     if (move) {
       setGame(newGame);
@@ -111,12 +150,17 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({ gameId, playerColor, opp
   }, []);
 
   return (
-    <div ref={boardContainerRef} className="flex justify-center items-center w-full h-full">
+    <div
+      ref={boardContainerRef}
+      className="flex justify-center items-center w-full h-full"
+    >
       <Chessboard
-        position={game.fen()}
-        onPieceDrop={(sourceSquare, targetSquare) => handleMove(sourceSquare, targetSquare)}
+        position={game.fen()} // This will now update when position prop changes
+        onPieceDrop={(sourceSquare, targetSquare) =>
+          handleMove(sourceSquare, targetSquare)
+        }
         customBoardStyle={{ borderRadius: "4px" }}
-        customNotationStyle={{color: "black", fontWeight: "bold"}}
+        customNotationStyle={{ color: "black", fontWeight: "bold" }}
         customDarkSquareStyle={{ backgroundColor: "#779952" }}
         customLightSquareStyle={{ backgroundColor: "#edeed1" }}
         boardWidth={boardSize}

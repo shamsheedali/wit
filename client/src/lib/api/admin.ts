@@ -102,6 +102,7 @@ export const getTournaments = async (page: number, limit: number) => {
 // CREATE_TOURNAMENT
 export const createTournament = async (tournamentData: {
   name: string;
+  gameType: string;
   timeControl: string;
   maxGames: number;
   createdBy: string;
