@@ -129,11 +129,12 @@ export default function socketHandler(io: Server) {
         receiverId: string;
         senderName: string;
         senderPfp: string;
+        senderEloRating: number;
         time: string;
         tournamentId: string;
         matchId: string;
       }) => {
-        const { senderId, receiverId, senderName, senderPfp, time, tournamentId, matchId } = data;
+        const { senderId, receiverId, senderName, senderPfp, senderEloRating, time, tournamentId, matchId } = data;
         // log.info(
         //   `Tournament play request from ${senderId} to ${receiverId} for tournament ${tournamentId}`
         // );
@@ -142,6 +143,7 @@ export default function socketHandler(io: Server) {
           receiverId,
           senderName,
           senderPfp,
+          senderEloRating,
           time,
           tournamentId,
           matchId,

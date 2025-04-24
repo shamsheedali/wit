@@ -232,11 +232,12 @@ export default function TournamentPage() {
       const match = await pairMatch(tournamentId);
       if (match) {
         const socketInstance = getSocket();
-        socketInstance.emit("tournamentPlayRequest", {
+        socketInstance?.emit("tournamentPlayRequest", {
           senderId: user._id,
           receiverId: match.opponentId,
           senderName: user.username,
           senderPfp: user.profileImageUrl || "",
+          senderEloRating: user.eloRating,
           time: match.timeControl,
           tournamentId,
           matchId: match.matchId,
