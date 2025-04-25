@@ -28,21 +28,21 @@ export interface IMove {
   from: string;
   to: string;
   piece: string;
-  san: string; // Standard Algebraic Notation (e.g., "e4", "Nf3")
+  san: string;
   timestamp: Date;
 }
 
 export interface IGame extends Document {
-  playerOne: string; // User ID
-  playerTwo: string; // User ID
-  result?: GameResult; // Optional until game ends
-  playerAt: string; // Color of playerOne ("w" or "b")
-  fen: string; // Final FEN position
+  playerOne: string;
+  playerTwo: string;
+  result?: GameResult;
+  playerAt: string;
+  fen: string;
   gameType: GameType;
-  timeControl: string; // e.g., "3min"
+  timeControl: string;
   moves: IMove[];
   lossType?: LossType;
-  gameDuration?: number; // Duration in seconds, when game ends
+  gameDuration?: number;
   gameStatus: GameStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -67,14 +67,18 @@ const GameSchema: Schema = new Schema(
     timeControl: { type: String, required: true },
     moves: [MoveSchema],
     lossType: { type: String, enum: Object.values(LossType) },
-    gameDuration: { type: Number }, // In seconds
+    gameDuration: { type: Number },
     gameStatus: {
       type: String,
       enum: Object.values(GameStatus),
       default: GameStatus.Ongoing,
     },
+    __v: { type: Number, select: false },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    optimisticConcurrency: true,
+  }
 );
 
 export default mongoose.model<IGame>('Game', GameSchema);

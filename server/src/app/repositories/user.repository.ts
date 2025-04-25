@@ -1,11 +1,12 @@
 import { inject, injectable } from 'inversify';
-import mongoose, { Model, ClientSession } from 'mongoose';
+import mongoose, { Model, ClientSession, FilterQuery, UpdateQuery, QueryOptions } from 'mongoose';
 import BaseRepository from '../../core/base.repository';
 import { IUser } from '../models/user.model';
 import TYPES from '../../config/types';
 import { cloudinary } from '../../config/cloudinary.config';
 import { IUserRepository } from './interface/IUserRepository';
 import { CreateUserDTO, GoogleUserInput } from '../dtos/user.dto';
+import log from '../../utils/logger';
 
 @injectable()
 export default class UserRepository extends BaseRepository<IUser> implements IUserRepository {
@@ -39,6 +40,19 @@ export default class UserRepository extends BaseRepository<IUser> implements IUs
     return await this.model
       .findById(id)
       .session(session ?? null)
+      .exec();
+  }
+
+  async findOneAndUpdate(
+    filter: FilterQuery<IUser>,
+    update: UpdateQuery<IUser>,
+    options?: QueryOptions
+  ): Promise<IUser | null> {
+    return await this.model
+      .findOneAndUpdate(filter, update, {
+        ...options,
+        runValidators: true,
+      })
       .exec();
   }
 
@@ -86,7 +100,7 @@ export default class UserRepository extends BaseRepository<IUser> implements IUs
 
       return await this.update(userId, userData);
     } catch (error) {
-      console.error('Error updating profile image:', error);
+      log.error('Error updating profile image:', error);
       throw error;
     }
   }
