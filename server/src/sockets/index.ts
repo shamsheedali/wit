@@ -136,13 +136,15 @@ export default function socketHandler(io: Server) {
         senderId: string;
         receiverId: string;
         senderName: string;
+        senderPfp: string;
+        senderEloRating: number;
         gameId: string;
         dbGameId: string;
         time: string;
         tournamentId: string;
         matchId: string;
       }) => {
-        io.to(data.senderId).emit('tournamentPlayRequestAccepted', {
+        io.to(data.receiverId).emit('tournamentPlayRequestAccepted', {
           ...data,
           opponentId: data.receiverId,
           opponentName: data.senderName,

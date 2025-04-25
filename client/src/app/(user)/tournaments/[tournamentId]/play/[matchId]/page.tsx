@@ -77,7 +77,7 @@ export default function PlayPage() {
   const [currentOpening, setCurrentOpening] = useState<string>("No moves yet");
   const [openings, setOpenings] = useState<any[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const lastProcessedMove = useRef<string | null>(null); // Track last processed move to prevent duplicates
+  const lastProcessedMove = useRef<string | null>(null);
 
   const { data: tournament, isLoading } = useQuery({
     queryKey: ["tournament", tournamentId],

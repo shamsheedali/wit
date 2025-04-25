@@ -196,9 +196,11 @@ export default function ClientSocketInitializer() {
                       }
 
                       socket.emit("tournamentPlayRequestAccepted", {
-                        senderId: data.senderId,
-                        receiverId: user._id,
+                        senderId: user._id,
+                        receiverId: data.senderId,
                         senderName: user.username,
+                        senderPfp: user.profileImageUrl || "",
+                        senderEloRating: user.eloRating,
                         gameId: newGameId,
                         dbGameId: savedGame._id,
                         time: data.time,
@@ -226,9 +228,7 @@ export default function ClientSocketInitializer() {
                         matchId: data.matchId,
                       });
 
-                      router.push(
-                        `/tournaments/${data.tournamentId}/play/${data.matchId}?gameId=${newGameId}&dbGameId=${savedGame._id}`
-                      );
+                      router.push("/play/tournament");
                     }}
                   >
                     Accept
@@ -241,13 +241,16 @@ export default function ClientSocketInitializer() {
         });
 
         socket.on("tournamentPlayRequestAccepted", (data) => {
-          if (data.receiverId === user?._id || data.senderId === user?._id) {
+          console.log("first", data, user)
+          if (data.receiverId === user?._id) {
             setGameState({
               gameId: data.gameId,
               dbGameId: data.dbGameId,
               opponentId:
                 data.senderId === user?._id ? data.receiverId : data.senderId,
               opponentName: data.senderName,
+              opponentProfilePicture: data.senderPfp,
+              opponentEloRating: data.senderEloRating,
               playerColor: data.senderId === user?._id ? "w" : "b",
               whiteTime: timeToSeconds(data.time),
               blackTime: timeToSeconds(data.time),
@@ -260,9 +263,7 @@ export default function ClientSocketInitializer() {
               matchId: data.matchId,
             });
             socket.emit("joinGame", { gameId: data.gameId });
-            router.push(
-              `/tournaments/${data.tournamentId}/play/${data.matchId}?gameId=${data.gameId}&dbGameId=${data.dbGameId}`
-            );
+            router.push("/play/tournament");
           }
         });
 
@@ -299,6 +300,7 @@ export default function ClientSocketInitializer() {
     }
   }, [
     user?._id,
+    user?.username,
     initializeSocket,
     router,
     logout,

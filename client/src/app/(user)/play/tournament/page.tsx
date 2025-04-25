@@ -1,7 +1,6 @@
 "use client";
 
 import { ChessBoard } from "@/components/chess/chessBoard";
-import { TimeDropdown } from "@/components/chess/time-dropdown";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,8 +17,6 @@ import { useFriendStore } from "@/stores/useFriendStore";
 import { useGameStore } from "@/stores/useGameStore";
 import { Friend } from "@/types/friend";
 import {
-  CircleArrowLeft,
-  Handshake,
   UserRound,
   ChevronLeft,
   ChevronRight,
@@ -38,10 +35,12 @@ import { ChessMove } from "@/types/game";
 import { Chess } from "chess.js";
 import ChatInterface from "@/components/core/chat-interface";
 import { reportGame } from "@/lib/api/gameReport";
+import { useRouter } from "next/navigation";
 
-export default function PlayFriend() {
+export default function PlayTournament() {
+  const router = useRouter();
   const { user } = useAuthStore();
-  const { fetchFriends, friends, sendPlayRequest } = useFriendStore();
+  const { fetchFriends } = useFriendStore();
   const {
     gameId,
     dbGameId,
@@ -59,11 +58,10 @@ export default function PlayFriend() {
     addMove,
     resetGame,
     setGameState,
+    tournamentId,
   } = useGameStore();
 
-  const [playAs, setPlayAs] = useState<boolean>(false);
   const [selectedFriend, setSelectedFriend] = useState<Friend | undefined>();
-  const [selectedTime, setSelectedTime] = useState<string>("10min");
   const [playerNames, setPlayerNames] = useState<{ [key: string]: string }>({});
   const [chess, setChess] = useState<Chess>(new Chess());
   const [currentOpening, setCurrentOpening] = useState<string>("No moves yet");
@@ -502,6 +500,9 @@ export default function PlayFriend() {
       setViewMode(false);
       setCurrentOpening("No moves yet");
       setBoardKey((prevKey) => prevKey + 1);
+
+      //redirect back to tournament info page
+      router.push(`/tournaments/${tournamentId}`);
     }
   };
 
@@ -537,38 +538,6 @@ export default function PlayFriend() {
         fen,
       });
     }
-  };
-
-  const handleClick = (friendId: string) => {
-    setPlayAs(true);
-    setSelectedFriend(friends.find((friend) => friend._id === friendId));
-  };
-
-  const handlePlay = () => {
-    if (!selectedFriend?._id || !user?._id) {
-      toast.error("Cannot send play request - missing user or friend");
-      return;
-    }
-    // Set initial timers based on selected time
-    const timeInSeconds = parseTimeToSeconds(selectedTime);
-    setGameState({
-      whiteTime: timeInSeconds,
-      blackTime: timeInSeconds,
-    });
-    sendPlayRequest(
-      selectedFriend._id,
-      user.username,
-      user.profileImageUrl as string,
-      user.eloRating,
-      selectedTime
-    );
-    toast.success(
-      `Play request sent to ${selectedFriend.username} (${selectedTime})`
-    );
-  };
-
-  const handleTimeChange = (value: string) => {
-    setSelectedTime(value);
   };
 
   const handleReportSubmit = async () => {
@@ -609,15 +578,6 @@ export default function PlayFriend() {
       toast.error("Error submitting report");
       console.error(error);
     }
-  };
-
-  const parseTimeToSeconds = (time: string): number => {
-    if (time.includes("sec")) {
-      return parseInt(time.replace("sec", ""));
-    } else if (time.includes("min")) {
-      return parseInt(time.replace("min", "")) * 60;
-    }
-    return 600; // Default to 10 minutes
   };
 
   const formatTime = (seconds: number): string => {
@@ -715,75 +675,6 @@ export default function PlayFriend() {
           </div>
         </div>
       </div>
-
-      {/* Right Section: Pre-Game Panels */}
-      {!playAs && !gameStarted && (
-        <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col gap-10 rounded-md">
-          <div className="w-full flex justify-center items-center gap-2">
-            <Handshake width={30} height={30} />
-            <h1 className="text-3xl font-bold">Play a friend</h1>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold">Friends</h1>
-            {friends && friends.length > 0 ? (
-              friends.map((friend) => (
-                <div
-                  key={friend._id}
-                  className="flex items-center gap-2 mt-5 cursor-pointer"
-                  onClick={() => handleClick(friend._id)}
-                >
-                  <div className="h-10 w-10 bg-white rounded-full">
-                    <img
-                      src={friend.profileImageUrl || "/placeholder.svg"}
-                      alt={`${friend.username}`}
-                      className="h-10 w-10 rounded-full"
-                    />
-                  </div>
-                  <h1>{friend.username}</h1>
-                </div>
-              ))
-            ) : (
-              <p>No friends yet</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Play Vs */}
-      {playAs && !gameStarted && (
-        <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col items-center gap-10 rounded-md">
-          <div className="w-full flex justify-center items-center gap-2 relative">
-            <div
-              className="absolute left-0 cursor-pointer"
-              onClick={() => setPlayAs(false)}
-            >
-              <CircleArrowLeft />
-            </div>
-            <div className="flex justify-center items-center gap-2">
-              <Handshake width={30} height={30} />
-              <h1 className="text-3xl font-bold">Play vs</h1>
-            </div>
-          </div>
-          <div>
-            <div className="flex flex-col items-center gap-2 mt-5">
-              <div className="h-32 w-32 bg-white rounded-full">
-                <img
-                  src={selectedFriend?.profileImageUrl || "/placeholder.svg"}
-                  alt={selectedFriend?.username}
-                  className="h-32 w-32 rounded-full"
-                />
-              </div>
-              <h1>{selectedFriend?.username}</h1>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <TimeDropdown onValueChange={handleTimeChange} />
-          </div>
-          <Button className="w-full h-11 font-bold" onClick={handlePlay}>
-            Play
-          </Button>
-        </div>
-      )}
 
       {/* Game Info Panel */}
       {gameStarted && (

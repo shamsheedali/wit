@@ -99,7 +99,7 @@ export default function TournamentPage() {
       );
       if (result) {
         const socketInstance = getSocket();
-        socketInstance.emit("tournamentUpdate", result);
+        socketInstance?.emit("tournamentUpdate", result);
         queryClient.invalidateQueries({
           queryKey: ["tournament", tournamentId],
         });
@@ -130,8 +130,8 @@ export default function TournamentPage() {
       const result = await startTournament(tournamentId, user._id);
       if (result) {
         const socketInstance = getSocket();
-        socketInstance.emit("tournamentUpdate", result);
-        socketInstance.emit("tournamentStarted", {
+        socketInstance?.emit("tournamentUpdate", result);
+        socketInstance?.emit("tournamentStarted", {
           tournamentId,
           tournamentName: tournament.name,
           players: tournament.players.map(
@@ -141,7 +141,6 @@ export default function TournamentPage() {
         queryClient.invalidateQueries({
           queryKey: ["tournament", tournamentId],
         });
-        toast.success("Tournament started");
       }
     } catch (error) {
       toast.error("Error starting tournament");
@@ -168,7 +167,7 @@ export default function TournamentPage() {
           tournamentId,
           matchId: match.matchId,
         });
-        toast.info("Play request sent to opponent");
+        toast.info(`Play request sent to ${match.opponentUsername}`);
       } else {
         toast.info("No available opponents");
       }
@@ -195,7 +194,7 @@ export default function TournamentPage() {
       const result = await leaveTournament(tournamentId, user._id);
       if (result) {
         const socketInstance = getSocket();
-        socketInstance.emit("tournamentUpdate", result);
+        socketInstance?.emit("tournamentUpdate", result);
         setIsExitDialogOpen(false);
         setIsJoined(false);
         queryClient.invalidateQueries({
@@ -218,7 +217,7 @@ export default function TournamentPage() {
       const result = await deleteTournament(tournamentId, user._id);
       if (result) {
         const socketInstance = getSocket();
-        socketInstance.emit("tournamentUpdate", result);
+        socketInstance?.emit("tournamentUpdate", result);
         setIsDeleteDialogOpen(false);
         router.push("/tournaments");
         toast.success("Tournament deleted");
