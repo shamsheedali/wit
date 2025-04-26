@@ -36,6 +36,7 @@ import { Chess } from "chess.js";
 import ChatInterface from "@/components/core/chat-interface";
 import { reportGame } from "@/lib/api/gameReport";
 import { useRouter } from "next/navigation";
+import { submitPlayoffResult, submitResult } from "@/lib/api/tournament";
 
 export default function PlayTournament() {
   const router = useRouter();
@@ -59,6 +60,7 @@ export default function PlayTournament() {
     resetGame,
     setGameState,
     tournamentId,
+    matchId,
   } = useGameStore();
 
   const [selectedFriend, setSelectedFriend] = useState<Friend | undefined>();
@@ -72,8 +74,6 @@ export default function PlayTournament() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [moveIndex, setMoveIndex] = useState(-1);
   const [viewMode, setViewMode] = useState(false);
-
-  //to reset the chess-board after the game
   const [boardKey, setBoardKey] = useState(0);
 
   // Update the chess instance when moves or moveIndex changes
@@ -81,7 +81,6 @@ export default function PlayTournament() {
     const newChess = new Chess();
 
     if (moveIndex === -1) {
-      // Show current position (all moves)
       moves.forEach((move) => {
         try {
           newChess.move({
@@ -94,7 +93,6 @@ export default function PlayTournament() {
         }
       });
     } else if (moveIndex >= 0 && moveIndex < moves.length) {
-      // Show position up to the selected move
       for (let i = 0; i <= moveIndex; i++) {
         try {
           newChess.move({
@@ -113,22 +111,19 @@ export default function PlayTournament() {
 
   // Handle navigation button clicks
   const handleFirstMove = () => {
-    setMoveIndex(-2); // Special index for initial position
+    setMoveIndex(-2);
     setViewMode(true);
-    setChess(new Chess()); // Reset to initial position
+    setChess(new Chess());
   };
 
   const handlePreviousMove = () => {
     setViewMode(true);
     if (moveIndex === -1) {
-      // If at current position, go to last move
       setMoveIndex(moves.length - 1);
     } else if (moveIndex > -2) {
-      // Go back one move
       setMoveIndex(Math.max(-2, moveIndex - 1));
     }
 
-    // Create a new game instance and replay moves up to the current index
     const newChess = new Chess();
     if (moveIndex > -2) {
       const targetIndex = moveIndex === -1 ? moves.length - 2 : moveIndex - 1;
@@ -150,21 +145,16 @@ export default function PlayTournament() {
   const handleNextMove = () => {
     setViewMode(true);
     if (moveIndex === -2) {
-      // From initial position, go to first move
       setMoveIndex(0);
     } else if (moveIndex < moves.length - 1) {
-      // Go forward one move
       setMoveIndex(moveIndex + 1);
     } else {
-      // If at last move, go to current position
       setMoveIndex(-1);
       setViewMode(false);
     }
 
-    // Create a new game instance and replay moves up to the current index
     const newChess = new Chess();
     if (moveIndex === -2) {
-      // Just show first move
       try {
         newChess.move({
           from: moves[0].from,
@@ -175,7 +165,6 @@ export default function PlayTournament() {
         console.error("Invalid move:", moves[0], e);
       }
     } else if (moveIndex >= 0 && moveIndex < moves.length - 1) {
-      // Show up to next move
       for (let i = 0; i <= moveIndex + 1; i++) {
         try {
           newChess.move({
@@ -188,7 +177,6 @@ export default function PlayTournament() {
         }
       }
     } else if (moveIndex === moves.length - 1) {
-      // Show all moves (current position)
       for (let i = 0; i < moves.length; i++) {
         try {
           newChess.move({
@@ -205,10 +193,9 @@ export default function PlayTournament() {
   };
 
   const handleLastMove = () => {
-    setMoveIndex(-1); // Go to current position
+    setMoveIndex(-1);
     setViewMode(false);
 
-    // Create a new game instance with all moves
     const newChess = new Chess();
     moves.forEach((move) => {
       try {
@@ -224,7 +211,7 @@ export default function PlayTournament() {
     setChess(newChess);
   };
 
-  // Helper function to pair moves
+  // Helper functions (getMovePairs, getPieceIcon, guessEcoPrefixes, normalizePGN, getOpeningFromPGN)
   const getMovePairs = (
     moves: ChessMove[]
   ): { white: ChessMove | null; black: ChessMove | null }[] => {
@@ -238,7 +225,6 @@ export default function PlayTournament() {
     return pairs;
   };
 
-  // Helper function to get piece icons
   const getPieceIcon = (piece: string, color: "w" | "b"): string => {
     switch (piece) {
       case "p":
@@ -258,7 +244,6 @@ export default function PlayTournament() {
     }
   };
 
-  // Guess ECO range based on first move
   const guessEcoPrefixes = (history: string[]): string[] => {
     if (history.length === 0) return [];
     const firstMove = history[0];
@@ -267,12 +252,10 @@ export default function PlayTournament() {
     return ["a"];
   };
 
-  // Normalize PGN by removing move numbers and dots
   const normalizePGN = (pgn: string): string => {
     return pgn.replace(/\d+\./g, "").replace(/\s+/g, " ").trim();
   };
 
-  // Function to determine opening from PGN
   const getOpeningFromPGN = (chessInstance: Chess): string => {
     const history = chessInstance.history();
     if (history.length === 0) return "No moves yet";
@@ -296,7 +279,7 @@ export default function PlayTournament() {
     return bestMatch;
   };
 
-  // Load relevant openings and sync chess instance
+  // Load openings and sync chess instance
   useEffect(() => {
     const loadRelevantOpenings = async () => {
       const newChess = new Chess();
@@ -347,14 +330,12 @@ export default function PlayTournament() {
     loadRelevantOpenings();
   }, [moves]);
 
-  // Update opening when chess or openings change
   useEffect(() => {
     if (chess) {
       setCurrentOpening(getOpeningFromPGN(chess));
     }
   }, [chess, openings]);
 
-  // Fetch friends and user names
   useEffect(() => {
     if (user?._id) {
       fetchFriends();
@@ -362,10 +343,8 @@ export default function PlayTournament() {
     }
   }, [user?._id, fetchFriends]);
 
-  // Timer logic
   useEffect(() => {
     if (gameStarted && gameId) {
-      // Ensure activePlayer is set to "w" when game starts
       if (!activePlayer) {
         setGameState({ activePlayer: "w" });
       }
@@ -397,7 +376,6 @@ export default function PlayTournament() {
     }
   }, [gameStarted, gameId, activePlayer, whiteTime, blackTime, setGameState]);
 
-  // Socket listener for opponent moves
   useEffect(() => {
     const socket = getSocket();
     if (socket) {
@@ -410,12 +388,9 @@ export default function PlayTournament() {
           fen: string;
         }) => {
           if (data.gameId === gameId && data.playerId !== user?._id) {
-            // Update chess instance
             const newChess = new Chess(data.fen);
             setChess(newChess);
-            // Add opponent's move
             addMove(data.move);
-            // Update activePlayer based on whose turn it is now
             setGameState({ activePlayer: newChess.turn() });
           }
         }
@@ -429,7 +404,7 @@ export default function PlayTournament() {
         }) => {
           if (data.opponentId === opponentId) {
             toast.success(`Opponent resigned: ${data.result}`);
-            resetGame();
+            endGame(data.result, "resignation", chess.fen());
           }
         }
       );
@@ -439,7 +414,7 @@ export default function PlayTournament() {
         socket.off("opponentResigned");
       };
     }
-  }, [gameId, user?._id, opponentId, addMove, setGameState, resetGame]);
+  }, [gameId, user?._id, opponentId, addMove, setGameState]);
 
   const fetchUserNames = async () => {
     try {
@@ -469,66 +444,103 @@ export default function PlayTournament() {
     }
   };
 
+  const isPlayoff = matchId === "playoff";
+
   const endGame = async (
     result: "whiteWin" | "blackWin" | "draw",
     lossType: "checkmate" | "resignation" | "timeout",
     fen: string
   ) => {
     if (dbGameId && gameStartTime) {
-      const gameDuration = Math.floor((Date.now() - gameStartTime) / 1000);
-      await updateGame(dbGameId, {
-        result,
-        moves,
-        lossType,
-        gameDuration,
-        gameStatus: "completed",
-        fen,
-      });
-      const socket = getSocket();
-      if (socket) {
-        socket.emit("opponentResigned", {
-          opponentId,
+      try {
+        console.log(
+          `endGame: result=${result}, lossType=${lossType}, dbGameId=${dbGameId}`
+        );
+        const gameDuration = Math.floor((Date.now() - gameStartTime) / 1000);
+        const updatedGame = await updateGame(dbGameId, {
           result,
+          moves,
+          lossType,
+          gameDuration,
+          gameStatus: "completed",
+          fen,
         });
+        console.log("updateGame result:", updatedGame);
+
+        const socket = getSocket();
+        if (socket) {
+          socket.emit("opponentResigned", { opponentId, result });
+        }
+
+        const tournamentResult =
+          result === "whiteWin"
+            ? "1-0"
+            : result === "blackWin"
+            ? "0-1"
+            : "0.5-0.5";
+        const submitFunction = isPlayoff ? submitPlayoffResult : submitResult;
+        let updatedTournament;
+        try {
+          updatedTournament = await submitFunction(
+            tournamentId as string,
+            isPlayoff ? undefined : matchId,
+            tournamentResult,
+            user?._id
+          );
+          console.log("submitResult result:", updatedTournament);
+        } catch (error: any) {
+          if (error.message.includes("Match already has result")) {
+            console.log("Duplicate result submission ignored");
+            // Fetch the latest tournament state
+            updatedTournament = await getTournament(tournamentId as string);
+          } else {
+            throw error;
+          }
+        }
+
+        if (updatedTournament) {
+          // Only emit tournamentUpdate from the first successful submission
+          if (!updatedTournament._id) {
+            console.log("Skipping tournamentUpdate emission for duplicate");
+          } else {
+            const socketInstance = getSocket();
+            socketInstance?.emit("tournamentUpdate", updatedTournament);
+            toast.success(`Game ended: ${result}`);
+          }
+        } else {
+          toast.error("Failed to update tournament");
+        }
+
+        resetGame();
+        setChess(new Chess());
+        setMoveIndex(-1);
+        setViewMode(false);
+        setCurrentOpening("No moves yet");
+        setBoardKey((prevKey) => prevKey + 1);
+        router.push(`/tournaments/${tournamentId}`);
+      } catch (error) {
+        console.error("Error ending game:", error);
+        toast.error("An error occurred while ending the game");
       }
-      toast.success(`Game ended: ${result}`);
-
-      // Reset all chess-related states
-      resetGame();
-      setChess(new Chess());
-      setMoveIndex(-1);
-      setViewMode(false);
-      setCurrentOpening("No moves yet");
-      setBoardKey((prevKey) => prevKey + 1);
-
-      //redirect back to tournament info page
-      router.push(`/tournaments/${tournamentId}`);
     }
   };
 
   const handleMoveUpdate = async (move: ChessMove | undefined, fen: string) => {
     if (!move) return;
 
-    // Reset view mode when a new move is made
     setViewMode(false);
     setMoveIndex(-1);
 
-    // Update chess instance
     const newChess = new Chess(fen);
     setChess(newChess);
 
-    // Add move to store
     addMove(move);
-
-    // Update activePlayer for next turn
     setGameState({ activePlayer: newChess.turn() });
 
-    // Update game in database
     if (dbGameId) {
       await updateGame(dbGameId, { moves: [...moves, move], fen });
     }
 
-    // Emit move to opponent
     const socket = getSocket();
     if (socket && gameId && user?._id) {
       socket.emit("moveMade", {
@@ -588,7 +600,6 @@ export default function PlayTournament() {
 
   return (
     <div className="flex flex-col md:flex-row w-full h-screen items-center p-4 font-clashDisplay">
-      {/* Left Section: Chessboard and Player Info */}
       <div className="flex flex-col items-center w-full md:w-1/2 h-full py-[30px]">
         <div className="flex items-center justify-between w-full max-w-[500px] pr-10 py-2 rounded-lg">
           <div className="flex items-center gap-2">
@@ -631,7 +642,6 @@ export default function PlayTournament() {
           </div>
         </div>
 
-        {/* CHESS BOARD */}
         <div className="flex-grow flex items-center justify-center w-full max-w-[500px] my-2">
           <ChessBoard
             key={boardKey}
@@ -645,7 +655,6 @@ export default function PlayTournament() {
           />
         </div>
 
-        {/* Player - 01 */}
         <div className="flex items-center justify-between w-full max-w-[500px] pr-10 py-2 rounded-lg">
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 bg-[#262522] rounded-full flex items-center justify-center">
@@ -676,7 +685,6 @@ export default function PlayTournament() {
         </div>
       </div>
 
-      {/* Game Info Panel */}
       {gameStarted && (
         <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-6 flex flex-col gap-6 rounded-md">
           <div className="border-b border-gray-600 pb-2">
@@ -801,7 +809,6 @@ export default function PlayTournament() {
         </div>
       )}
 
-      {/* Report Modal */}
       <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
         <DialogContent className="bg-[#262522] text-white">
           <DialogHeader>
@@ -865,7 +872,6 @@ export default function PlayTournament() {
         </DialogContent>
       </Dialog>
 
-      {/* Chat Interface */}
       {gameStarted && (
         <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col gap-10 rounded-md">
           <ChatInterface

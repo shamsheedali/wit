@@ -1,7 +1,30 @@
 import { Schema, model, models, Document, Types } from 'mongoose';
 import { GameType } from './game.model';
 
+export interface Player {
+  userId: Types.ObjectId;
+  points: number;
+  gamesPlayed: number;
+  wins: number;
+  draws: number;
+  losses: number;
+}
+
+export interface Match {
+  _id: Types.ObjectId;
+  player1Id: Types.ObjectId;
+  player2Id: Types.ObjectId;
+  result?: '1-0' | '0-1' | '0.5-0.5' | null;
+}
+
+export interface PlayoffMatch {
+  player1Id: Types.ObjectId;
+  player2Id: Types.ObjectId;
+  result?: '1-0' | '0-1' | null;
+}
+
 export interface ITournament extends Document {
+  _id: Types.ObjectId;
   name: string;
   type: 'league';
   gameType: GameType;
@@ -9,29 +32,13 @@ export interface ITournament extends Document {
   maxGames: number;
   maxPlayers: number;
   password?: string;
-  players: {
-    userId: Types.ObjectId;
-    points: number;
-    gamesPlayed: number;
-    wins: number;
-    draws: number;
-    losses: number;
-  }[];
-  matches: {
-    player1Id: Types.ObjectId;
-    player2Id: Types.ObjectId;
-    result?: '1-0' | '0-1' | '0.5-0.5' | null;
-    _id: Types.ObjectId;
-  }[];
+  players: Player[];
+  matches: Match[];
   status: 'pending' | 'active' | 'playoff' | 'completed' | 'cancelled';
   createdBy: Types.ObjectId;
   createdByAdmin: boolean;
   startDate?: number;
-  playoffMatch?: {
-    player1Id: Types.ObjectId;
-    player2Id: Types.ObjectId;
-    result?: '1-0' | '0-1' | null;
-  };
+  playoffMatch?: PlayoffMatch;
 }
 
 const tournamentSchema = new Schema<ITournament>({

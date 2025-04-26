@@ -241,7 +241,6 @@ export default function ClientSocketInitializer() {
         });
 
         socket.on("tournamentPlayRequestAccepted", (data) => {
-          console.log("first", data, user)
           if (data.receiverId === user?._id) {
             setGameState({
               gameId: data.gameId,

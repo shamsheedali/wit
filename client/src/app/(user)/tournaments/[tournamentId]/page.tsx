@@ -65,6 +65,7 @@ export default function TournamentPage() {
             ["tournament", tournamentId],
             updatedTournament
           );
+          toast.info("Tournament updated");
         }
       });
 
