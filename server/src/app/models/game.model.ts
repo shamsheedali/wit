@@ -16,6 +16,7 @@ export enum LossType {
   Checkmate = 'checkmate',
   Resignation = 'resignation',
   Timeout = 'timeout',
+  Draw = 'draw',
 }
 
 export enum GameStatus {

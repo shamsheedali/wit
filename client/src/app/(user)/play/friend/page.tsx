@@ -429,16 +429,28 @@ export default function PlayFriend() {
           opponentId: string;
           result: "whiteWin" | "blackWin" | "draw";
         }) => {
-          if (data.opponentId === opponentId) {
             toast.success(`Opponent resigned: ${data.result}`);
             resetGame();
-          }
+            setChess(new Chess());
+            setMoveIndex(-1);
+            setViewMode(false);
+            setCurrentOpening("No moves yet");
+            setBoardKey((prevKey) => prevKey + 1);
         }
       );
+
+      socket.on("drawRequestAccepted", () => {
+        endGame(
+          "draw",
+          "draw",
+          chess.fen()
+        )
+      })
 
       return () => {
         socket.off("moveMade");
         socket.off("opponentResigned");
+        socket.off("drawRequestAccepted");
       };
     }
   }, [gameId, user?._id, opponentId, addMove, setGameState, resetGame]);
@@ -473,7 +485,7 @@ export default function PlayFriend() {
 
   const endGame = async (
     result: "whiteWin" | "blackWin" | "draw",
-    lossType: "checkmate" | "resignation" | "timeout",
+    lossType: "checkmate" | "resignation" | "timeout" | "draw",
     fen: string
   ) => {
     if (dbGameId && gameStartTime) {
@@ -486,13 +498,17 @@ export default function PlayFriend() {
         gameStatus: "completed",
         fen,
       });
-      const socket = getSocket();
-      if (socket) {
-        socket.emit("opponentResigned", {
-          opponentId,
-          result,
-        });
+
+      if (lossType === "resignation") {
+        const socket = getSocket();
+        if (socket) {
+          socket.emit("opponentResigned", {
+            opponentId,
+            result,
+          });
+        }
       }
+
       toast.success(`Game ended: ${result}`);
 
       // Reset all chess-related states
@@ -504,6 +520,17 @@ export default function PlayFriend() {
       setBoardKey((prevKey) => prevKey + 1);
     }
   };
+
+  const handleDraw = () => {
+      const socket = getSocket();
+      if (socket) {
+        socket.emit("opponentDrawRequest", {
+          opponentId,
+          senderId: user?._id,
+          senderName: user?.username,
+        });
+      }
+  }
 
   const handleMoveUpdate = async (move: ChessMove | undefined, fen: string) => {
     if (!move) return;
@@ -846,7 +873,7 @@ export default function PlayFriend() {
               <Button
                 variant="outline"
                 className="w-1/2 bg-gray-700 text-white hover:bg-gray-600"
-                onClick={() => endGame("draw", "resignation", chess.fen())}
+                onClick={handleDraw}
               >
                 <Hand className="mr-2" /> Draw
               </Button>

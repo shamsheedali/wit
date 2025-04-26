@@ -259,6 +259,17 @@ export default function socketHandler(io: Server) {
       io.to(opponentId).emit('opponentResigned', { opponentId, result });
     });
 
+    socket.on('opponentDrawRequest', (data) => {
+      const { opponentId, senderId, senderName } = data;
+      io.to(opponentId).emit('opponentDrawRequestReceived', { opponentId, senderId, senderName });
+    });
+
+    socket.on('drawRequestAccepted', (data) => {
+      const { playerOne, playerTwo } = data;
+      io.to(playerOne).emit('drawRequestAccepted');
+      io.to(playerTwo).emit('drawRequestAccepted');
+    });
+
     socket.on('tournamentUpdate', (updatedTournament: any) => {
       io.emit('tournamentUpdated', updatedTournament);
     });

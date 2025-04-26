@@ -93,6 +93,21 @@ export default class TournamentService {
     return deletedTournament;
   }
 
+  async deleteTournamentAdmin(tournamentId: string): Promise<ITournament | null> {
+    const tournament = await this._tournamentRepository.findById(tournamentId);
+    if (!tournament) throw new NotFoundError('Tournament');
+    // if (tournament.createdByAdmin)
+    //   throw new BadRequestError('Cannot delete admin-created tournament');
+    // if (!tournament.createdBy || !tournament.createdBy.equals(new Types.ObjectId(userId))) {
+    //   throw new BadRequestError('Only the creator can delete the tournament');
+    // }
+    // if (tournament.status === 'active' || tournament.status === 'playoff') {
+    //   throw new BadRequestError('Cannot delete tournament in active or playoff status');
+    // }
+    const deletedTournament = await this._tournamentRepository.delete(tournamentId);
+    return deletedTournament;
+  }
+
   async joinTournament(
     tournamentId: string,
     userId: string,

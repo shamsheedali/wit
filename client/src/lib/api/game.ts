@@ -41,7 +41,7 @@ export const updateGame = async (
     result: "whiteWin" | "blackWin" | "draw";
     fen: string;
     moves: IMove[];
-    lossType: "checkmate" | "resignation" | "timeout";
+    lossType: "checkmate" | "resignation" | "timeout" | "draw";
     gameDuration: number;
     gameStatus: "ongoing" | "completed" | "terminated";
   }>

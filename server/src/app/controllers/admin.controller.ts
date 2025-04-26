@@ -178,7 +178,7 @@ export default class AdminController {
     const tournamentId = req.params.tournamentId;
     if (!tournamentId) throw new BadRequestError('Tournament ID is required');
 
-    const tournament = await this._tournamentService.deleteTournament(tournamentId);
+    const tournament = await this._tournamentService.deleteTournamentAdmin(tournamentId);
     if (!tournament) throw new NotFoundError('Tournament not found');
 
     res.status(HttpStatus.OK).json({ message: 'Tournament deleted successfully' });

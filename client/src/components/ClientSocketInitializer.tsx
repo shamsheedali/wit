@@ -156,9 +156,40 @@ export default function ClientSocketInitializer() {
           router.push("/");
         });
 
-        socket.on("opponentResigned", (data) => {
-          toast.success(`Game ended: ${data.result}`);
-          resetGame();
+        // socket.on("opponentResigned", (data) => {
+        //   toast.success(`Game ended: ${data.result}`);
+        //   resetGame();
+        // });
+
+        socket.on("opponentDrawRequestReceived", (data) => {
+          if (data.opponentId === user?._id) {
+            toast(`Draw match request from ${data.senderName}`, {
+              description: (
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => toast.info("Draw request declined")}
+                  >
+                    Decline
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      if (!socket || !user?._id) return;
+                      socket.emit("drawRequestAccepted", {
+                        playerOne: user._id,
+                        playerTwo: data.senderId,
+                      });
+                    }}
+                  >
+                    Accept
+                  </Button>
+                </div>
+              ),
+              duration: 10000,
+            });
+          }
         });
 
         socket.on("tournamentPlayRequestReceived", (data) => {
