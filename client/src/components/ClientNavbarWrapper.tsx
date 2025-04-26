@@ -12,6 +12,7 @@ export default function ClientNavbarWrapper() {
     "/play/friend",
     "/play/online",
     "/play/tournament",
+    /^\/review\/[^\/]+$/,
     /^\/tournaments\/[^\/]+\/play\/[^\/]+$/,
     /^\/dashboard(\/.*)?$/, // Matches /admin and any subroutes
     "/admin-login"

@@ -44,6 +44,10 @@ export default class GameService extends BaseService<IGame> implements IGameServ
     return this._gameRepository.saveGame(gameData);
   }
 
+  async getGame(gameId: string) {
+    return this._gameRepository.findById(gameId);
+  }
+
   async updateGame(
     gameId: string,
     updateData: Partial<{

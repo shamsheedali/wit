@@ -62,6 +62,30 @@ export const getAllGames = async (page: number, limit: number) => {
   }
 };
 
+export const getTotalGames = async () => {
+  try {
+    const response = await apiClient.get(`${API_URL}/total/games`);
+    return response.data.total;
+  } catch (error) {
+    handleApiError(error);
+    return 0;
+  }
+};
+
+// GET ALL GAME-REPORTS
+export const getGameReports = async () => {
+  try {
+    const response = await apiClient.get(`${API_URL}/game-reports`);
+    if (response.status === HttpStatus.OK) {
+      return response.data.data;
+    }
+    return [];
+  } catch (error) {
+    handleApiError(error);
+    return [];
+  }
+};
+
 // DELETE_GAME
 export const deleteGame = async (gameId: string) => {
   try {

@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserGrowthChart } from "@/components/user-growth-chart";
-import { getTotalGames } from "@/lib/api/game";
-import { getTotalUsers } from "@/lib/api/admin";
+import { getTotalGames, getTotalUsers } from "@/lib/api/admin";
 
 export default function Overview() {
   const [totalUsers, setTotalUsers] = useState(0);

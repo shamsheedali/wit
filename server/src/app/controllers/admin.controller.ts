@@ -16,6 +16,7 @@ import {
   UnauthorizedError,
 } from '../../utils/http-error.util';
 import HttpResponse from '../../constants/response-message.constant';
+import GameReportService from '../services/gameReport.service';
 
 @injectable()
 export default class AdminController {
@@ -23,6 +24,7 @@ export default class AdminController {
   private _userService: UserService;
   private _tokenService: TokenService;
   private _gameService: GameService;
+  private _gameReportService: GameReportService;
   private _clubService: ClubService;
   private _tournamentService: TournamentService;
 
@@ -31,6 +33,7 @@ export default class AdminController {
     @inject(TYPES.UserService) userService: UserService,
     @inject(TYPES.TokenService) tokenService: TokenService,
     @inject(TYPES.GameService) gameService: GameService,
+    @inject(TYPES.GameReportService) gameReportService: GameReportService,
     @inject(TYPES.ClubService) clubService: ClubService,
     @inject(TYPES.TournamentService) tournamentService: TournamentService
   ) {
@@ -38,6 +41,7 @@ export default class AdminController {
     this._userService = userService;
     this._tokenService = tokenService;
     this._gameService = gameService;
+    this._gameReportService = gameReportService;
     this._clubService = clubService;
     this._tournamentService = tournamentService;
   }
@@ -194,6 +198,24 @@ export default class AdminController {
   async getTotalUsers(req: Request, res: Response) {
     const totalUsers = await this._userService.getTotalUsers();
     res.status(HttpStatus.OK).json({ total: totalUsers });
+  }
+
+  async getTotalGames(req: Request, res: Response) {
+    const totalGames = await this._gameService.getTotalGames();
+    res.status(HttpStatus.OK).json({ total: totalGames });
+  }
+
+  //GET ALL GAME REPORTS
+  async getReports(req: Request, res: Response) {
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedError(HttpResponse.UNAUTHORIZED);
+
+    const reports = await this._gameReportService.getReports();
+
+    res.status(HttpStatus.OK).json({
+      message: HttpResponse.REPORTS_FETCHED,
+      data: reports,
+    });
   }
 
   async getAllClubs(req: Request, res: Response) {

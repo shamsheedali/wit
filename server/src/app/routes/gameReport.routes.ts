@@ -13,10 +13,5 @@ router.post(
   authenticateToken,
   asyncWrap(gameReportController.createReport.bind(gameReportController))
 );
-router.get(
-  '/',
-  authenticateToken,
-  asyncWrap(gameReportController.getReports.bind(gameReportController))
-);
 
 export default router;

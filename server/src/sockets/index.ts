@@ -11,6 +11,7 @@ import { Types } from 'mongoose';
 export default function socketHandler(io: Server) {
   const onlineUsers = new Map<string, string>(); // userId -> socketId
   const matchmakingQueue = new Map<string, { userId: string; time: string; socket: Socket }>();
+  const gameResults = new Map<string, { result: string; lossType: string }>(); // gameId -> result
   const clubRepository = container.get<ClubRepository>(TYPES.ClubRepository);
 
   io.on('connection', (socket: Socket) => {
@@ -44,8 +45,18 @@ export default function socketHandler(io: Server) {
       for (const [queuedUserId, queuedData] of matchmakingQueue) {
         if (queuedUserId !== userId && queuedData.time === time) {
           const gameId = uuidv4();
-          socket.emit('matchFound', { opponentId: queuedUserId, gameId, time });
-          queuedData.socket.emit('matchFound', { opponentId: userId, gameId, time });
+          socket.emit('matchFound', {
+            opponentId: queuedUserId,
+            gameId,
+            time,
+            playerColor: 'w',
+          });
+          queuedData.socket.emit('matchFound', {
+            opponentId: userId,
+            gameId,
+            time,
+            playerColor: 'b',
+          });
           matchmakingQueue.delete(userId);
           matchmakingQueue.delete(queuedUserId);
           return;
@@ -242,6 +253,7 @@ export default function socketHandler(io: Server) {
     socket.on('gameTerminated', (data) => {
       const { gameId, playerOne, playerTwo } = data;
       io.to(playerOne).to(playerTwo).emit('gameTerminated', { gameId });
+      gameResults.delete(gameId);
     });
 
     socket.on('userBanned', (data) => {
@@ -252,12 +264,20 @@ export default function socketHandler(io: Server) {
     socket.on('opponentBanned', (data) => {
       const { gameId, bannedUserId, opponentId } = data;
       io.to(opponentId).emit('opponentBanned', { gameId, bannedUserId });
+      gameResults.delete(gameId);
     });
 
-    socket.on('opponentResigned', (data) => {
-      const { opponentId, result } = data;
-      io.to(opponentId).emit('opponentResigned', { opponentId, result });
-    });
+    socket.on(
+      'opponentResigned',
+      (data: { gameId: string; opponentId: string; result: string; lossType: string }) => {
+        const { gameId, opponentId, result, lossType } = data;
+        // Prevent duplicate updates
+        if (!gameResults.has(gameId)) {
+          gameResults.set(gameId, { result, lossType });
+          io.to(opponentId).emit('opponentResigned', { gameId, opponentId, result, lossType });
+        }
+      }
+    );
 
     socket.on('opponentDrawRequest', (data) => {
       const { opponentId, senderId, senderName } = data;

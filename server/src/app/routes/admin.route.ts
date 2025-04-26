@@ -92,6 +92,16 @@ router.get(
   asyncWrap(adminController.getTotalUsers.bind(adminController))
 );
 
+//GET TOTAL GAMES
+router.get('/total/games', asyncWrap(adminController.getTotalGames.bind(adminController)));
+
+//GET ALL GAME-REPORTS
+router.get(
+  '/game-reports',
+  authenticateToken,
+  asyncWrap(adminController.getReports.bind(adminController))
+);
+
 // GET ALL CLUBS
 router.get(
   '/clubs',

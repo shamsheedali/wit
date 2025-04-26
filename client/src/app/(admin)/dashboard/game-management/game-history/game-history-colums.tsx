@@ -24,7 +24,7 @@ export type GameData = {
   timeControl: string;
   moves: Array<any>;
   createdAt: string;
-  gameStatus: "ongoing" | "completed";
+  gameStatus: "ongoing" | "completed" | "terminated";
 };
 
 export const gameColumns = (
@@ -60,8 +60,15 @@ export const gameColumns = (
     header: "Result",
     cell: ({ row }) => {
       const result = row.getValue("result") as string | undefined;
-      return <span>{result ? (result === "whiteWin" ? "1-0" : result === "blackWin" ? "0-1" : "½-½") : "Ongoing"}</span>;
+      const gameStatus = row.getValue("gameStatus") as string | undefined;
+      return <span>{result ? (result === "whiteWin" ? "1-0" : result === "blackWin" ? "0-1" : "½-½") : gameStatus === 'terminated' ? '-' : 'Ongoing'}</span>;
     },
+    enableSorting: false,
+  },
+  {
+    accessorKey: "gameStatus",
+    header: "Status",
+    cell: ({ row }) => <span className="capitalize">{row.getValue("gameStatus")}</span>,
     enableSorting: false,
   },
   {
