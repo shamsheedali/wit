@@ -106,7 +106,6 @@ export default function TournamentPage() {
         });
         setIsPasswordDialogOpen(false);
         setPassword("");
-        toast.success("Joined tournament");
       }
     } catch (error) {
       toast.error("Error joining tournament");

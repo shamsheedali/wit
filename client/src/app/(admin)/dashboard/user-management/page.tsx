@@ -6,7 +6,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { userColumns } from "./user-colums";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { getUsers } from "../../../../lib/api/admin";
+import { getUsers } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
 
 const LIMIT = 7;

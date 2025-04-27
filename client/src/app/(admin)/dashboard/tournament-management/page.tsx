@@ -5,8 +5,8 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { tournamentColumns } from "./tournament-columns";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { getTournaments } from "@/lib/api/admin";
+import { useState, useMemo } from "react";
+import { getTournaments, getUsers } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,11 +36,51 @@ export default function TournamentManagementPage() {
   const queryClient = useQueryClient();
   const { admin } = useAuthStore();
 
+  // Fetch tournaments
   const { data, isLoading, isError } = useQuery({
     queryKey: ["tournaments", page],
     queryFn: () => getTournaments(page, LIMIT),
     keepPreviousData: true,
   });
+
+  // Fetch users for createdBy usernames
+  const { data: usersData } = useQuery({
+    queryKey: ["users-for-tournaments"],
+    queryFn: async () => {
+      const usersLimit = 100;
+      let page = 1;
+      let allUsers: { _id: string; username: string }[] = [];
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await getUsers(page, usersLimit);
+        if (response?.users?.length > 0) {
+          allUsers = [...allUsers, ...response.users];
+          page += 1;
+          hasMore = response.users.length === usersLimit;
+        } else {
+          hasMore = false;
+        }
+      }
+      return allUsers;
+    },
+    staleTime: Infinity, // Users data doesn't change often
+  });
+
+  // Create userNamesMap from usersData
+  const userNamesMap = useMemo(() => {
+    const namesMap: { [key: string]: string } = {};
+    usersData?.forEach((u) => {
+      namesMap[u._id] = u.username;
+    });
+    return namesMap;
+  }, [usersData]);
+
+  // Memoize columns to prevent unnecessary re-renders
+  const columns = useMemo(
+    () => tournamentColumns(queryClient, admin, userNamesMap),
+    [queryClient, admin, userNamesMap]
+  );
 
   const isNameValid = tournamentName.trim().length > 0;
   const isMaxGamesValid = parseInt(maxGames) > 0;
@@ -65,13 +105,13 @@ export default function TournamentManagementPage() {
         createdByAdmin: true,
       });
       if (response?.success) {
-        toast.success("Tournament created successfully");
         setIsCreateDialogOpen(false);
         setTournamentName("");
         setMaxGames("5");
         setMaxPlayers("10");
         setSelectedTime("10min");
         await queryClient.invalidateQueries({ queryKey: ["tournaments"] });
+        toast.success("Tournament created successfully");
       } else {
         toast.error("Failed to create tournament");
       }
@@ -104,10 +144,7 @@ export default function TournamentManagementPage() {
             Create Tournament
           </Button>
         </div>
-        <DataTable
-          columns={tournamentColumns(queryClient)}
-          data={data?.tournaments || []}
-        />
+        <DataTable columns={columns} data={data?.tournaments || []} />
 
         <div className="flex justify-end mt-4 gap-2">
           <Button
@@ -132,6 +169,7 @@ export default function TournamentManagementPage() {
         </div>
       </div>
 
+      {/* Create Tournament Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="bg-[#262522] text-white">
           <DialogHeader>
