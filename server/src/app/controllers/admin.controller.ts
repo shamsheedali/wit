@@ -178,6 +178,17 @@ export default class AdminController {
     });
   }
 
+  async startTournament(req: Request, res: Response) {
+    const { tournamentId, userId } = req.body;
+
+    if (!tournamentId) throw new MissingFieldError('tournamentId');
+    if (!userId) throw new MissingFieldError('userId');
+
+    const tournament = await this._tournamentService.startTournament(tournamentId, userId);
+
+    res.status(HttpStatus.OK).json({ message: 'Tournament started', tournament });
+  }
+
   async deleteTournament(req: Request, res: Response) {
     const tournamentId = req.params.tournamentId;
     if (!tournamentId) throw new BadRequestError('Tournament ID is required');

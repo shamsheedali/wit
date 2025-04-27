@@ -99,6 +99,7 @@ router.get('/total/games', asyncWrap(adminController.getTotalGames.bind(adminCon
 router.get(
   '/game-reports',
   authenticateToken,
+  isAdmin(),
   asyncWrap(adminController.getReports.bind(adminController))
 );
 
@@ -124,6 +125,13 @@ router.delete(
   authenticateToken,
   isAdmin(),
   asyncWrap(adminController.deleteClub.bind(adminController))
+);
+
+//START TOURNAMENT
+router.post(
+  '/start-tournament',
+  authenticateToken,
+  asyncWrap(adminController.startTournament.bind(adminController))
 );
 
 // REFRESH TOKEN

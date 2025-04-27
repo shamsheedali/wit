@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { getTournament } from "@/lib/api/tournament";
-import { getUsers } from "@/lib/api/admin";
+import { getUsers, startTournament } from "@/lib/api/admin";
 import { useAuthStore } from "@/stores";
 import { DataTable } from "@/components/data-table";
 import { standingsColumns } from "../standings-columns";
@@ -12,11 +12,13 @@ import { matchColumns } from "../match-columns";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { getSocket } from "@/lib/socket";
 
 export default function AdminTournamentDetailsPage() {
   const params = useParams();
   const tournamentId = params.tournamentId as string;
   const { admin } = useAuthStore();
+  const queryClient = useQueryClient();
   const [userNamesMap, setUserNamesMap] = useState<{ [key: string]: string }>(
     {}
   );
@@ -64,6 +66,29 @@ export default function AdminTournamentDetailsPage() {
     };
     fetchUsers();
   }, []);
+
+    const handleStart = async () => {
+      try {
+        const result = await startTournament(tournamentId, admin?._id as string);
+        if (result) {
+          const socketInstance = getSocket();
+          socketInstance?.emit("tournamentUpdate", result);
+          socketInstance?.emit("tournamentStarted", {
+            tournamentId,
+            tournamentName: tournament.name,
+            players: tournament.players.map(
+              (p: any) => p.userId?._id || p.userId
+            ),
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["tournament", tournamentId],
+          });
+        }
+      } catch (error) {
+        toast.error("Error starting tournament");
+        console.error(error);
+      }
+    };
 
   if (isLoading || !tournament) return <div>Loading tournament...</div>;
   if (isError) return <div>Error loading tournament</div>;
@@ -120,6 +145,15 @@ export default function AdminTournamentDetailsPage() {
           </div>
         </div>
 
+        {tournament.status === "pending" &&
+              (tournament.createdByAdmin) && (
+              <Button
+                onClick={handleStart}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Start Tournament
+              </Button>
+            )}
         <h2 className="text-xl font-bold mb-4">Standings</h2>
         <DataTable
           columns={standingsColumns(userNamesMap)}

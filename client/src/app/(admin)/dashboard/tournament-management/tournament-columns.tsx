@@ -98,7 +98,6 @@ export const tournamentColumns = (
           const response = await deleteTournament(tournamentId);
           if (response?.success) {
             await queryClient.invalidateQueries({ queryKey: ["tournaments"] });
-            toast.success("Tournament deleted successfully");
           } else {
             toast.error("Failed to delete tournament");
           }
