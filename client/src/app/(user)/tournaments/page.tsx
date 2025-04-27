@@ -91,7 +91,6 @@ export default function TournamentsPage() {
           password: "",
         });
         setSelectedTime("10min");
-        toast.success("Tournament created successfully");
       } else {
         toast.error("Failed to create tournament");
       }

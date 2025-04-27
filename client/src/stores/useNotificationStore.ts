@@ -4,6 +4,7 @@ interface Notification {
   _id: string;
   type: "message";
   senderId: string;
+  senderName: string;
   content: string;
   timestamp: number;
 }

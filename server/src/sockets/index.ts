@@ -123,6 +123,20 @@ export default function socketHandler(io: Server) {
     );
 
     socket.on(
+      'friendRequestAccepted',
+      (data: { senderId: string; senderName: string; receiverId: string }) => {
+        const {senderId, senderName, receiverId} = data;
+        io.to(receiverId).emit('notification', {
+          type: 'message',
+          senderId,
+          senderName,
+          content: `${senderName} accepted your friend request`,
+          timestamp: Date.now(),
+        });
+      }
+    );
+
+    socket.on(
       'tournamentPlayRequest',
       (data: {
         senderId: string;
@@ -203,14 +217,16 @@ export default function socketHandler(io: Server) {
       'sendMessage',
       async (data: {
         senderId: string;
+        senderName: string;
         receiverId: string;
         content: string;
         _id: string;
         timestamp: string;
       }) => {
-        const { senderId, receiverId, content, _id, timestamp } = data;
+        const { senderId, senderName, receiverId, content, _id, timestamp } = data;
         io.to(receiverId).emit('messageReceived', {
           senderId,
+          senderName,
           receiverId,
           content,
           timestamp,
@@ -220,7 +236,8 @@ export default function socketHandler(io: Server) {
         io.to(receiverId).emit('notification', {
           type: 'message',
           senderId,
-          content: `New message from ${senderId}`,
+          senderName,
+          content: `New message from ${senderName}`,
           timestamp: Date.now(),
         });
       }

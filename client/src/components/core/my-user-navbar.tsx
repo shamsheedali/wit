@@ -16,13 +16,19 @@ import { useNotificationStore } from "@/stores/useNotificationStore";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { format } from "date-fns";
+import { useFriendStore } from "@/stores/useFriendStore";
 
 export default function UserNavbar() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+  const { friendRequests } = useFriendStore();
   const { notifications } = useNotificationStore();
   const [isOpen, setIsOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const navRef = useRef(null);
+
+  const receivedRequests = friendRequests.filter(
+    (req) => req.receiverId === user?._id && req.status === "pending"
+  );
 
   useEffect(() => {
     gsap.fromTo(
@@ -110,7 +116,14 @@ export default function UserNavbar() {
           <Tooltip>
             <TooltipTrigger>
               <Link href={"/friends"}>
-                <UsersRound className="h-5 w-5" />
+                <div className="relative">
+                  <UsersRound className="h-5 w-5" />
+                  {receivedRequests.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full h-2 w-2 flex items-center justify-center">
+                      {/* {receivedRequests.length} */}
+                    </span>
+                  )}
+                </div>
               </Link>
             </TooltipTrigger>
             <TooltipContent>

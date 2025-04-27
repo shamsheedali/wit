@@ -7,6 +7,9 @@ const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/friend`;
 // FETCH FRIENDS
 export const fetchFriends = async (userId: string) => {
     try {
+      if (!userId) {
+        throw new Error("User ID is required");
+      }
       const response = await apiClient.get(`${API_URL}/friends?userId=${userId}`);
       if (response.status === HttpStatus.OK) {
         return { success: true, data: response.data };

@@ -41,12 +41,21 @@ export default class FriendService implements IFriendService {
     }
 
     const request = await this._friendRepository.createFriendRequest(senderId, receiverId);
+    const sender = await this._userRepository.findById(senderId);
     io.to(receiverId).emit('friendRequest', {
       _id: request._id,
       senderId,
       receiverId,
       status: request.status,
       createdAt: request.createdAt,
+    });
+
+    io.to(receiverId).emit('notification', {
+      type: 'message',
+      senderId,
+      senderName: sender?.username,
+      content: `New friend request from ${sender?.username}`,
+      timestamp: Date.now(),
     });
 
     return request;

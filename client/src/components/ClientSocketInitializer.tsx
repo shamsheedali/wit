@@ -308,6 +308,7 @@ export default function ClientSocketInitializer() {
             _id: `${data.senderId}-${data.timestamp}`,
             type: "message",
             senderId: data.senderId,
+            senderName: data.senderName,
             content: data.content,
             timestamp: data.timestamp,
           });
