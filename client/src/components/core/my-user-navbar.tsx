@@ -87,7 +87,7 @@ export default function UserNavbar() {
         <h1>Contact Us</h1>
         <Link href={"/clubs"}>Clubs</Link>
         <Link href={"/friends"}>Friends</Link>
-        <Link href={"/messages"}>Messages</Link>
+        <Link href={"/"}>Messages</Link>
         {isAuthenticated ? (
           <UserAvatar />
         ) : (
