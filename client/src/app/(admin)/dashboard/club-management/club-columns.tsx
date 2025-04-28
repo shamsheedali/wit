@@ -88,7 +88,6 @@ export const clubColumns = (
               // Emit clubDeleted event to notify members
               socket.emit("clubDeleted", { clubName, adminId: admin._id });
               await queryClient.invalidateQueries({ queryKey: ["clubs"] });
-              toast.success("Club deleted successfully");
             } else {
               toast.error(response?.message || "Failed to delete club");
             }

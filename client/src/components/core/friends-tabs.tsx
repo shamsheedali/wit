@@ -18,8 +18,9 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores";
 import { User } from "@/types/auth";
 import { useFriendStore } from "@/stores/useFriendStore";
-import { useOnlineStatusStore } from "@/stores/useOnlineStatusStore"; // New store
-// import { Sword } from "lucide-react";
+import { useOnlineStatusStore } from "@/stores/useOnlineStatusStore";
+import { UserRound } from "lucide-react";
+import { getSocket } from "@/lib/socket";
 
 export function FriendsTabs() {
   const { user: mainUser } = useAuthStore();
@@ -34,7 +35,9 @@ export function FriendsTabs() {
     useOnlineStatusStore();
   const router = useRouter();
   const [query, setQuery] = useState<string>("");
-  const [playerNames, setPlayerNames] = useState<{ [key: string]: string }>({}); // Map userId to username
+  const [player, setPlayer] = useState<{
+    [key: string]: { username: string; profileImage: string };
+  }>({});
 
   const debouncedSetQuery = useCallback(
     debounce((val) => setQuery(val), 500),
@@ -50,18 +53,21 @@ export function FriendsTabs() {
   const filteredUsers =
     users?.filter((user: User) => user._id !== mainUser?._id) || [];
 
-  // Fetch usernames for mapping
   useEffect(() => {
     const fetchUserNames = async () => {
       try {
         const limit = 100;
         let page = 1;
-        let allUsers: { _id: string; username: string }[] = [];
+        let allUsers: {
+          _id: string;
+          username: string;
+          profileImageUrl: string;
+        }[] = [];
         let hasMore = true;
 
         while (hasMore) {
           const response = await getUsers(page, limit);
-          if (response && response.users && response.users.length > 0) {
+          if (response?.users?.length > 0) {
             allUsers = [...allUsers, ...response.users];
             page += 1;
             hasMore = response.users.length === limit;
@@ -70,11 +76,16 @@ export function FriendsTabs() {
           }
         }
 
-        const namesMap: { [key: string]: string } = {};
+        const namesMap: {
+          [key: string]: { username: string; profileImage: string };
+        } = {};
         allUsers.forEach((u) => {
-          namesMap[u._id] = u.username;
+          namesMap[u._id] = {
+            username: u.username,
+            profileImage: u.profileImageUrl,
+          };
         });
-        setPlayerNames(namesMap);
+        setPlayer(namesMap);
       } catch (error) {
         console.error("Failed to fetch users:", error);
       }
@@ -83,13 +94,14 @@ export function FriendsTabs() {
     fetchUserNames();
   }, []);
 
-  // Initialize socket and fetch data
   useEffect(() => {
-    if (mainUser?._id) {
-      initializeSocket(); // Start socket listeners
-      fetchFriendRequests();
-      fetchFriends();
+    if (!mainUser?._id) {
+      console.error("Main user ID is missing!");
+      return;
     }
+    initializeSocket();
+    fetchFriendRequests();
+    fetchFriends();
   }, [mainUser?._id, fetchFriendRequests, fetchFriends, initializeSocket]);
 
   const handleUserPage = (username: string) => {
@@ -100,32 +112,59 @@ export function FriendsTabs() {
     (req) => req.receiverId === mainUser?._id && req.status === "pending"
   );
 
-  const handleAccept = (requestId: string) => {
-    updateFriendRequest(requestId, "accepted");
+  const [error, setError] = useState<string | null>(null);
+  const [isAccepting, setIsAccepting] = useState(false);
+
+  const handleAccept = async (requestId: string, receiverId: string) => {
+    try {
+      setIsAccepting(true);
+      setError(null);
+      await updateFriendRequest(requestId, "accepted");
+      //notify other user
+      const socket = getSocket();
+      if (socket && mainUser) {
+        socket.emit('friendRequestAccepted', {
+          senderId: mainUser._id,
+          senderName: mainUser.username,
+          receiverId
+        });
+      }
+    } catch (err) {
+      setError("Failed to accept friend request");
+      console.error(err);
+    } finally {
+      setIsAccepting(false);
+    }
   };
 
   const handleIgnore = (requestId: string) => {
     updateFriendRequest(requestId, "ignored");
   };
 
-  const FriendItem = ({ user, showChallenge = false }) => (
+  const FriendItem = ({
+    user,
+    showChallenge = false,
+  }: {
+    user: User;
+    showChallenge?: boolean;
+  }) => (
     <div
+      key={user._id}
       className="flex items-center space-x-4 p-3 cursor-pointer rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
       onClick={() => handleUserPage(user.username)}
     >
       <div className="relative">
-        <img
-          src={user.profileImageUrl || "/placeholder.svg?height=40&width=40"}
-          alt="User avatar"
-          className="rounded-full w-10 h-10 object-cover"
-          width={40}
-          height={40}
-        />
-        <span
-          className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
-            isUserOnline(user._id) ? "bg-green-500" : "bg-gray-500"
-          }`}
-        ></span>
+        {user.profileImageUrl ? (
+          <img
+            src={user.profileImageUrl || "/placeholder.svg?height=40&width=40"}
+            alt="User avatar"
+            className="rounded-full w-10 h-10 object-cover"
+            width={40}
+            height={40}
+          />
+        ) : (
+          <UserRound />
+        )}
       </div>
       <div className="flex-1">
         <p className="text-sm font-medium">{user.username}</p>
@@ -138,15 +177,6 @@ export function FriendsTabs() {
           {isUserOnline(user._id) ? "Online" : "Offline"}
         </p>
       </div>
-      {/* {showChallenge && (
-        <Button
-          size="sm"
-          variant="ghost"
-          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary hover:text-primary-foreground"
-        >
-          <Sword /> Challenge
-        </Button>
-      )} */}
     </div>
   );
 
@@ -155,8 +185,16 @@ export function FriendsTabs() {
       <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="friends">Friends</TabsTrigger>
         <TabsTrigger value="find">Find</TabsTrigger>
-        <TabsTrigger value="received">Received</TabsTrigger>
+        <TabsTrigger value="received">
+          Received
+          {receivedRequests.length > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+              {receivedRequests.length}
+            </span>
+          )}
+        </TabsTrigger>
       </TabsList>
+
       <TabsContent value="friends">
         <Card>
           <CardHeader>
@@ -167,9 +205,11 @@ export function FriendsTabs() {
             {friends.length === 0 ? (
               <p>No friends yet</p>
             ) : (
-              friends.map((friend) => (
-                <FriendItem key={friend._id} user={friend} showChallenge />
-              ))
+              friends
+                .filter((friend) => friend?._id)
+                .map((friend) => (
+                  <FriendItem key={friend._id} user={friend} showChallenge />
+                ))
             )}
           </CardContent>
         </Card>
@@ -212,33 +252,32 @@ export function FriendsTabs() {
                   typeof req.senderId === "string"
                     ? {
                         _id: req.senderId,
-                        username: playerNames[req.senderId],
-                        profileImageUrl: "",
+                        username: player[req.senderId]?.username || "Unknown",
+                        profileImageUrl:
+                          player[req.senderId]?.profileImage || "",
                       }
                     : req.senderId;
-                return (
+
+                return sender ? (
                   <div
                     key={req._id}
                     className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
                   >
                     <div className="relative">
-                      <img
-                        src={
-                          sender.profileImageUrl ||
-                          "/placeholder.svg?height=40&width=40"
-                        }
-                        alt="User avatar"
-                        className="rounded-full w-10 h-10 object-cover"
-                        width={40}
-                        height={40}
-                      />
-                      <span
-                        className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
-                          isUserOnline(sender._id)
-                            ? "bg-green-500"
-                            : "bg-gray-500"
-                        }`}
-                      ></span>
+                      {sender.profileImageUrl ? (
+                        <img
+                          src={
+                            sender.profileImageUrl ||
+                            "/placeholder.svg?height=40&width=40"
+                          }
+                          alt="User avatar"
+                          className="rounded-full w-10 h-10 object-cover"
+                          width={40}
+                          height={40}
+                        />
+                      ) : (
+                        <UserRound />
+                      )}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium">
@@ -264,12 +303,16 @@ export function FriendsTabs() {
                       >
                         Ignore
                       </Button>
-                      <Button size="sm" onClick={() => handleAccept(req._id)}>
-                        Accept
+                      <Button
+                        size="sm"
+                        onClick={() => handleAccept(req._id, sender._id)}
+                        disabled={isAccepting}
+                      >
+                        {isAccepting ? "Accepting..." : "Accept"}
                       </Button>
                     </div>
                   </div>
-                );
+                ) : null;
               })
             )}
           </CardContent>

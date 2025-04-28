@@ -16,11 +16,19 @@ import {
   Zap,
   MoveUpRight,
   Timer,
+  MoreVertical,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getUserGames } from "@/lib/api/game";
 import { getUsers } from "@/lib/api/user";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useRouter } from "next/navigation";
 import { User } from "@/types/auth";
 
 type Game = {
@@ -36,6 +44,7 @@ type Game = {
     timestamp: string;
   }>;
   gameType: "blitz" | "bullet" | "rapid";
+  gameStatus: "completed" | "ongoing" | "terminated";
   timeControl: string;
   createdAt: string;
 };
@@ -59,22 +68,21 @@ export default function GameHistoryTable({
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [games, setGames] = useState<Game[]>(initialGames);
   const [playerNames, setPlayerNames] = useState<{ [key: string]: PlayerInfo }>(
-    initialPlayerNames,
+    initialPlayerNames
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [limit] = useState(5); // Number of games per page
+  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
       if (user?._id) {
         try {
-          // Fetch paginated games
           const gameData = await getUserGames(user._id, currentPage, limit);
           setGames(gameData?.games || []);
           setTotalPages(gameData?.totalPages || 1);
 
-          // Fetch all users (unchanged)
           const usersLimit = 100;
           let page = 1;
           let allUsers: {
@@ -132,6 +140,7 @@ export default function GameHistoryTable({
   };
 
   const getResultDisplay = (game: Game) => {
+    if (game.gameStatus === "terminated") return game.gameStatus;
     if (!game.result) return "Ongoing";
     if (game.result === "whiteWin") return "1-0";
     if (game.result === "blackWin") return "0-1";
@@ -162,6 +171,10 @@ export default function GameHistoryTable({
     }
   };
 
+  const handleReviewGame = (gameId: string) => {
+    router.push(`/review/${gameId}`);
+  };
+
   return (
     <div className="w-full rounded-lg border shadow-sm">
       <div className="overflow-x-auto">
@@ -170,7 +183,9 @@ export default function GameHistoryTable({
             <TableRow className="bg-muted/50">
               <TableHead className="w-[300px]">Players</TableHead>
               <TableHead className="w-[100px] text-center">Result</TableHead>
-              <TableHead className="w-[100px] text-center">Game Type</TableHead>
+              <TableHead className="w-[100px] text-center">
+                Time Control
+              </TableHead>
               <TableHead className="w-[100px] text-center">Moves</TableHead>
               <TableHead
                 className="w-[150px] cursor-pointer hover:bg-muted/80 transition-colors"
@@ -185,6 +200,7 @@ export default function GameHistoryTable({
                   )}
                 </div>
               </TableHead>
+              <TableHead className="w-[50px] text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -260,11 +276,35 @@ export default function GameHistoryTable({
                     {game.moves.length}
                   </TableCell>
                   <TableCell>{formatDate(game.createdAt)}</TableCell>
+                  <TableCell className="text-center">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-muted/80"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="bg-background"
+                      >
+                        <DropdownMenuItem
+                          onClick={() => handleReviewGame(game._id)}
+                          className="cursor-pointer"
+                        >
+                          Review Game
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-4">
+                <TableCell colSpan={6} className="text-center py-4">
                   No games found
                 </TableCell>
               </TableRow>

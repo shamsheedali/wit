@@ -35,13 +35,22 @@ export const saveGame = async (
   }
 };
 
+export const getGame = async (gameId: string) => {
+  try {
+    const response = await apiClient.get(`${GAME_API_URL}/${gameId}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+}
+
 export const updateGame = async (
   gameId: string,
   updateData: Partial<{
     result: "whiteWin" | "blackWin" | "draw";
     fen: string;
     moves: IMove[];
-    lossType: "checkmate" | "resignation" | "timeout";
+    lossType: "checkmate" | "resignation" | "timeout" | "draw";
     gameDuration: number;
     gameStatus: "ongoing" | "completed" | "terminated";
   }>
@@ -62,16 +71,6 @@ export const getUserGames = async (userId: string, page: number = 1, limit: numb
     return response.data;
   } catch (error) {
     handleApiError(error);
-  }
-};
-
-export const getTotalGames = async () => {
-  try {
-    const response = await apiClient.get(`${GAME_API_URL}/total`);
-    return response.data.total;
-  } catch (error) {
-    handleApiError(error);
-    return 0;
   }
 };
 

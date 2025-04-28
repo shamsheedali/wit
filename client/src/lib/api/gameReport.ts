@@ -20,16 +20,3 @@ export const reportGame = async (reportData: {
     return { success: false };
   }
 };
-
-export const getGameReports = async () => {
-  try {
-    const response = await apiClient.get(API_URL);
-    if (response.status === HttpStatus.OK) {
-      return response.data.data;
-    }
-    return [];
-  } catch (error) {
-    handleApiError(error);
-    return [];
-  }
-};

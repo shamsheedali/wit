@@ -92,6 +92,17 @@ router.get(
   asyncWrap(adminController.getTotalUsers.bind(adminController))
 );
 
+//GET TOTAL GAMES
+router.get('/total/games', asyncWrap(adminController.getTotalGames.bind(adminController)));
+
+//GET ALL GAME-REPORTS
+router.get(
+  '/game-reports',
+  authenticateToken,
+  isAdmin(),
+  asyncWrap(adminController.getReports.bind(adminController))
+);
+
 // GET ALL CLUBS
 router.get(
   '/clubs',
@@ -114,6 +125,13 @@ router.delete(
   authenticateToken,
   isAdmin(),
   asyncWrap(adminController.deleteClub.bind(adminController))
+);
+
+//START TOURNAMENT
+router.post(
+  '/start-tournament',
+  authenticateToken,
+  asyncWrap(adminController.startTournament.bind(adminController))
 );
 
 // REFRESH TOKEN

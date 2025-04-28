@@ -195,7 +195,6 @@ export function CreateClubDialog({
         setSelectedUsers([]);
         setMaxMembersError(null);
         setNameError(null);
-        toast.success("Club created successfully!");
       }
     },
     onError: (error) => {

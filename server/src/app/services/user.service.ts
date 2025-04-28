@@ -1,4 +1,5 @@
 import { inject, injectable } from 'inversify';
+import mongoose, { ClientSession, FilterQuery, QueryOptions, UpdateQuery } from 'mongoose';
 import bcrypt from 'bcrypt';
 import { IUser } from '../models/user.model';
 import BaseService from '../../core/base.service';
@@ -16,7 +17,6 @@ import { IUserService } from './interface/IUserService';
 import { ApplicationError } from '../../utils/http-error.util';
 import HttpStatus from '../../constants/httpStatus';
 import HttpResponse from '../../constants/response-message.constant';
-import mongoose from 'mongoose';
 
 @injectable()
 export default class UserService extends BaseService<IUser> implements IUserService {
@@ -34,7 +34,6 @@ export default class UserService extends BaseService<IUser> implements IUserServ
   }> {
     const { username, email, password } = dto;
 
-    // Check for existing email
     const existingUserEmail = await this._userRepository.findOneByEmail(email);
     if (existingUserEmail) {
       return {
@@ -55,7 +54,6 @@ export default class UserService extends BaseService<IUser> implements IUserServ
       };
     }
 
-    // Check for existing username
     const existingUserUsername = await this._userRepository.findOneByUsername(username);
     if (existingUserUsername) {
       return {
@@ -76,7 +74,6 @@ export default class UserService extends BaseService<IUser> implements IUserServ
       };
     }
 
-    // Hash password and create user
     const hashedPassword = await this.hashPassword(password);
     const newUser = await this._userRepository.createUser({
       username,
@@ -101,7 +98,6 @@ export default class UserService extends BaseService<IUser> implements IUserServ
     };
   }
 
-  //LOGIN
   async loginUser(dto: LoginUserDTO): Promise<LoginResponseDTO> {
     const { email, password } = dto;
 
@@ -153,7 +149,6 @@ export default class UserService extends BaseService<IUser> implements IUserServ
       });
     }
 
-    // Map IUser to GoogleUserResponseDTO
     return {
       _id: user._id.toString(),
       firstName: user.firstName,
@@ -229,9 +224,16 @@ export default class UserService extends BaseService<IUser> implements IUserServ
     return await this._userRepository.countUsers();
   }
 
-  //elo
   async findById(id: string, session?: mongoose.ClientSession): Promise<IUser | null> {
     return await this._userRepository.findById(id, session);
+  }
+
+  async findOneAndUpdate(
+    filter: FilterQuery<IUser>,
+    update: UpdateQuery<IUser>,
+    options?: QueryOptions
+  ): Promise<IUser | null> {
+    return await this._userRepository.findOneAndUpdate(filter, update, options);
   }
 
   async update(

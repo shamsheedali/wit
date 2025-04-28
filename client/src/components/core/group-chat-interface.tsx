@@ -259,7 +259,6 @@ export default function ClubChat() {
         await queryClient.invalidateQueries({
           queryKey: ["userClubs", mainUser._id],
         });
-        toast.success("Club deleted successfully");
         router.push("/clubs");
       }
     } catch (error) {
@@ -431,7 +430,6 @@ export default function ClubChat() {
           setSelectedUsers([]);
           setMaxMembersError(null);
           setNameError(null);
-          toast.success("Club updated successfully!");
         }
       },
       onError: (error) => {

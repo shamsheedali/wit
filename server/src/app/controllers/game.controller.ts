@@ -37,6 +37,14 @@ export default class GameController {
     res.status(HttpStatus.CREATED).json({ game });
   }
 
+  async getGame(req: Request, res: Response) {
+    const { gameId } = req.params;
+    if (!gameId) throw new BadRequestError('Game ID is required');
+
+    const game = await this._gameService.getGame(gameId);
+    res.status(HttpStatus.OK).json({ game });
+  }
+
   async updateGame(req: Request, res: Response) {
     const { gameId } = req.params;
     if (!gameId) throw new BadRequestError('Game ID is required');
@@ -72,11 +80,6 @@ export default class GameController {
       limit,
       totalPages: Math.ceil(total / limit),
     });
-  }
-
-  async getTotalGames(req: Request, res: Response) {
-    const totalGames = await this._gameService.getTotalGames();
-    res.status(HttpStatus.OK).json({ total: totalGames });
   }
 
   async getOngoingGameByUserId(req: Request, res: Response) {

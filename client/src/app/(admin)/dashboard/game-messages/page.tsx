@@ -2,13 +2,13 @@
 
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getGameReports } from "@/lib/api/gameReport";
 import { getSocket } from "@/lib/socket";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { getGameReports } from "@/lib/api/admin";
 
 interface GameReport {
   _id: string;

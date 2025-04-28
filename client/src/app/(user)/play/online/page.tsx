@@ -69,6 +69,7 @@ export default function PlayOnline() {
   const [reportReason, setReportReason] = useState<string>("cheating");
   const [reportDetails, setReportDetails] = useState<string>("");
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const isGameEnded = useRef(false);
 
   // Helper function to pair moves
   const getMovePairs = (
@@ -220,26 +221,32 @@ export default function PlayOnline() {
           toast.info("This game has been terminated by an admin.");
           resetGame();
           setMatchmakingStatus("idle");
+          isGameEnded.current = true;
         });
 
         socketInstance.on("opponentBanned", () => {
           toast.info("Admin banned your opponent.");
           resetGame();
           setMatchmakingStatus("idle");
+          isGameEnded.current = true;
         });
 
         socketInstance.on(
           "matchFound",
-          (data: { opponentId: string; gameId: string; time: string }) => {
+          (data: {
+            opponentId: string;
+            gameId: string;
+            time: string;
+            playerColor: "w" | "b";
+          }) => {
             setMatchmakingStatus("matched");
-            const newPlayerColor = Math.random() > 0.5 ? "w" : "b";
             const initialTime = timeToSeconds(data.time);
             useGameStore.setState({
               gameId: data.gameId,
               opponentId: data.opponentId,
               opponentName: playerNames[data.opponentId] || data.opponentId,
-              opponentProfilePicture: null, // Update if available
-              playerColor: newPlayerColor,
+              opponentProfilePicture: null,
+              playerColor: data.playerColor,
               whiteTime: initialTime,
               blackTime: initialTime,
               gameStarted: true,
@@ -255,7 +262,7 @@ export default function PlayOnline() {
             saveGame(
               user._id,
               data.opponentId,
-              newPlayerColor,
+              data.playerColor,
               chess.fen(),
               gameType,
               data.time
@@ -277,20 +284,38 @@ export default function PlayOnline() {
           }) => {
             if (data.gameId === gameId && data.playerId !== user._id) {
               addMove(data.move);
+              const newChess = new Chess(data.fen);
+              setChess(newChess);
               useGameStore.setState({
-                activePlayer: data.move.color === "w" ? "b" : "w",
+                activePlayer: newChess.turn(),
               });
+              if (newChess.isCheckmate()) {
+                const result = playerColor === "w" ? "blackWin" : "whiteWin";
+                endGame(result, "checkmate", data.fen);
+              } else if (newChess.isDraw()) {
+                endGame("draw", "resignation", data.fen);
+              }
             }
           }
         );
 
-        socketInstance.on("opponentResigned", (data) => {
-          if (data.opponentId === opponentId) {
-            toast.info("Your opponent has resigned.");
-            resetGame();
-            setMatchmakingStatus("idle");
+        socketInstance.on(
+          "opponentResigned",
+          (data: {
+            gameId: string;
+            opponentId: string;
+            result: string;
+            lossType: string;
+          }) => {
+            if (data.opponentId === opponentId && !isGameEnded.current) {
+              isGameEnded.current = true;
+              toast.info("Your opponent has resigned.");
+              resetGame();
+              setMatchmakingStatus("idle");
+              toast.success(`Game ended: ${data.result}`);
+            }
           }
-        });
+        );
 
         return () => {
           socketInstance.off("connect");
@@ -392,7 +417,10 @@ export default function PlayOnline() {
     lossType: "checkmate" | "resignation" | "timeout",
     fen: string
   ) => {
-    if (dbGameId && gameStartTime) {
+    if (isGameEnded.current || !dbGameId || !gameStartTime) return;
+    isGameEnded.current = true;
+
+    try {
       const gameDuration = Math.floor((Date.now() - gameStartTime) / 1000);
       await updateGame(dbGameId, {
         result,
@@ -402,25 +430,49 @@ export default function PlayOnline() {
         gameStatus: "completed",
         fen,
       });
-      const socket = getSocket();
-      if (socket) {
-        socket.emit("opponentResigned", {
-          opponentId,
-          result,
-        });
+
+      console.log(`Game ended and saved for ${user?._id}, ${result}`);
+      if (lossType === "resignation") {
+        const socket = getSocket();
+        if (socket) {
+          socket.emit("opponentResigned", {
+            gameId,
+            opponentId,
+            result,
+            lossType,
+          });
+        }
       }
       resetGame();
       setMatchmakingStatus("idle");
       toast.success(`Game ended: ${result}`);
+    } catch (error) {
+      console.error("Failed to end game:", error);
+      toast.error(
+        "Failed to save game result: " + (error.message || "Unknown error")
+      );
+      isGameEnded.current = false; // Allow retry on failure
     }
   };
 
   const handleMoveUpdate = async (move: ChessMove | undefined, fen: string) => {
-    if (!move) return;
+    if (!move || isGameEnded.current) return;
+
     addMove(move);
+    const newChess = new Chess(fen);
+    setChess(newChess);
+
     if (dbGameId) {
-      await updateGame(dbGameId, { moves: [...moves, move], fen });
+      try {
+        await updateGame(dbGameId, { moves: [...moves, move], fen });
+      } catch (error) {
+        console.error("Failed to update game:", error);
+        toast.error(
+          "Failed to save move: " + (error.message || "Unknown error")
+        );
+      }
     }
+
     const socket = getSocket();
     if (socket && gameId && user?._id) {
       socket.emit("moveMade", {
@@ -429,6 +481,13 @@ export default function PlayOnline() {
         playerId: user._id,
         fen,
       });
+    }
+
+    if (newChess.isCheckmate()) {
+      const result = playerColor === "w" ? "whiteWin" : "blackWin";
+      await endGame(result, "checkmate", fen);
+    } else if (newChess.isDraw()) {
+      await endGame("draw", "resignation", fen);
     }
   };
 

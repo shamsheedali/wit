@@ -62,6 +62,30 @@ export const getAllGames = async (page: number, limit: number) => {
   }
 };
 
+export const getTotalGames = async () => {
+  try {
+    const response = await apiClient.get(`${API_URL}/total/games`);
+    return response.data.total;
+  } catch (error) {
+    handleApiError(error);
+    return 0;
+  }
+};
+
+// GET ALL GAME-REPORTS
+export const getGameReports = async () => {
+  try {
+    const response = await apiClient.get(`${API_URL}/game-reports`);
+    if (response.status === HttpStatus.OK) {
+      return response.data.data;
+    }
+    return [];
+  } catch (error) {
+    handleApiError(error);
+    return [];
+  }
+};
+
 // DELETE_GAME
 export const deleteGame = async (gameId: string) => {
   try {
@@ -96,6 +120,23 @@ export const getTournaments = async (page: number, limit: number) => {
   } catch (error) {
     console.error("Error fetching tournaments:", error);
     throw error;
+  }
+};
+
+//START-TOURNAMENT
+export const startTournament = async (tournamentId: string, userId: string) => {
+  try {
+    const response = await apiClient.post(`${API_URL}/start-tournament`, {
+      tournamentId,
+      userId,
+    });
+    if (response.status === HttpStatus.OK) {
+      toast.success(response.data.message);
+      return response.data.tournament;
+    }
+  } catch (error) {
+    handleApiError(error);
+    return null;
   }
 };
 

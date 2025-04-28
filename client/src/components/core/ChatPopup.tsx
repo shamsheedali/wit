@@ -43,7 +43,7 @@ export default function ChatPopup({
   const sendMessageMutation = useMutation({
     mutationFn: sendMessage,
     onSuccess: (response) => {
-      const newMessage = response?.data; // Assume API returns the created message
+      const newMessage = response?.data;
       queryClient.setQueryData(
         ["messages", userId, otherUserId],
         (old: Message[] | undefined) => {
@@ -57,6 +57,7 @@ export default function ChatPopup({
       if (socket && user?._id) {
         socket.emit("sendMessage", {
           senderId: user._id,
+          senderName: user.username,
           receiverId: otherUserId,
           content: message,
           _id: newMessage._id,

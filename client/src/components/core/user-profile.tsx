@@ -51,7 +51,7 @@ const UserProfile = ({ user }: { user: User }) => {
     formatDate = format(new Date(dateToFormat), "MMM d, yyyy");
   }
 
-  const isFriend = friends.some((friend) => friend._id === user._id);
+  const isFriend = friends.some((friend) => friend?._id === user?._id);
 
   const handleAddFriend = async () => {
     try {
@@ -206,9 +206,11 @@ const UserProfile = ({ user }: { user: User }) => {
         />
       )}
 
-      <div className="my-20">
-        <GameHistoryTable user={user} />
-      </div>
+      {user.gamesPlayed > 0 && (
+        <div className="my-20">
+          <GameHistoryTable user={user} />
+        </div>
+      )}
     </div>
   );
 };

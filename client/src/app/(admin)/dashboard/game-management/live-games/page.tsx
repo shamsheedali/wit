@@ -3,7 +3,6 @@
 import { DataTable } from "@/components/data-table";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { gameColumns } from "../game-history/game-history-colums"; 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { getAllGames, getUsers } from "@/lib/api/admin";

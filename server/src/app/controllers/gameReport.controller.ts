@@ -36,16 +36,4 @@ export default class GameReportController {
       data: report,
     });
   }
-
-  async getReports(req: Request, res: Response) {
-    const userId = req.user?.userId;
-    if (!userId) throw new UnauthorizedError(HttpResponse.UNAUTHORIZED);
-
-    const reports = await this._gameReportService.getReports();
-
-    res.status(HttpStatus.OK).json({
-      message: HttpResponse.REPORTS_FETCHED,
-      data: reports,
-    });
-  }
 }

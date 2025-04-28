@@ -19,7 +19,11 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
-import { getTournament, submitResult } from "@/lib/api/tournament";
+import {
+  getTournament,
+  submitResult,
+  submitPlayoffResult,
+} from "@/lib/api/tournament";
 import { Chess, Move } from "chess.js";
 import {
   CircleArrowLeft,
@@ -67,13 +71,115 @@ export default function PlayPage() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportReason, setReportReason] = useState<string>("cheating");
   const [reportDetails, setReportDetails] = useState<string>("");
+  const [currentMoveIndex, setCurrentMoveIndex] = useState<number>(
+    moves.length
+  );
+  const [currentOpening, setCurrentOpening] = useState<string>("No moves yet");
+  const [openings, setOpenings] = useState<any[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastProcessedMove = useRef<string | null>(null);
 
   const { data: tournament, isLoading } = useQuery({
     queryKey: ["tournament", tournamentId],
     queryFn: () => getTournament(tournamentId),
     enabled: !!tournamentId,
   });
+
+  // Guess ECO range based on first move
+  const guessEcoPrefixes = (history: string[]): string[] => {
+    if (history.length === 0) return [];
+    const firstMove = history[0];
+    if (firstMove === "e4") return ["b", "c"];
+    if (firstMove === "d4") return ["d", "e"];
+    return ["a"];
+  };
+
+  // Normalize PGN by removing move numbers and dots
+  const normalizePGN = (pgn: string): string => {
+    return pgn.replace(/\d+\./g, "").replace(/\s+/g, " ").trim();
+  };
+
+  // Function to determine opening from PGN
+  const getOpeningFromPGN = (chessInstance: Chess): string => {
+    const history = chessInstance.history();
+    if (history.length === 0) return "No moves yet";
+    if (!openings.length) return "Loading openings...";
+
+    const moveSequence = history.join(" ");
+    let bestMatch = "Unknown Opening";
+    let longestMatchLength = 0;
+
+    for (const opening of openings) {
+      const normalizedOpeningPGN = normalizePGN(opening.pgn);
+      if (
+        moveSequence.startsWith(normalizedOpeningPGN) &&
+        normalizedOpeningPGN.split(" ").length > longestMatchLength
+      ) {
+        bestMatch = opening.name;
+        longestMatchLength = normalizedOpeningPGN.split(" ").length;
+      }
+    }
+
+    return bestMatch;
+  };
+
+  // Load relevant openings and sync chess instance
+  useEffect(() => {
+    const loadRelevantOpenings = async () => {
+      const newChess = new Chess();
+      moves.forEach((move) => newChess.move(move.san));
+      setChess(newChess);
+
+      const history = newChess.history();
+      const prefixes = guessEcoPrefixes(history);
+      if (prefixes.length === 0) {
+        setOpenings([]);
+        setCurrentOpening("No moves yet");
+        return;
+      }
+
+      const allOpenings = [];
+      try {
+        for (const prefix of prefixes) {
+          const response = await fetch(`/openings/${prefix}.json`);
+          if (!response.ok) throw new Error(`Failed to fetch ${prefix}.json`);
+          const data = await response.json();
+          allOpenings.push(...data);
+        }
+        setOpenings(allOpenings);
+
+        if (
+          getOpeningFromPGN(newChess) === "Unknown Opening" &&
+          prefixes.length < 5
+        ) {
+          const allPrefixes = ["a", "b", "c", "d", "e"];
+          for (const prefix of allPrefixes) {
+            if (!prefixes.includes(prefix)) {
+              const response = await fetch(`/openings/${prefix}.json`);
+              if (response.ok) {
+                const data = await response.json();
+                allOpenings.push(...data);
+              }
+            }
+          }
+          setOpenings(allOpenings);
+        }
+      } catch (error) {
+        console.error("Error loading openings:", error);
+        setOpenings([]);
+        setCurrentOpening("Failed to load openings");
+      }
+    };
+
+    loadRelevantOpenings();
+  }, [moves]);
+
+  // Update opening when chess or openings change
+  useEffect(() => {
+    if (chess) {
+      setCurrentOpening(getOpeningFromPGN(chess));
+    }
+  }, [chess, openings]);
 
   useEffect(() => {
     const gameIdFromUrl = searchParams.get("gameId");
@@ -100,6 +206,9 @@ export default function PlayPage() {
           activePlayer: "w",
           gameStartTime: Date.now(),
           moves: [],
+          isTournamentGame: true,
+          tournamentId,
+          matchId,
         });
         socketInstance?.emit("joinGame", { gameId: gameIdFromUrl });
       }
@@ -116,11 +225,17 @@ export default function PlayPage() {
           playerId: string;
           fen: string;
         }) => {
-          if (data.gameId === gameId && data.playerId !== user?._id) {
+          if (
+            data.gameId === gameId &&
+            data.playerId !== user?._id &&
+            data.move.san !== lastProcessedMove.current // Prevent duplicate moves
+          ) {
+            lastProcessedMove.current = data.move.san;
             addMove(data.move);
             const newChess = new Chess(data.fen);
             setChess(newChess);
             setGameState({ activePlayer: data.move.color === "w" ? "b" : "w" });
+            setCurrentMoveIndex(moves.length + 1);
           }
         }
       );
@@ -129,7 +244,6 @@ export default function PlayPage() {
         "chatMessageReceived",
         (data: { senderId: string; content: string; timestamp: number }) => {
           if (data.senderId !== user?._id) {
-            // ChatInterface should handle displaying the message
             console.log(
               `Chat message received from ${data.senderId}: ${data.content}`
             );
@@ -175,6 +289,7 @@ export default function PlayPage() {
     router,
     tournamentId,
     socketInstance,
+    moves,
   ]);
 
   useEffect(() => {
@@ -206,12 +321,28 @@ export default function PlayPage() {
 
   const handleMoveUpdate = async (move: Move | undefined, fen: string) => {
     if (!move || !user?._id || !gameId) return;
+
+    // Check if move is already processed
+    if (move.san === lastProcessedMove.current) return;
+
+    lastProcessedMove.current = move.san;
     addMove(move);
     setChess(new Chess(fen));
     setGameState({ activePlayer: move.color === "w" ? "b" : "w" });
+    setCurrentMoveIndex(moves.length + 1);
+
+    // Update database with new moves
     if (dbGameId) {
-      await updateGame(dbGameId, { moves: [...moves, move], fen });
+      try {
+        await updateGame(dbGameId, { moves: [...moves, move], fen });
+      } catch (error) {
+        console.error("Failed to update game:", error);
+        toast.error("Failed to update game state");
+        return;
+      }
     }
+
+    // Emit move to opponent
     socketInstance?.emit("makeMove", {
       gameId,
       move,
@@ -227,11 +358,32 @@ export default function PlayPage() {
     }
   };
 
+  const endGame = (
+    result: "whiteWin" | "blackWin" | "draw",
+    lossType: string,
+    fen: string
+  ) => {
+    if (dbGameId) {
+      updateGame(dbGameId, {
+        status:
+          result === "draw"
+            ? "draw"
+            : result === "whiteWin"
+            ? "whiteWin"
+            : "blackWin",
+        lossType,
+        fen,
+      });
+    }
+    resetGame();
+  };
+
   const handleSubmitResult = async (result: "1-0" | "0-1" | "0.5-0.5") => {
     if (!user?._id) {
       toast.error("Please log in to submit result");
       return;
     }
+
     const submitFunction = isPlayoff ? submitPlayoffResult : submitResult;
     const updatedTournament = await submitFunction(
       tournamentId,
@@ -239,13 +391,17 @@ export default function PlayPage() {
       result,
       user._id
     );
+
     if (updatedTournament) {
+      const socketInstance = getSocket();
       socketInstance?.emit("tournamentUpdate", updatedTournament);
-      socketInstance?.emit("opponentResigned", {
-        opponentId,
-        result,
-      });
-      resetGame();
+
+      endGame(
+        result === "1-0" ? "whiteWin" : result === "0-1" ? "blackWin" : "draw",
+        "checkmate",
+        chess.fen()
+      );
+
       toast.success("Result submitted");
       router.push(`/tournaments/${tournamentId}`);
     }
@@ -331,6 +487,16 @@ export default function PlayPage() {
     return pairs;
   };
 
+  const navigateToMove = (index: number) => {
+    if (index < 0 || index > moves.length) return;
+    const newChess = new Chess();
+    for (let i = 0; i < index; i++) {
+      newChess.move(moves[i]);
+    }
+    setChess(newChess);
+    setCurrentMoveIndex(index);
+  };
+
   if (isLoading || !tournament) return <div>Loading match...</div>;
 
   return (
@@ -412,10 +578,12 @@ export default function PlayPage() {
 
       <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-6 flex flex-col gap-6 rounded-md">
         <div className="border-b border-gray-600 pb-2">
-          <h2 className="text-lg font-semibold text-white">Moves</h2>
+          <h2 className="text-lg font-semibold text-white">Opening</h2>
+          <p className="text-sm text-gray-300">{currentOpening}</p>
         </div>
 
         <div className="flex-1 overflow-y-auto">
+          <h2 className="text-lg font-semibold text-white mb-2">Moves</h2>
           <div className="bg-[#3a3a3a] rounded-md p-2">
             <table className="w-full text-sm text-white">
               <thead>
@@ -486,6 +654,7 @@ export default function PlayPage() {
               size="icon"
               variant="outline"
               className="bg-gray-700 text-white hover:bg-gray-600"
+              onClick={() => navigateToMove(0)}
             >
               <ChevronsLeft />
             </Button>
@@ -493,6 +662,7 @@ export default function PlayPage() {
               size="icon"
               variant="outline"
               className="bg-gray-700 text-white hover:bg-gray-600"
+              onClick={() => navigateToMove(currentMoveIndex - 1)}
             >
               <ChevronLeft />
             </Button>
@@ -500,6 +670,7 @@ export default function PlayPage() {
               size="icon"
               variant="outline"
               className="bg-gray-700 text-white hover:bg-gray-600"
+              onClick={() => navigateToMove(currentMoveIndex + 1)}
             >
               <ChevronRight />
             </Button>
@@ -507,6 +678,7 @@ export default function PlayPage() {
               size="icon"
               variant="outline"
               className="bg-gray-700 text-white hover:bg-gray-600"
+              onClick={() => navigateToMove(moves.length)}
             >
               <ChevronsRight />
             </Button>

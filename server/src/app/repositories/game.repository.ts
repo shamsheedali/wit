@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { Model, ClientSession } from 'mongoose';
+import { Model, ClientSession, FilterQuery, UpdateQuery, QueryOptions } from 'mongoose';
 import BaseRepository from '../../core/base.repository';
 import { GameStatus, IGame } from '../models/game.model';
 import { IGameInput } from '../dtos/game.dto';
@@ -16,8 +16,24 @@ export default class GameRepository extends BaseRepository<IGame> implements IGa
     return this.create(gameData);
   }
 
-  async findById(id: string): Promise<IGame | null> {
-    return this.model.findById(id).exec();
+  async findById(id: string, session?: ClientSession): Promise<IGame | null> {
+    return this.model
+      .findById(id)
+      .session(session ?? null)
+      .exec();
+  }
+
+  async findOneAndUpdate(
+    filter: FilterQuery<IGame>,
+    update: UpdateQuery<IGame>,
+    options?: QueryOptions
+  ): Promise<IGame | null> {
+    return this.model
+      .findOneAndUpdate(filter, update, {
+        ...options,
+        runValidators: true,
+      })
+      .exec();
   }
 
   async updateGame(
@@ -60,7 +76,9 @@ export default class GameRepository extends BaseRepository<IGame> implements IGa
   }
 
   async terminateGame(id: string): Promise<IGame | null> {
-    return this.model.findByIdAndUpdate(id, { gameStatus: 'terminated' }).exec();
+    return this.model
+      .findByIdAndUpdate(id, { gameStatus: GameStatus.Terminated }, { new: true })
+      .exec();
   }
 
   async findOngoingGameByUserId(userId: string): Promise<IGame | null> {

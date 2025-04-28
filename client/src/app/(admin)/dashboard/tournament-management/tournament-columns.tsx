@@ -14,20 +14,26 @@ import {
 import { deleteTournament } from "@/lib/api/admin";
 import { QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useMemo } from "react";
 
-// Define the shape of TournamentData
 export type TournamentData = {
   _id: string;
   name: string;
   timeControl: string;
   maxGames: number;
   status: "pending" | "active" | "playoff" | "completed";
-  createdBy: { username: string };
+  createdBy: string;
+  createdByAdmin: boolean;
   startDate?: number;
+  players: any[];
+  matches: any[];
 };
 
 export const tournamentColumns = (
-  queryClient: QueryClient
+  queryClient: QueryClient,
+  admin: { _id: string } | null,
+  userNamesMap: { [key: string]: string }
 ): ColumnDef<TournamentData>[] => [
   {
     accessorKey: "_id",
@@ -65,11 +71,18 @@ export const tournamentColumns = (
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => <span>{row.getValue("status")}</span>,
+    cell: ({ row }) => (
+      <span className="capitalize">{row.getValue("status")}</span>
+    ),
   },
   {
     id: "createdByUsername",
-    accessorFn: (row) => row.createdBy?.username || "-",
+    accessorFn: (row) => {
+      if (row.createdByAdmin || row.createdBy === admin?._id) {
+        return "Wit Official Admin";
+      }
+      return userNamesMap[row.createdBy] || "Loading...";
+    },
     header: "Created By",
     cell: ({ row }) => <span>{row.getValue("createdByUsername")}</span>,
   },
@@ -77,13 +90,13 @@ export const tournamentColumns = (
     id: "actions",
     header: "Actions",
     cell: ({ row }) => {
+      const router = useRouter();
       const tournament = row.original;
 
       const handleDeleteTournament = async (tournamentId: string) => {
         try {
           const response = await deleteTournament(tournamentId);
           if (response?.success) {
-            toast.success("Tournament deleted successfully");
             await queryClient.invalidateQueries({ queryKey: ["tournaments"] });
           } else {
             toast.error("Failed to delete tournament");
@@ -108,6 +121,16 @@ export const tournamentColumns = (
               className="cursor-pointer"
             >
               Copy Tournament ID
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                router.push(
+                  `/dashboard/tournament-management/${tournament._id}`
+                )
+              }
+              className="cursor-pointer"
+            >
+              View Details
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

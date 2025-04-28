@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import mongoose from 'mongoose';
+import mongoose, { ClientSession } from 'mongoose';
 import BaseService from '../../core/base.service';
 import GameRepository from '../repositories/game.repository';
 import UserService from './user.service';
@@ -7,6 +7,7 @@ import { IGame, GameResult, GameType, LossType, GameStatus, IMove } from '../mod
 import { IGameInput } from '../dtos/game.dto';
 import TYPES from '../../config/types';
 import { IGameService } from './interface/IGameService';
+import log from '../../utils/logger';
 
 @injectable()
 export default class GameService extends BaseService<IGame> implements IGameService {
@@ -43,6 +44,10 @@ export default class GameService extends BaseService<IGame> implements IGameServ
     return this._gameRepository.saveGame(gameData);
   }
 
+  async getGame(gameId: string) {
+    return this._gameRepository.findById(gameId);
+  }
+
   async updateGame(
     gameId: string,
     updateData: Partial<{
@@ -56,79 +61,119 @@ export default class GameService extends BaseService<IGame> implements IGameServ
   ): Promise<IGame | null> {
     const maxRetries = 3;
     let attempt = 0;
+    let lastError: Error | null = null;
 
     while (attempt < maxRetries) {
       const session = await mongoose.startSession();
-      session.startTransaction();
 
       try {
-        const game = await this._gameRepository.findById(gameId);
-        if (!game) return null;
+        session.startTransaction();
+        log.info(`Attempt ${attempt + 1} to update game ${gameId}`);
 
-        const updatedGame = await this._gameRepository.updateGame(gameId, updateData, session);
+        const updatedGame = await this._gameRepository.findOneAndUpdate(
+          { _id: gameId },
+          {
+            $set: updateData,
+            $inc: { __v: 1 },
+          },
+          { session, new: true }
+        );
+
+        if (!updatedGame) {
+          await session.abortTransaction();
+          log.warn(`Game ${gameId} not found`);
+          return null;
+        }
 
         if (updateData.gameStatus === GameStatus.Completed && updateData.result) {
-          const playerOne = await this._userService.findById(game.playerOne, session);
-          const playerTwo = await this._userService.findById(game.playerTwo, session);
-
-          if (!playerOne || !playerTwo) throw new Error('Players not found');
-
-          const playerOneResult = this.getPlayerResult(game.playerAt, updateData.result);
-          const playerTwoResult = 1 - playerOneResult;
-
-          const playerOneEloChange = this.calculateEloChange(
-            playerOne.eloRating,
-            playerTwo.eloRating,
-            playerOneResult
-          );
-          const playerTwoEloChange = this.calculateEloChange(
-            playerTwo.eloRating,
-            playerOne.eloRating,
-            playerTwoResult
-          );
-
-          await this._userService.update(
-            game.playerOne,
-            {
-              eloRating: playerOne.eloRating + playerOneEloChange,
-              gamesPlayed: playerOne.gamesPlayed + 1,
-            },
-            session
-          );
-
-          await this._userService.update(
-            game.playerTwo,
-            {
-              eloRating: playerTwo.eloRating + playerTwoEloChange,
-              gamesPlayed: playerTwo.gamesPlayed + 1,
-            },
-            session
-          );
+          await this.updatePlayerRatings(updatedGame, updateData.result, session);
         }
 
         await session.commitTransaction();
+        log.info(`Successfully updated game ${gameId}`);
         return updatedGame;
       } catch (error: any) {
         await session.abortTransaction();
-        if (
-          error.message.includes('Write conflict') ||
-          error.code === 112 // MongoDB write conflict error code
-        ) {
+
+        if (error.code === 112 || error.message.includes('Write conflict')) {
+          lastError = error;
           attempt++;
-          if (attempt === maxRetries) {
-            throw new Error('Max retries reached due to persistent write conflicts');
-          }
-          console.log(`Retry attempt ${attempt} due to write conflict`);
-          await new Promise((resolve) => setTimeout(resolve, 100 * attempt)); // Exponential backoff
-        } else {
-          throw error; // Non-retryable error
+          const delay = 100 * Math.pow(2, attempt);
+          log.warn(`Write conflict on game ${gameId}, retrying in ${delay}ms`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
         }
+
+        log.error(`Error updating game ${gameId}:`, error);
+        throw error;
       } finally {
         session.endSession();
       }
     }
 
-    return null; // Shouldn’t reach here due to max retries throw
+    log.error(`Max retries reached for game ${gameId} update`);
+    throw lastError || new Error('Max retries reached due to persistent write conflicts');
+  }
+
+  private async updatePlayerRatings(
+    game: IGame,
+    result: GameResult,
+    session: ClientSession
+  ): Promise<void> {
+    try {
+      log.info(`Updating ratings for game ${game._id}`);
+
+      const [playerOne, playerTwo] = await Promise.all([
+        this._userService.findById(game.playerOne, session),
+        this._userService.findById(game.playerTwo, session),
+      ]);
+
+      if (!playerOne || !playerTwo) {
+        throw new Error('One or both players not found');
+      }
+
+      const playerOneResult = this.getPlayerResult(game.playerAt, result);
+      const playerTwoResult = 1 - playerOneResult;
+
+      const playerOneEloChange = this.calculateEloChange(
+        playerOne.eloRating,
+        playerTwo.eloRating,
+        playerOneResult
+      );
+      const playerTwoEloChange = this.calculateEloChange(
+        playerTwo.eloRating,
+        playerOne.eloRating,
+        playerTwoResult
+      );
+
+      await Promise.all([
+        this._userService.findOneAndUpdate(
+          { _id: game.playerOne },
+          {
+            $inc: {
+              eloRating: playerOneEloChange,
+              gamesPlayed: 1,
+            },
+          },
+          { session }
+        ),
+        this._userService.findOneAndUpdate(
+          { _id: game.playerTwo },
+          {
+            $inc: {
+              eloRating: playerTwoEloChange,
+              gamesPlayed: 1,
+            },
+          },
+          { session }
+        ),
+      ]);
+
+      log.info(`Ratings updated for game ${game._id}`);
+    } catch (error) {
+      log.error(`Error updating ratings for game ${game._id}:`, error);
+      throw error;
+    }
   }
 
   async getUserGames(
@@ -160,7 +205,10 @@ export default class GameService extends BaseService<IGame> implements IGameServ
   }
 
   async terminateGame(gameId: string): Promise<IGame | null> {
-    return this._gameRepository.terminateGame(gameId);
+    return this._gameRepository.findOneAndUpdate(
+      { _id: gameId },
+      { gameStatus: GameStatus.Terminated }
+    );
   }
 
   async getTotalGames(): Promise<number> {
