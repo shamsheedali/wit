@@ -36,7 +36,11 @@ import { Chess } from "chess.js";
 import ChatInterface from "@/components/core/chat-interface";
 import { reportGame } from "@/lib/api/gameReport";
 import { useRouter } from "next/navigation";
-import { submitPlayoffResult, submitResult } from "@/lib/api/tournament";
+import {
+  getTournament,
+  submitPlayoffResult,
+  submitResult,
+} from "@/lib/api/tournament";
 
 export default function PlayTournament() {
   const router = useRouter();
@@ -409,8 +413,13 @@ export default function PlayTournament() {
         }
       );
 
+      socket.on("drawRequestAccepted", () => {
+        endGame("draw", "draw", chess.fen());
+      });
+
       return () => {
         socket.off("moveMade");
+        socket.off("drawRequestAccepted");
         socket.off("opponentResigned");
       };
     }
@@ -448,7 +457,7 @@ export default function PlayTournament() {
 
   const endGame = async (
     result: "whiteWin" | "blackWin" | "draw",
-    lossType: "checkmate" | "resignation" | "timeout",
+    lossType: "checkmate" | "resignation" | "timeout" | "draw",
     fen: string
   ) => {
     if (dbGameId && gameStartTime) {
@@ -467,9 +476,11 @@ export default function PlayTournament() {
         });
         console.log("updateGame result:", updatedGame);
 
-        const socket = getSocket();
-        if (socket) {
-          socket.emit("opponentResigned", { opponentId, result });
+        if (lossType === "resignation") {
+          const socket = getSocket();
+          if (socket) {
+            socket.emit("opponentResigned", { opponentId, result });
+          }
         }
 
         const tournamentResult =
@@ -522,6 +533,17 @@ export default function PlayTournament() {
         console.error("Error ending game:", error);
         toast.error("An error occurred while ending the game");
       }
+    }
+  };
+
+  const handleDraw = () => {
+    const socket = getSocket();
+    if (socket) {
+      socket.emit("opponentDrawRequest", {
+        opponentId,
+        senderId: user?._id,
+        senderName: user?.username,
+      });
     }
   };
 
@@ -745,7 +767,7 @@ export default function PlayTournament() {
               <Button
                 variant="outline"
                 className="w-1/2 bg-gray-700 text-white hover:bg-gray-600"
-                onClick={() => endGame("draw", "resignation", chess.fen())}
+                onClick={handleDraw}
               >
                 <Hand className="mr-2" /> Draw
               </Button>

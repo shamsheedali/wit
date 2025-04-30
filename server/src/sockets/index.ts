@@ -125,7 +125,7 @@ export default function socketHandler(io: Server) {
     socket.on(
       'friendRequestAccepted',
       (data: { senderId: string; senderName: string; receiverId: string }) => {
-        const {senderId, senderName, receiverId} = data;
+        const { senderId, senderName, receiverId } = data;
         io.to(receiverId).emit('notification', {
           type: 'message',
           senderId,

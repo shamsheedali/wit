@@ -317,6 +317,10 @@ export default function PlayOnline() {
           }
         );
 
+        socketInstance.on("drawRequestAccepted", () => {
+          endGame("draw", "draw", chess.fen());
+        });
+
         return () => {
           socketInstance.off("connect");
           socketInstance.off("matchFound");
@@ -324,6 +328,7 @@ export default function PlayOnline() {
           socketInstance.off("gameTerminated");
           socketInstance.off("opponentBanned");
           socketInstance.off("opponentResigned");
+          socketInstance.off("drawRequestAccepted");
           if (timerRef.current) clearInterval(timerRef.current);
         };
       }
@@ -414,9 +419,10 @@ export default function PlayOnline() {
 
   const endGame = async (
     result: "whiteWin" | "blackWin" | "draw",
-    lossType: "checkmate" | "resignation" | "timeout",
+    lossType: "checkmate" | "resignation" | "timeout" | "draw",
     fen: string
   ) => {
+    // console.log("come on are you working now", isGameEnded.current, dbGameId, gameStartTime);
     if (isGameEnded.current || !dbGameId || !gameStartTime) return;
     isGameEnded.current = true;
 
@@ -452,6 +458,17 @@ export default function PlayOnline() {
         "Failed to save game result: " + (error.message || "Unknown error")
       );
       isGameEnded.current = false; // Allow retry on failure
+    }
+  };
+
+  const handleDraw = () => {
+    const socket = getSocket();
+    if (socket) {
+      socket.emit("opponentDrawRequest", {
+        opponentId,
+        senderId: user?._id,
+        senderName: user?.username,
+      });
     }
   };
 
@@ -737,7 +754,7 @@ export default function PlayOnline() {
               <Button
                 variant="outline"
                 className="w-1/2 bg-gray-700 text-white hover:bg-gray-600"
-                onClick={() => endGame("draw", "resignation", chess.fen())}
+                onClick={handleDraw}
               >
                 <Hand className="mr-2" /> Draw
               </Button>
