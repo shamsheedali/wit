@@ -20,11 +20,15 @@ export const standingsColumns = (
     accessorKey: "userId",
     header: "Player",
     cell: ({ row }) => {
-      const userId = row.getValue("userId");
+      const userId = row.getValue<string | { _id: string; username: string }>(
+        "userId"
+      );
+
       const username =
         typeof userId === "string"
-          ? userNamesMap[userId] || "Unknown"
-          : userId.username || "Unknown";
+          ? userNamesMap[userId] ?? "Unknown"
+          : userId.username ?? "Unknown";
+
       return <span>{username}</span>;
     },
   },

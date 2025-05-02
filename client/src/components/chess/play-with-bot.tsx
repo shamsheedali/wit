@@ -14,11 +14,6 @@ type SelectedBot = {
   move: InitialisedBot;
 } | null;
 
-type BoardMove = {
-  sourceSquare: engine.Square;
-  targetSquare: engine.Square;
-};
-
 const BotSelector: React.FC<{
   playerName: string;
   availableBots: AvailableBots;
@@ -28,7 +23,14 @@ const BotSelector: React.FC<{
 }> = ({ playerName, availableBots, selectedBot, setSelectedBot, disabled }) => {
   const handleChange = (e: ChangeEvent<HTMLSelectElement>): void => {
     const name = e.target.value;
-    setSelectedBot(name ? { name, move: availableBots[name]() } : null);
+    if (name) {
+      // Initialize the bot function properly
+      const botFunction = availableBots[name];
+      const initializedBot: InitialisedBot = (fen: string) => botFunction(fen);
+      setSelectedBot({ name, move: initializedBot });
+    } else {
+      setSelectedBot(null);
+    }
   };
 
   return (
@@ -59,9 +61,7 @@ const History: React.FC<{ history: Array<engine.Move> }> = ({ history }) => {
   }, [history]);
 
   return (
-    <pre
-      className="bg-gray-800 text-white w-60 h-[425px] p-4 mt-[105px] overflow-y-auto rounded-lg"
-    >
+    <pre className="bg-gray-800 text-white w-60 h-[425px] p-4 mt-[105px] overflow-y-auto rounded-lg">
       {history.map(({ color, piece, from, san }) => `${color}${piece}${from} ${san}`).join("\n")}
       <div ref={endRef} />
     </pre>
@@ -87,25 +87,17 @@ const PlayWithBot: React.FC<{
   }, []);
 
   const doMove = useCallback(
-    (fen: engine.Fen, from: engine.Square, to: engine.Square) => {
+    (fen: engine.Fen, from: engine.Square, to: engine.Square): boolean => {
       const move = engine.move(fen, from, to);
       if (!move) return false;
 
       const [newFen, action] = move;
-
-      console.log("Move made:", from, "to", to);
-      console.log("New FEN:", newFen);
-      console.log("Game over check:", engine.isGameOver(newFen));
 
       if (engine.isGameOver(newFen)) {
         setTimeout(() => {
           onGameCompleted(engine.getGameWinner(newFen));
           newGame();
         }, 500);
-
-        setFen(newFen);
-        setHistory((prev) => [...prev, action]);
-        return true;
       }
 
       setFen(newFen);
@@ -121,23 +113,20 @@ const PlayWithBot: React.FC<{
     let isBotMovePlayable = true;
 
     const playBotMove = async (bot: SelectedBot) => {
-      if (bot) {
-        try {
-          await new Promise((resolve) => setTimeout(resolve, 300));
-          const { from, to } = await bot.move(fen);
-          console.log(`Bot ${bot.name} wants to move from ${from} to ${to}`);
-
-          if (isBotMovePlayable) {
-            const moveSucceeded = doMove(fen, from, to);
-            if (!moveSucceeded) {
-              console.error(
-                `Bot ${bot.name} attempted invalid move: ${from} to ${to}`
-              );
-            }
+      if (!bot) return;
+      
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        const { from, to } = await bot.move(fen);
+        
+        if (isBotMovePlayable) {
+          const moveSucceeded = doMove(fen, from, to);
+          if (!moveSucceeded) {
+            console.error(`Bot ${bot.name} attempted invalid move: ${from} to ${to}`);
           }
-        } catch (error) {
-          console.error("Error making bot move:", error);
         }
+      } catch (error) {
+        console.error("Error making bot move:", error);
       }
     };
 
@@ -158,24 +147,9 @@ const PlayWithBot: React.FC<{
   }, [isPlaying, fen, whiteBot, blackBot, doMove]);
 
   return (
-    <div
-      style={{
-        height: "100vh",
-        width: "100%",
-        display: "flex",
-        padding: "1rem",
-      }}
-    >
+    <div className="h-screen w-full p-4 flex">
       <History history={history} />
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <div className="flex-1 flex flex-col items-center justify-center">
         <div className="flex gap-4">
           <BotSelector
             playerName="White"
@@ -204,14 +178,16 @@ const PlayWithBot: React.FC<{
             boardWidth={400}
           />
         </div>
-        <div style={{ width: "400px", marginTop: "10px", textAlign: "left" }}>
+        <div className="w-[400px] mt-2.5 text-left">
           <div className="flex items-center gap-2">
             <Avatar className="w-10 h-10">
               <AvatarImage
-                src={user?.avatar || "/placeholder.svg?height=40&width=40"}
-                alt="User avatar"
+                src={user?.profileImageUrl || "/placeholder.svg?height=40&width=40"}
+                alt="User profile image"
               />
-              <AvatarFallback>{user?.username?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
+              <AvatarFallback>
+                {user?.username?.charAt(0).toUpperCase() || "U"}
+              </AvatarFallback>
             </Avatar>
             <span className="text-sm font-medium">
               {user?.username || "Guest"}

@@ -14,16 +14,46 @@ import {
 import { QueryClient } from "@tanstack/react-query";
 import { deleteClub } from "@/lib/api/club";
 import { toast } from "sonner";
-import { ClubData } from "./ClubManagementPage";
-import { useAuthStore } from "@/stores";
+import { ClubData } from "./page";
 import { getSocket } from "@/lib/socket";
+import { useAuthStore } from "@/stores";
 
-export const clubColumns = (
+export const useClubColumns = (
   queryClient: QueryClient,
   handleViewDetails: (club: ClubData) => void
 ): ColumnDef<ClubData>[] => {
   const { admin } = useAuthStore();
   const socket = getSocket();
+
+  const handleDeleteClub = async (clubId: string, clubName: string) => {
+    if (!admin?._id) {
+      toast.error("Authentication required");
+      return;
+    }
+
+    try {
+      const response = await deleteClub(clubId, admin._id);
+      if (response?.success) {
+        // Emit clubDeleted event to notify members
+        socket?.emit("clubDeleted", { clubName, adminId: admin._id });
+        await queryClient.invalidateQueries({ queryKey: ["clubs"] });
+        toast.success("Club deleted successfully");
+      } else {
+        toast.error(
+          response?.error instanceof Error 
+            ? response.error.message 
+            : "Failed to delete club"
+        );
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("An unknown error occurred");
+      }
+      console.error("Error deleting club:", error);
+    }
+  };
 
   return [
     {
@@ -75,27 +105,6 @@ export const clubColumns = (
       header: "Actions",
       cell: ({ row }) => {
         const club = row.original;
-
-        const handleDeleteClub = async (clubId: string, clubName: string) => {
-          if (!admin?._id) {
-            toast.error("Authentication required");
-            return;
-          }
-
-          try {
-            const response = await deleteClub(clubId, admin._id);
-            if (response?.success) {
-              // Emit clubDeleted event to notify members
-              socket.emit("clubDeleted", { clubName, adminId: admin._id });
-              await queryClient.invalidateQueries({ queryKey: ["clubs"] });
-            } else {
-              toast.error(response?.message || "Failed to delete club");
-            }
-          } catch (error) {
-            toast.error(error.response?.data?.message || "Error deleting club");
-            console.error(error);
-          }
-        };
 
         return (
           <DropdownMenu>

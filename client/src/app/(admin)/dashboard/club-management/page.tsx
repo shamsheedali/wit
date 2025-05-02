@@ -3,11 +3,11 @@
 import { DataTable } from "@/components/data-table";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { getClubs, createAdminClub, addClubMessage } from "@/lib/api/club";
-import { clubColumns } from "./club-columns"; // Updated import
+import { useClubColumns } from "./club-columns";
 import {
   Dialog,
   DialogContent,
@@ -62,8 +62,15 @@ export default function ClubManagementPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["clubs", page],
     queryFn: () => getClubs(page, LIMIT),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
+
+  const handleViewDetails = (club: ClubData) => {
+    setSelectedClub(club);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const columns = useClubColumns(queryClient, handleViewDetails);
 
   // Initialize socket and load messages for selected club
   useEffect(() => {
@@ -120,7 +127,7 @@ export default function ClubManagementPage() {
   // Join club chat when opening chat dialog
   useEffect(() => {
     if (isChatDialogOpen && selectedClub?.name && admin?._id) {
-      socket.emit("joinClubChat", {
+      socket?.emit("joinClubChat", {
         clubName: selectedClub.name,
         userId: admin._id,
       });
@@ -153,18 +160,13 @@ export default function ClubManagementPage() {
     }
   };
 
-  const handleViewDetails = (club: ClubData) => {
-    setSelectedClub(club);
-    setIsDetailsDialogOpen(true);
-  };
-
   // Send message to club (persist in DB and emit via socket)
-  const sendClubMessage = async (clubId: string, message: string) => {
+  const sendClubMessage = async (clubId: string, message: string): Promise<{ success: boolean }> => {
     if (!admin?._id || !selectedClub?.name) {
       toast.error("Authentication or club details missing");
       return { success: false };
     }
-
+  
     try {
       // Persist message in backend
       const response = await addClubMessage(clubId, admin._id, message);
@@ -172,19 +174,29 @@ export default function ClubManagementPage() {
         toast.error("Failed to save message");
         return { success: false };
       }
-
+  
       // Emit message via socket
-      socket.emit("sendClubMessage", {
+      socket?.emit("sendClubMessage", {
         clubName: selectedClub.name,
         userId: admin._id,
         message,
       });
-
+  
       toast.success("Message sent successfully");
       return { success: true };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to send message:", error);
-      toast.error(error.response?.data?.message || "Failed to send message");
+      
+      // Type-safe error handling
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else if (typeof error === 'object' && error !== null && 'response' in error) {
+        const axiosError = error as { response?: { data?: { message?: string } } };
+        toast.error(axiosError.response?.data?.message || "Failed to send message");
+      } else {
+        toast.error("Failed to send message");
+      }
+      
       return { success: false };
     }
   };
@@ -233,10 +245,7 @@ export default function ClubManagementPage() {
             Create Club
           </Button>
         </div>
-        <DataTable
-          columns={clubColumns(queryClient, handleViewDetails)}
-          data={data?.clubs || []}
-        />
+        <DataTable columns={columns} data={data?.clubs || []} />
 
         {/* Pagination Controls */}
         <div className="flex justify-end mt-4 gap-2">
@@ -329,7 +338,7 @@ export default function ClubManagementPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {selectedClub?.members.length > 0 ? (
+            {selectedClub && selectedClub?.members.length > 0 ? (
               <ul className="space-y-2">
                 {selectedClub.members.map((member) => (
                   <li

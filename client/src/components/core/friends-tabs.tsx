@@ -21,6 +21,13 @@ import { useFriendStore } from "@/stores/useFriendStore";
 import { useOnlineStatusStore } from "@/stores/useOnlineStatusStore";
 import { UserRound } from "lucide-react";
 import { getSocket } from "@/lib/socket";
+import { Friend } from "@/types/friend";
+
+type Sender = {
+  _id: string;
+  username: string;
+  profileImageUrl?: string;
+};
 
 export function FriendsTabs() {
   const { user: mainUser } = useAuthStore();
@@ -31,20 +38,21 @@ export function FriendsTabs() {
     fetchFriends,
     friends,
   } = useFriendStore();
-  const { onlineUsers, initializeSocket, isUserOnline } =
-    useOnlineStatusStore();
+  const { initializeSocket, isUserOnline } = useOnlineStatusStore();
   const router = useRouter();
   const [query, setQuery] = useState<string>("");
-  const [player, setPlayer] = useState<{
-    [key: string]: { username: string; profileImage: string };
-  }>({});
+  const [players, setPlayers] = useState<
+    Record<string, { username: string; profileImage: string }>
+  >({});
+  const [, setError] = useState<string | null>(null);
+  const [isAccepting, setIsAccepting] = useState(false);
 
   const debouncedSetQuery = useCallback(
-    debounce((val) => setQuery(val), 500),
+    debounce((val: string) => setQuery(val), 500),
     []
   );
 
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [] } = useQuery({
     queryKey: ["searchFriend", query],
     queryFn: () => searchFriend(query),
     enabled: !!query,
@@ -76,16 +84,17 @@ export function FriendsTabs() {
           }
         }
 
-        const namesMap: {
-          [key: string]: { username: string; profileImage: string };
-        } = {};
+        const namesMap: Record<
+          string,
+          { username: string; profileImage: string }
+        > = {};
         allUsers.forEach((u) => {
           namesMap[u._id] = {
             username: u.username,
             profileImage: u.profileImageUrl,
           };
         });
-        setPlayer(namesMap);
+        setPlayers(namesMap);
       } catch (error) {
         console.error("Failed to fetch users:", error);
       }
@@ -112,21 +121,18 @@ export function FriendsTabs() {
     (req) => req.receiverId === mainUser?._id && req.status === "pending"
   );
 
-  const [error, setError] = useState<string | null>(null);
-  const [isAccepting, setIsAccepting] = useState(false);
-
   const handleAccept = async (requestId: string, receiverId: string) => {
     try {
       setIsAccepting(true);
       setError(null);
       await updateFriendRequest(requestId, "accepted");
-      //notify other user
+
       const socket = getSocket();
       if (socket && mainUser) {
-        socket.emit('friendRequestAccepted', {
+        socket.emit("friendRequestAccepted", {
           senderId: mainUser._id,
           senderName: mainUser.username,
-          receiverId
+          receiverId,
         });
       }
     } catch (err) {
@@ -141,13 +147,7 @@ export function FriendsTabs() {
     updateFriendRequest(requestId, "ignored");
   };
 
-  const FriendItem = ({
-    user,
-    showChallenge = false,
-  }: {
-    user: User;
-    showChallenge?: boolean;
-  }) => (
+  const FriendItem = ({ user }: { user: Friend }) => (
     <div
       key={user._id}
       className="flex items-center space-x-4 p-3 cursor-pointer rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
@@ -156,7 +156,7 @@ export function FriendsTabs() {
       <div className="relative">
         {user.profileImageUrl ? (
           <img
-            src={user.profileImageUrl || "/placeholder.svg?height=40&width=40"}
+            src={user.profileImageUrl}
             alt="User avatar"
             className="rounded-full w-10 h-10 object-cover"
             width={40}
@@ -206,10 +206,8 @@ export function FriendsTabs() {
               <p>No friends yet</p>
             ) : (
               friends
-                .filter((friend) => friend?._id)
-                .map((friend) => (
-                  <FriendItem key={friend._id} user={friend} showChallenge />
-                ))
+                .filter((friend): friend is Friend => !!friend?._id)
+                .map((friend) => <FriendItem key={friend._id} user={friend} />)
             )}
           </CardContent>
         </Card>
@@ -230,7 +228,7 @@ export function FriendsTabs() {
               />
               <Button>Search</Button>
             </div>
-            {filteredUsers.map((user: User) => (
+            {filteredUsers.map((user: Friend) => (
               <FriendItem key={user._id} user={user} />
             ))}
           </CardContent>
@@ -241,24 +239,33 @@ export function FriendsTabs() {
         <Card>
           <CardHeader>
             <CardTitle>Received</CardTitle>
-            <CardDescription>Friend requests you've received</CardDescription>
+            <CardDescription>
+              Friend requests you&apos;ve received
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {receivedRequests.length === 0 ? (
               <p>No pending requests</p>
             ) : (
               receivedRequests.map((req) => {
-                const sender =
+                const sender: Sender =
                   typeof req.senderId === "string"
                     ? {
                         _id: req.senderId,
-                        username: player[req.senderId]?.username || "Unknown",
-                        profileImageUrl:
-                          player[req.senderId]?.profileImage || "",
+                        username: players[req.senderId]?.username || "Unknown",
+                        profileImageUrl: players[req.senderId]?.profileImage,
                       }
-                    : req.senderId;
+                    : {
+                        _id: req.senderId._id,
+                        username: req.senderId.username,
+                        profileImageUrl:
+                          "profileImageUrl" in req.senderId
+                            ? (req.senderId as { profileImageUrl?: string })
+                                .profileImageUrl
+                            : undefined,
+                      };
 
-                return sender ? (
+                return (
                   <div
                     key={req._id}
                     className="flex items-center space-x-4 p-3 rounded-lg transition-all duration-200 hover:bg-accent hover:scale-[1.02] group"
@@ -266,10 +273,7 @@ export function FriendsTabs() {
                     <div className="relative">
                       {sender.profileImageUrl ? (
                         <img
-                          src={
-                            sender.profileImageUrl ||
-                            "/placeholder.svg?height=40&width=40"
-                          }
+                          src={sender.profileImageUrl}
                           alt="User avatar"
                           className="rounded-full w-10 h-10 object-cover"
                           width={40}
@@ -280,9 +284,7 @@ export function FriendsTabs() {
                       )}
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium">
-                        {sender.username || "Unknown"}
-                      </p>
+                      <p className="text-sm font-medium">{sender.username}</p>
                       <p className="text-xs text-muted-foreground flex items-center">
                         <span
                           className={`w-2 h-2 rounded-full mr-1 ${
@@ -312,7 +314,7 @@ export function FriendsTabs() {
                       </Button>
                     </div>
                   </div>
-                ) : null;
+                );
               })
             )}
           </CardContent>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getTournaments,
   getUserTournaments,
@@ -43,7 +43,7 @@ export default function TournamentsPage() {
   const { data: publicTournaments, isLoading: publicLoading } = useQuery({
     queryKey: ["tournaments", page],
     queryFn: () => getTournaments(page, LIMIT),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
   const { data: userTournaments, isLoading: userLoading } = useQuery({

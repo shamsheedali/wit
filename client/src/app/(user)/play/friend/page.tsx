@@ -34,10 +34,10 @@ import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
 import { updateGame } from "@/lib/api/game";
 import { getUsers } from "@/lib/api/user";
-import { ChessMove } from "@/types/game";
 import { Chess } from "chess.js";
 import ChatInterface from "@/components/core/chat-interface";
 import { reportGame } from "@/lib/api/gameReport";
+import { ChessMove, LossType, openings } from "@/types/game";
 
 export default function PlayFriend() {
   const { user } = useAuthStore();
@@ -67,7 +67,7 @@ export default function PlayFriend() {
   const [playerNames, setPlayerNames] = useState<{ [key: string]: string }>({});
   const [chess, setChess] = useState<Chess>(new Chess());
   const [currentOpening, setCurrentOpening] = useState<string>("No moves yet");
-  const [openings, setOpenings] = useState<any[]>([]);
+  const [openings, setOpenings] = useState<openings[]>([]);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportReason, setReportReason] = useState<string>("cheating");
   const [reportDetails, setReportDetails] = useState<string>("");
@@ -485,7 +485,7 @@ export default function PlayFriend() {
 
   const endGame = async (
     result: "whiteWin" | "blackWin" | "draw",
-    lossType: "checkmate" | "resignation" | "timeout" | "draw",
+    lossType: LossType,
     fen: string
   ) => {
     if (dbGameId && gameStartTime) {

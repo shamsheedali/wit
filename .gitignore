@@ -1,0 +1,15 @@
+# Environment files
+.env
+.env.*
+
+# Docker-related
+docker-compose.yml.bak
+*.log
+
+# Editor files
+.DS_Store
+.vscode/
+.idea/
+
+# Misc
+*.swp

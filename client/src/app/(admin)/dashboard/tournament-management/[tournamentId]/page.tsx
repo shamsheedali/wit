@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { getSocket } from "@/lib/socket";
+import { TournamentPlayer } from "@/types/tournament";
 
 export default function AdminTournamentDetailsPage() {
   const params = useParams();
@@ -67,28 +68,28 @@ export default function AdminTournamentDetailsPage() {
     fetchUsers();
   }, []);
 
-    const handleStart = async () => {
-      try {
-        const result = await startTournament(tournamentId, admin?._id as string);
-        if (result) {
-          const socketInstance = getSocket();
-          socketInstance?.emit("tournamentUpdate", result);
-          socketInstance?.emit("tournamentStarted", {
-            tournamentId,
-            tournamentName: tournament.name,
-            players: tournament.players.map(
-              (p: any) => p.userId?._id || p.userId
-            ),
-          });
-          queryClient.invalidateQueries({
-            queryKey: ["tournament", tournamentId],
-          });
-        }
-      } catch (error) {
-        toast.error("Error starting tournament");
-        console.error(error);
+  const handleStart = async () => {
+    try {
+      const result = await startTournament(tournamentId, admin?._id as string);
+      if (result) {
+        const socketInstance = getSocket();
+        socketInstance?.emit("tournamentUpdate", result);
+        socketInstance?.emit("tournamentStarted", {
+          tournamentId,
+          tournamentName: tournament.name,
+          players: tournament.players.map((p: TournamentPlayer) =>
+            typeof p.userId === "string" ? p.userId : p.userId._id
+          ),
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["tournament", tournamentId],
+        });
       }
-    };
+    } catch (error) {
+      toast.error("Error starting tournament");
+      console.error(error);
+    }
+  };
 
   if (isLoading || !tournament) return <div>Loading tournament...</div>;
   if (isError) return <div>Error loading tournament</div>;
@@ -145,27 +146,24 @@ export default function AdminTournamentDetailsPage() {
           </div>
         </div>
 
-        {tournament.status === "pending" &&
-              (tournament.createdByAdmin) && (
-              <Button
-                onClick={handleStart}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                Start Tournament
-              </Button>
-            )}
+        {tournament.status === "pending" && tournament.createdByAdmin && (
+          <Button
+            onClick={handleStart}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            Start Tournament
+          </Button>
+        )}
         <h2 className="text-xl font-bold mb-4">Standings</h2>
-        <DataTable
-          columns={standingsColumns(userNamesMap)}
-          data={tournament.players}
-          className="mb-8 bg-[#27272a]"
-        />
+          <DataTable
+            columns={standingsColumns(userNamesMap)}
+            data={tournament.players}
+          />
 
         <h2 className="text-xl font-bold mb-4">Matches</h2>
         <DataTable
           columns={matchColumns(userNamesMap)}
           data={tournament.matches}
-          className="bg-[#27272a]"
         />
       </div>
     </div>

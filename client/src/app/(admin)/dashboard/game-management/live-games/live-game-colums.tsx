@@ -15,22 +15,11 @@ import { terminateGame } from "@/lib/api/admin";
 import { QueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { getSocket } from "@/lib/socket";
-
-export type GameData = {
-  _id: string;
-  playerOne: string; 
-  playerTwo: string; 
-  result?: "whiteWin" | "blackWin" | "draw";
-  gameType: "blitz" | "bullet" | "rapid";
-  timeControl: string;
-  moves: Array<any>;
-  createdAt: string;
-  gameStatus: "ongoing" | "completed";
-};
+import { ChessMove, GameData } from "@/types/game";
 
 export const LiveGameColumns = (
   queryClient: QueryClient,
-  playerNames: { [key: string]: string } // Add playerNames parameter
+  playerNames: { [key: string]: string }
 ): ColumnDef<GameData>[] => [
   {
     accessorKey: "_id",
@@ -80,7 +69,7 @@ export const LiveGameColumns = (
   {
     accessorKey: "moves",
     header: "Moves",
-    cell: ({ row }) => <span>{(row.getValue("moves") as any[]).length}</span>,
+    cell: ({ row }) => <span>{row.getValue<ChessMove[]>("moves").length}</span>,
     enableSorting: true,
     sortingFn: "basic",
   },

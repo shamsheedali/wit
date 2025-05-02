@@ -4,7 +4,7 @@ import { DataTable } from "@/components/data-table";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { userColumns } from "./user-colums";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { getUsers } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ export default function UserManagementPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["users", page],
     queryFn: () => getUsers(page, LIMIT),
-    keepPreviousData: true, 
+    placeholderData: keepPreviousData, 
   });
 
   if (isLoading) return <div>Loading users...</div>;

@@ -3,11 +3,16 @@
 import { DataTable } from "@/components/data-table";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { getAllGames, getUsers } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
 import { LiveGameColumns } from "./live-game-colums";
+import { GameData } from "@/types/game";
 
 const LIMIT = 7;
 
@@ -20,7 +25,7 @@ export default function LiveGameManagement() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["games", page],
     queryFn: () => getAllGames(page, LIMIT),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
   // Fetch all usernames
@@ -57,8 +62,10 @@ export default function LiveGameManagement() {
   }, []);
 
   // Filter games to show only "ongoing" ones
-  const ongoingGames = data?.games?.filter((game) => game.gameStatus === "ongoing") || [];
-
+  const ongoingGames: GameData[] = (data?.games ?? []).filter(
+    (game: GameData) => game.gameStatus === "ongoing"
+  );
+  
   if (isLoading) return <div>Loading games...</div>;
   if (isError) return <div>Error loading games</div>;
 

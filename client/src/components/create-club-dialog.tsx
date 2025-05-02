@@ -21,6 +21,7 @@ import { createClub } from "@/lib/api/club";
 import { useAuthStore } from "@/stores";
 import { useQuery } from "@tanstack/react-query";
 import { debounce } from "lodash";
+import { searchFriend } from "@/lib/api/user";
 
 interface CreateClubDialogProps {
   open: boolean;
@@ -198,7 +199,7 @@ export function CreateClubDialog({
       }
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || "Failed to create club");
+      toast.error("Failed to create club");
       console.error(error);
     },
   });
@@ -320,7 +321,7 @@ export function CreateClubDialog({
                 />
                 {filteredSearchResults.length > 0 && (
                   <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-                    {filteredSearchResults.map((user) => (
+                    {filteredSearchResults.map((user: User) => (
                       <div
                         key={user._id}
                         className="p-2 hover:bg-muted cursor-pointer"

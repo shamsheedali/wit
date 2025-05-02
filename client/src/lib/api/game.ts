@@ -1,15 +1,8 @@
+import { ChessMove, LossType } from "@/types/game";
 import apiClient from "../apiClient";
 import { handleApiError } from "../constants/errorHandler";
 
 const GAME_API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/game`;
-
-interface IMove {
-  from: string;
-  to: string;
-  piece: string;
-  san: string;
-  timestamp: string; // ISO string
-}
 
 export const saveGame = async (
   playerOne: string,
@@ -49,8 +42,8 @@ export const updateGame = async (
   updateData: Partial<{
     result: "whiteWin" | "blackWin" | "draw";
     fen: string;
-    moves: IMove[];
-    lossType: "checkmate" | "resignation" | "timeout" | "draw";
+    moves: ChessMove[];
+    lossType: LossType;
     gameDuration: number;
     gameStatus: "ongoing" | "completed" | "terminated";
   }>

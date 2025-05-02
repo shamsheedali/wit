@@ -2,6 +2,7 @@ import HttpStatus from "../constants/httpStatus";
 import { toast } from "sonner";
 import apiClient from "../apiClient";
 import { handleApiError } from "../constants/errorHandler";
+import { TournamentCreationResponse, TournamentsResponse } from "@/types/api";
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin`;
 
@@ -111,7 +112,7 @@ export const terminateGame = async (gameId: string) => {
 };
 
 // GET_ALL_TOURNAMENTS
-export const getTournaments = async (page: number, limit: number) => {
+export const getTournaments = async (page: number, limit: number): Promise<TournamentsResponse> => {
   try {
     const response = await apiClient.get(`${API_URL}/tournaments`, {
       params: { page, limit },
@@ -141,13 +142,17 @@ export const startTournament = async (tournamentId: string, userId: string) => {
 };
 
 // CREATE_TOURNAMENT
-export const createTournament = async (tournamentData: {
-  name: string;
-  gameType: string;
-  timeControl: string;
-  maxGames: number;
-  createdBy: string;
-}) => {
+export const createTournament = async (
+  tournamentData: {
+    name: string;
+    gameType: string;
+    timeControl: string;
+    maxGames: number;
+    maxPlayers: number;
+    createdBy: string;
+    createdByAdmin: boolean;
+  }
+): Promise<TournamentCreationResponse> => {
   try {
     const response = await apiClient.post(
       `${API_URL}/tournaments`,
@@ -155,11 +160,15 @@ export const createTournament = async (tournamentData: {
     );
     if (response.status === HttpStatus.OK) {
       toast.success(response.data.message);
-      return { success: true, tournament: response.data.tournament };
+      return { 
+        success: true, 
+        tournament: response.data.tournament 
+      };
     }
     return false;
   } catch (error) {
     handleApiError(error);
+    return false;
   }
 };
 
@@ -176,6 +185,7 @@ export const deleteTournament = async (tournamentId: string) => {
     return false;
   } catch (error) {
     handleApiError(error);
+    return false;
   }
 };
 

@@ -129,10 +129,10 @@ export default function ClubChat() {
     }
   }, [allUsers]);
 
-  const club = userClubs.find((c) => c.name === clubName);
-  const isAdmin = club?.admins?.some((id) => id.toString() === mainUser?._id);
+  const club = userClubs.find((c: Club) => c.name === clubName);
+  const isAdmin = club?.admins?.some((id: ClubMember) => id.toString() === mainUser?._id);
   const members: ClubMember[] =
-    club?.members?.map((id) => {
+    club?.members?.map((id: ClubMember) => {
       const userId = id.toString();
       return {
         _id: userId,
@@ -146,7 +146,7 @@ export default function ClubChat() {
   // Load persisted messages
   useEffect(() => {
     if (club?.messages) {
-      const loadedMessages: Message[] = club.messages.map((msg) => ({
+      const loadedMessages: Message[] = club.messages.map((msg: Message) => ({
         id: `${msg.timestamp}-${msg.senderId}`,
         senderId: msg.senderId.toString(),
         content: msg.content,
@@ -255,7 +255,7 @@ export default function ClubChat() {
       const response = await deleteClub(club._id, mainUser._id);
       if (response?.success) {
         // Emit clubDeleted event to notify other members
-        socket.emit("clubDeleted", { clubName });
+        socket?.emit("clubDeleted", { clubName });
         await queryClient.invalidateQueries({
           queryKey: ["userClubs", mainUser._id],
         });
@@ -263,7 +263,7 @@ export default function ClubChat() {
       }
     } catch (error) {
       console.error("Failed to delete club:", error);
-      toast.error(error.response?.data?.message || "Failed to delete club");
+      toast.error("Failed to delete club");
     }
   };
 
@@ -433,7 +433,7 @@ export default function ClubChat() {
         }
       },
       onError: (error) => {
-        toast.error(error.response?.data?.message || "Failed to update club");
+        toast.error("Failed to update club");
         console.error(error);
       },
     });
@@ -536,7 +536,7 @@ export default function ClubChat() {
                   />
                   {filteredSearchResults.length > 0 && (
                     <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-                      {filteredSearchResults.map((user) => (
+                      {filteredSearchResults.map((user: User) => (
                         <div
                           key={user._id}
                           className="p-2 hover:bg-muted cursor-pointer"
@@ -696,7 +696,7 @@ export default function ClubChat() {
           </div>
           <div className="flex gap-2">
             {isAdmin && (
-              <Button variant="success" onClick={() => setShowEditDialog(true)}>
+              <Button variant="outline" onClick={() => setShowEditDialog(true)}>
                 Edit Club
               </Button>
             )}

@@ -15,7 +15,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuthStore } from "@/stores";
 import { useFriendStore } from "@/stores/useFriendStore";
 import { useGameStore } from "@/stores/useGameStore";
-import { Friend } from "@/types/friend";
 import {
   UserRound,
   ChevronLeft,
@@ -31,7 +30,7 @@ import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
 import { updateGame } from "@/lib/api/game";
 import { getUsers } from "@/lib/api/user";
-import { ChessMove } from "@/types/game";
+import { ChessMove, GameResult, LossType, openings } from "@/types/game";
 import { Chess } from "chess.js";
 import ChatInterface from "@/components/core/chat-interface";
 import { reportGame } from "@/lib/api/gameReport";
@@ -41,6 +40,7 @@ import {
   submitPlayoffResult,
   submitResult,
 } from "@/lib/api/tournament";
+import { TournamentData, TournamentResult } from "@/types/tournament";
 
 export default function PlayTournament() {
   const router = useRouter();
@@ -67,11 +67,11 @@ export default function PlayTournament() {
     matchId,
   } = useGameStore();
 
-  const [selectedFriend, setSelectedFriend] = useState<Friend | undefined>();
+  // const [selectedFriend, setSelectedFriend] = useState<Friend | undefined>();
   const [playerNames, setPlayerNames] = useState<{ [key: string]: string }>({});
   const [chess, setChess] = useState<Chess>(new Chess());
   const [currentOpening, setCurrentOpening] = useState<string>("No moves yet");
-  const [openings, setOpenings] = useState<any[]>([]);
+  const [openings, setOpenings] = useState<openings[]>([]);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportReason, setReportReason] = useState<string>("cheating");
   const [reportDetails, setReportDetails] = useState<string>("");
@@ -456,84 +456,129 @@ export default function PlayTournament() {
   const isPlayoff = matchId === "playoff";
 
   const endGame = async (
-    result: "whiteWin" | "blackWin" | "draw",
-    lossType: "checkmate" | "resignation" | "timeout" | "draw",
+    result: GameResult,
+    lossType: LossType,
     fen: string
   ) => {
-    if (dbGameId && gameStartTime) {
-      try {
-        console.log(
-          `endGame: result=${result}, lossType=${lossType}, dbGameId=${dbGameId}`
-        );
-        const gameDuration = Math.floor((Date.now() - gameStartTime) / 1000);
-        const updatedGame = await updateGame(dbGameId, {
-          result,
-          moves,
-          lossType,
-          gameDuration,
-          gameStatus: "completed",
-          fen,
-        });
-        console.log("updateGame result:", updatedGame);
-
-        if (lossType === "resignation") {
-          const socket = getSocket();
-          if (socket) {
-            socket.emit("opponentResigned", { opponentId, result });
-          }
-        }
-
-        const tournamentResult =
-          result === "whiteWin"
-            ? "1-0"
-            : result === "blackWin"
-            ? "0-1"
-            : "0.5-0.5";
-        const submitFunction = isPlayoff ? submitPlayoffResult : submitResult;
-        let updatedTournament;
-        try {
-          updatedTournament = await submitFunction(
-            tournamentId as string,
-            isPlayoff ? undefined : matchId,
-            tournamentResult,
-            user?._id
-          );
-          console.log("submitResult result:", updatedTournament);
-        } catch (error: any) {
-          if (error.message.includes("Match already has result")) {
-            console.log("Duplicate result submission ignored");
-            // Fetch the latest tournament state
-            updatedTournament = await getTournament(tournamentId as string);
-          } else {
-            throw error;
-          }
-        }
-
-        if (updatedTournament) {
-          // Only emit tournamentUpdate from the first successful submission
-          if (!updatedTournament._id) {
-            console.log("Skipping tournamentUpdate emission for duplicate");
-          } else {
-            const socketInstance = getSocket();
-            socketInstance?.emit("tournamentUpdate", updatedTournament);
-            toast.success(`Game ended: ${result}`);
-          }
-        } else {
-          toast.error("Failed to update tournament");
-        }
-
-        resetGame();
-        setChess(new Chess());
-        setMoveIndex(-1);
-        setViewMode(false);
-        setCurrentOpening("No moves yet");
-        setBoardKey((prevKey) => prevKey + 1);
-        router.push(`/tournaments/${tournamentId}`);
-      } catch (error) {
-        console.error("Error ending game:", error);
-        toast.error("An error occurred while ending the game");
-      }
+    // Early return if missing required parameters
+    if (!dbGameId || !gameStartTime || !tournamentId) {
+      console.error("Missing required parameters to end game");
+      return;
     }
+
+    try {
+      // Calculate game duration in seconds
+      const gameDuration = Math.floor((Date.now() - gameStartTime) / 1000);
+
+      // Update the game record in database
+      await updateGame(dbGameId, {
+        result,
+        moves,
+        lossType,
+        gameDuration,
+        gameStatus: "completed",
+        fen,
+      });
+
+      // Notify opponent if game ended by resignation
+      if (lossType === "resignation") {
+        getSocket()?.emit("opponentResigned", {
+          opponentId,
+          result,
+        });
+      }
+
+      // Convert game result to tournament notation
+      const tournamentResult: TournamentResult =
+        result === "whiteWin"
+          ? "1-0"
+          : result === "blackWin"
+          ? "0-1"
+          : "0.5-0.5";
+
+      // Handle tournament result submission
+      let updatedTournament: TournamentData | undefined;
+
+      if (isPlayoff) {
+        // Submit playoff result
+        updatedTournament = await submitPlayoffResult(
+          tournamentId,
+          tournamentResult === "1-0" ? "1-0" : "0-1", // Convert to expected type
+          user?._id || "" // Provide fallback for undefined userId
+        ).catch(async (error) => {
+          return handleSubmissionError(error, tournamentId);
+        });
+      } else {
+        // Submit regular match result
+        if (!matchId) {
+          throw new Error("Match ID is required for non-playoff games");
+        }
+
+        updatedTournament = await submitResult(
+          tournamentId,
+          matchId,
+          tournamentResult,
+          user?._id as string
+        ).catch(async (error) => {
+          return handleSubmissionError(error, tournamentId);
+        });
+      }
+
+      // Update tournament state if submission was successful
+      if (updatedTournament?._id) {
+        getSocket()?.emit("tournamentUpdate", updatedTournament);
+        toast.success(`Game ended: ${result}`);
+      }
+
+      // Clean up game state
+      resetGameState();
+
+      // Navigate back to tournament page
+      router.push(`/tournaments/${tournamentId}`);
+    } catch (error) {
+      console.error("Error ending game:", error);
+      handleGameEndError(error);
+    }
+  };
+
+  // Helper function to reset game state
+  const resetGameState = () => {
+    resetGame();
+    setChess(new Chess());
+    setMoveIndex(-1);
+    setViewMode(false);
+    setCurrentOpening("No moves yet");
+    setBoardKey((prev) => prev + 1);
+  };
+
+  // Helper function to handle submission errors
+  const handleSubmissionError = async (
+    error: unknown,
+    tournamentId: string
+  ): Promise<TournamentData> => {
+    if (
+      error instanceof Error &&
+      error.message.includes("Match already has result")
+    ) {
+      console.log(
+        "Duplicate result submission - fetching current tournament state"
+      );
+      return await getTournament(tournamentId);
+    }
+    throw error;
+  };
+
+  // Helper function to handle game end errors
+  const handleGameEndError = (error: unknown) => {
+    let errorMessage = "An error occurred while ending the game";
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+
+    toast.error(errorMessage);
   };
 
   const handleDraw = () => {
@@ -626,13 +671,7 @@ export default function PlayTournament() {
         <div className="flex items-center justify-between w-full max-w-[500px] pr-10 py-2 rounded-lg">
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 bg-[#262522] rounded-full flex items-center justify-center">
-              {selectedFriend?.profileImageUrl ? (
-                <img
-                  src={selectedFriend.profileImageUrl}
-                  alt="opponent profile image"
-                  className="w-10 h-10 rounded-full"
-                />
-              ) : opponentProfilePicture ? (
+              {opponentProfilePicture ? (
                 <img
                   src={opponentProfilePicture}
                   alt="opponent profile image"
@@ -643,15 +682,9 @@ export default function PlayTournament() {
               )}
             </div>
             <h1 className="text-md font-semibold">
-              {gameStarted && selectedFriend
-                ? selectedFriend.username
-                : opponentName || "Opponent"}
+              {(gameStarted && opponentName) || "Opponent"}
               <span className="text-gray-500 ml-1">
-                (
-                {gameStarted && selectedFriend
-                  ? selectedFriend.eloRating
-                  : opponentEloRating || 500}
-                )
+                ({(gameStarted && opponentEloRating) || 500})
               </span>
             </h1>
           </div>

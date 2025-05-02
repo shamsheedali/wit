@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { checkUsername, getOtp, registerUser, verifyOtp } from "@/lib/api/user";
 import { useAuthStore } from "@/stores";
+import { registerUserResponse } from "@/types/api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { debounce } from "lodash";
 import { CircleCheck, CircleX, Loader2 } from "lucide-react";
@@ -65,7 +66,7 @@ export default function SignupFormDetailsPage() {
   }
 
   const [errors, setErrors] = useState<Partial<FormData>>({});
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  // const [termsAccepted, setTermsAccepted] = useState(false);
   //   const [termsError, setTermsError] = useState(false);
 
   // Password strength validation
@@ -156,12 +157,12 @@ export default function SignupFormDetailsPage() {
     }
   };
 
-  const resetForm = () => {
-    setFormData({ code: "", username: "", password: "", confirmPassword: "" });
-    setErrors({});
-    setTermsAccepted(false);
-    // setTermsError(false);
-  };
+  // const resetForm = () => {
+  //   setFormData({ code: "", username: "", password: "", confirmPassword: "" });
+  //   setErrors({});
+  //   // setTermsAccepted(false);
+  //   // setTermsError(false);
+  // };
 
   const otpMutation = useMutation({
     mutationFn: ({ code, email }: { code: string; email: string }) =>
@@ -186,7 +187,7 @@ export default function SignupFormDetailsPage() {
       email: string;
       password: string;
     }) => registerUser(userData),
-    onSuccess: (response: { success: boolean; data: any } | undefined) => {
+    onSuccess: (response: { success: boolean; data: registerUserResponse } | undefined) => {
       if (response?.success) {
         localStorage.removeItem("userEmail");
         //saving in global state

@@ -3,8 +3,8 @@
 import { DataTable } from "@/components/data-table";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { tournamentColumns } from "./tournament-columns";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTournamentColumns } from "./tournament-columns";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { getTournaments, getUsers } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import { createTournament } from "@/lib/api/admin";
 import { useAuthStore } from "@/stores";
 import { getGameType } from "@/lib/utils";
 import { TimeDropdown } from "@/components/chess/time-dropdown";
+import { TournamentsResponse } from "@/types/api";
 
 const LIMIT = 7;
 
@@ -36,14 +37,12 @@ export default function TournamentManagementPage() {
   const queryClient = useQueryClient();
   const { admin } = useAuthStore();
 
-  // Fetch tournaments
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError } = useQuery<TournamentsResponse>({
     queryKey: ["tournaments", page],
     queryFn: () => getTournaments(page, LIMIT),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
-  // Fetch users for createdBy usernames
   const { data: usersData } = useQuery({
     queryKey: ["users-for-tournaments"],
     queryFn: async () => {
@@ -64,10 +63,9 @@ export default function TournamentManagementPage() {
       }
       return allUsers;
     },
-    staleTime: Infinity, // Users data doesn't change often
+    staleTime: Infinity,
   });
 
-  // Create userNamesMap from usersData
   const userNamesMap = useMemo(() => {
     const namesMap: { [key: string]: string } = {};
     usersData?.forEach((u) => {
@@ -76,11 +74,7 @@ export default function TournamentManagementPage() {
     return namesMap;
   }, [usersData]);
 
-  // Memoize columns to prevent unnecessary re-renders
-  const columns = useMemo(
-    () => tournamentColumns(queryClient, admin, userNamesMap),
-    [queryClient, admin, userNamesMap]
-  );
+  const columns = useTournamentColumns(queryClient, admin, userNamesMap);
 
   const isNameValid = tournamentName.trim().length > 0;
   const isMaxGamesValid = parseInt(maxGames) > 0;
@@ -89,37 +83,45 @@ export default function TournamentManagementPage() {
   const isFormValid =
     isNameValid && isMaxGamesValid && isMaxPlayersValid && selectedTime;
 
-  const handleCreateTournament = async () => {
-    if (!admin?._id) {
-      toast.error("Please log in to create a tournament");
-      return;
-    }
-    try {
-      const response = await createTournament({
-        name: tournamentName,
-        gameType: getGameType(selectedTime),
-        timeControl: selectedTime,
-        maxGames: parseInt(maxGames),
-        maxPlayers: parseInt(maxPlayers),
-        createdBy: admin._id,
-        createdByAdmin: true,
-      });
-      if (response?.success) {
-        setIsCreateDialogOpen(false);
-        setTournamentName("");
-        setMaxGames("5");
-        setMaxPlayers("10");
-        setSelectedTime("10min");
-        await queryClient.invalidateQueries({ queryKey: ["tournaments"] });
-        toast.success("Tournament created successfully");
-      } else {
-        toast.error("Failed to create tournament");
+    const handleCreateTournament = async () => {
+      if (!admin?._id) {
+        toast.error("Please log in to create a tournament");
+        return;
       }
-    } catch (error) {
-      toast.error("Error creating tournament");
-      console.error(error);
-    }
-  };
+    
+      try {
+        const response = await createTournament({
+          name: tournamentName,
+          gameType: getGameType(selectedTime),
+          timeControl: selectedTime,
+          maxGames: parseInt(maxGames),
+          maxPlayers: parseInt(maxPlayers),
+          createdBy: admin._id,
+          createdByAdmin: true,
+        });
+    
+        // Type-safe response handling
+        if (response === false) {
+          toast.error("Failed to create tournament");
+          return;
+        }
+    
+        if (response.success) {
+          setIsCreateDialogOpen(false);
+          setTournamentName("");
+          setMaxGames("5");
+          setMaxPlayers("10");
+          setSelectedTime("10min");
+          await queryClient.invalidateQueries({ queryKey: ["tournaments"] });
+          toast.success("Tournament created successfully");
+        } else {
+          toast.error("Failed to create tournament");
+        }
+      } catch (error) {
+        toast.error("Unexpected error creating tournament");
+        console.error(error);
+      }
+    };
 
   const handleTimeChange = (value: string) => {
     setSelectedTime(value);
@@ -169,7 +171,6 @@ export default function TournamentManagementPage() {
         </div>
       </div>
 
-      {/* Create Tournament Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="bg-[#262522] text-white">
           <DialogHeader>

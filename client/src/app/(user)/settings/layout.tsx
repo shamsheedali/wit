@@ -18,7 +18,7 @@ export default function SettingsLayout({
     if(!isAuthenticated) {
       redirect('/login')
     }
-  }, [])
+  }, [isAuthenticated])
 
   return (
     <div className="lg:px-44 w-full py-[120px] font-clashDisplay flex">

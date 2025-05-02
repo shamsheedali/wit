@@ -10,6 +10,7 @@ import { useNotificationStore } from "@/stores/useNotificationStore";
 import { Button } from "./ui/button";
 import { getGameType, timeToSeconds } from "@/lib/utils";
 import { saveGame } from "@/lib/api/game";
+import { ChessMove } from "@/types/game";
 
 export default function ClientSocketInitializer() {
   const { user, logout } = useAuthStore();

@@ -4,7 +4,7 @@ export interface User {
   email: string;
   firstName?: string;
   lastName?: string;
-  isBanned: boolean;
+  isBanned?: boolean;
   bio?: string;
   googleId?: string;
   profileImageUrl?: string;
