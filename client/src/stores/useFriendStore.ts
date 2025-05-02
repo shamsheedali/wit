@@ -45,7 +45,7 @@ export const useFriendStore = create<FriendState>((set) => ({
 
       if (result.success) {
         const validFriends = result.data.filter(
-          (friend) =>
+          (friend: Friend) =>
             friend &&
             typeof friend === "object" &&
             friend._id &&

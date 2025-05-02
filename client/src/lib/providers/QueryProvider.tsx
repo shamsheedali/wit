@@ -1,6 +1,6 @@
 "use client";
 
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { Persister, PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 // import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { QueryClient } from "@tanstack/react-query";
@@ -16,7 +16,7 @@ export const queryClient = new QueryClient({
 });
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
-  const [persister, setPersister] = useState<any>(null);
+  const [persister, setPersister] = useState<Persister | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {

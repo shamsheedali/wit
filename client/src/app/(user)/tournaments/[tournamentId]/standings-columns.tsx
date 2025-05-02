@@ -3,6 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TournamentPlayerUser } from "@/types/tournament";
 
 export type PlayerData = {
   userId: string | { _id: string; username: string };
@@ -18,9 +19,9 @@ export const standingsColumns: ColumnDef<PlayerData>[] = [
     accessorKey: "userId",
     header: "Player",
     cell: ({ row }) => {
-      const userId = row.getValue("userId");
+      const userId = row.getValue("userId") as string | TournamentPlayerUser;
       const username =
-        typeof userId === "string" ? "Unknown" : userId.username || "Unknown";
+        typeof userId === "string" ? "Unknown" : userId?.username ?? "Unknown";
       return <span>{username}</span>;
     },
   },

@@ -55,7 +55,7 @@ export default function GameReview() {
     const params = useParams();
     const gameId = params.gameId;
   const [game, setGame] = useState<GameData | null>(null);
-  const [chess, setChess] = useState<Chess>(new Chess());
+  const [ , setChess] = useState<Chess>(new Chess());
   const [fen, setFen] = useState<string>("");
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
   const [validMoves, setValidMoves] = useState<Move[]>([]);

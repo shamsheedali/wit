@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { getGameReports } from "@/lib/api/admin";
+import { ChessMove } from "@/types/game";
 
 interface GameReport {
   _id: string;
-  gameId: { _id: string; fen: string; moves: any[] };
+  gameId: { _id: string; fen: string; moves: ChessMove[] };
   reportingUserId: { _id: string; username: string };
   reportedUserId: { _id: string; username: string };
   reason: string;
@@ -67,7 +68,7 @@ export default function GameMessagesPage() {
           {reports.length === 0 ? (
             <p className="text-gray-400">No game reports available.</p>
           ) : (
-            reports.map((report) => (
+            reports.map((report: GameReport) => (
               <Card key={report._id} className="bg-[#262522] border-gray-700">
                 <CardHeader>
                   <CardTitle className="text-lg">

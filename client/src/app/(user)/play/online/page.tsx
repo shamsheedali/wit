@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
 import { saveGame, updateGame } from "@/lib/api/game";
 import { getUsers } from "@/lib/api/user";
-import { ChessMove } from "@/types/game";
+import { ChessMove, LossType, openings } from "@/types/game";
 import { Chess } from "chess.js";
 import ChatInterface from "@/components/core/chat-interface";
 import { reportGame } from "@/lib/api/gameReport";
@@ -61,7 +61,7 @@ export default function PlayOnline() {
   const [playerNames, setPlayerNames] = useState<{ [key: string]: string }>({});
   const [chess, setChess] = useState<Chess>(new Chess());
   const [currentOpening, setCurrentOpening] = useState<string>("No moves yet");
-  const [openings, setOpenings] = useState<any[]>([]);
+  const [openings, setOpenings] = useState<openings[]>([]);
   const [matchmakingStatus, setMatchmakingStatus] = useState<
     "idle" | "searching" | "matched"
   >("idle");
@@ -419,10 +419,9 @@ export default function PlayOnline() {
 
   const endGame = async (
     result: "whiteWin" | "blackWin" | "draw",
-    lossType: "checkmate" | "resignation" | "timeout" | "draw",
+    lossType: LossType,
     fen: string
   ) => {
-    // console.log("come on are you working now", isGameEnded.current, dbGameId, gameStartTime);
     if (isGameEnded.current || !dbGameId || !gameStartTime) return;
     isGameEnded.current = true;
 
@@ -437,7 +436,6 @@ export default function PlayOnline() {
         fen,
       });
 
-      console.log(`Game ended and saved for ${user?._id}, ${result}`);
       if (lossType === "resignation") {
         const socket = getSocket();
         if (socket) {
@@ -455,9 +453,10 @@ export default function PlayOnline() {
     } catch (error) {
       console.error("Failed to end game:", error);
       toast.error(
-        "Failed to save game result: " + (error.message || "Unknown error")
+        "Failed to save game result: " + 
+        (error instanceof Error ? error.message : "Unknown error")
       );
-      isGameEnded.current = false; // Allow retry on failure
+      isGameEnded.current = false;
     }
   };
 
@@ -483,10 +482,12 @@ export default function PlayOnline() {
       try {
         await updateGame(dbGameId, { moves: [...moves, move], fen });
       } catch (error) {
-        console.error("Failed to update game:", error);
+        console.error("Failed to end game:", error);
         toast.error(
-          "Failed to save move: " + (error.message || "Unknown error")
+          "Failed to save game result: " + 
+          (error instanceof Error ? error.message : "Unknown error")
         );
+        isGameEnded.current = false;
       }
     }
 

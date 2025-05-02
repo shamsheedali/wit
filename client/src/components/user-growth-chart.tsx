@@ -64,6 +64,12 @@ export function UserGrowthChart() {
     fetchGrowthData();
   }, [timeRange]);
 
+  const handleTimeRangeChange = (value: string) => {
+    if (value === "7d" || value === "30d" || value === "90d") {
+      setTimeRange(value);
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
@@ -71,7 +77,7 @@ export function UserGrowthChart() {
           <CardTitle>User Growth Chart</CardTitle>
           <CardDescription>Showing new users over time</CardDescription>
         </div>
-        <Select value={timeRange} onValueChange={setTimeRange}>
+        <Select value={timeRange} onValueChange={handleTimeRangeChange}>
           <SelectTrigger className="w-[160px] rounded-lg sm:ml-auto" aria-label="Select time range">
             <SelectValue placeholder="Last 3 months" />
           </SelectTrigger>

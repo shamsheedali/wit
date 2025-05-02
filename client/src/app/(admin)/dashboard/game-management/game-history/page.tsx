@@ -4,23 +4,24 @@ import { DataTable } from "@/components/data-table";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { gameColumns } from "./game-history-colums";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { getAllGames, getUsers } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
+import { GamesResponse, UsersResponse } from "@/types/api";
 
 const LIMIT = 7;
 
 export default function GameManagementPage() {
   const [page, setPage] = useState(1);
-  const [playerNames, setPlayerNames] = useState<{ [key: string]: string }>({}); // Map of userId to username
+  const [playerNames, setPlayerNames] = useState<{ [key: string]: string }>({});
 
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError } = useQuery<GamesResponse>({
     queryKey: ["games", page],
     queryFn: () => getAllGames(page, LIMIT),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
   // Fetch all usernames
@@ -33,8 +34,8 @@ export default function GameManagementPage() {
         let hasMore = true;
 
         while (hasMore) {
-          const response = await getUsers(page, limit);
-          if (response && response.users && response.users.length > 0) {
+          const response = await getUsers(page, limit) as UsersResponse;
+          if (response?.users?.length > 0) {
             allUsers = [...allUsers, ...response.users];
             page += 1;
             hasMore = response.users.length === limit;
@@ -71,7 +72,7 @@ export default function GameManagementPage() {
 
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
         <DataTable
-          columns={gameColumns(queryClient, playerNames)} // Pass playerNames to gameColumns
+          columns={gameColumns(queryClient, playerNames)}
           data={data?.games || []}
         />
 

@@ -21,16 +21,18 @@ export type UserData = {
   _id: string;
   userId: string;
   username: string;
-  rating?: number; 
+  rating?: number;
   isBanned: boolean;
 };
 
-export const userColumns = (queryClient: QueryClient): ColumnDef<UserData>[] => [
+export const userColumns = (
+  queryClient: QueryClient
+): ColumnDef<UserData>[] => [
   {
     accessorKey: "_id",
     header: "User ID",
     cell: ({ row }) => <span>{row.getValue("_id")}</span>,
-    enableSorting: false, 
+    enableSorting: false,
   },
   {
     accessorKey: "username",
@@ -44,7 +46,9 @@ export const userColumns = (queryClient: QueryClient): ColumnDef<UserData>[] => 
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    cell: ({ row }) => <span className="font-medium">{row.getValue("username")}</span>,
+    cell: ({ row }) => (
+      <span className="font-medium">{row.getValue("username")}</span>
+    ),
     sortingFn: "alphanumeric", // Enables sorting
   },
   {
@@ -60,8 +64,10 @@ export const userColumns = (queryClient: QueryClient): ColumnDef<UserData>[] => 
       </Button>
     ),
     cell: ({ row }) => {
-      const rating = row.getValue("eloRating");
-      return <span className="text-right">{rating !== undefined ? rating : "-"}</span>;
+      const rating = row.getValue<number | null | undefined>("eloRating");
+      return (
+        <span className="text-right">{rating != null ? rating : "-"}</span>
+      );
     },
     sortingFn: "basic", // Enables sorting
   },
@@ -74,7 +80,6 @@ export const userColumns = (queryClient: QueryClient): ColumnDef<UserData>[] => 
       const handleBanUser = async (userId: string) => {
         const response = await toggleBan(userId);
         if (response && response.success && response.user.isBanned) {
-
           const socket = getSocket();
           if (socket) {
             socket.emit("userBanned", { userId });
@@ -82,10 +87,13 @@ export const userColumns = (queryClient: QueryClient): ColumnDef<UserData>[] => 
             // if user is in an ongoing game
             try {
               const ongoingGameResponse = await getOngoingGame(userId);
-              console.log("ongoing game response", ongoingGameResponse)
+              console.log("ongoing game response", ongoingGameResponse);
               const ongoingGame = ongoingGameResponse;
               if (ongoingGame) {
-                const opponentId = ongoingGame.playerOne === userId ? ongoingGame.playerTwo : ongoingGame.playerOne;
+                const opponentId =
+                  ongoingGame.playerOne === userId
+                    ? ongoingGame.playerTwo
+                    : ongoingGame.playerOne;
                 socket.emit("opponentBanned", {
                   gameId: ongoingGame._id,
                   bannedUserId: userId,
@@ -102,7 +110,6 @@ export const userColumns = (queryClient: QueryClient): ColumnDef<UserData>[] => 
         await queryClient.invalidateQueries({ queryKey: ["users"] });
       };
 
-      
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -112,13 +119,25 @@ export const userColumns = (queryClient: QueryClient): ColumnDef<UserData>[] => 
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user._id)} className="cursor-pointer">
+            <DropdownMenuItem
+              onClick={() => navigator.clipboard.writeText(user._id)}
+              className="cursor-pointer"
+            >
               Copy User ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer">View Profile</DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer">Send Message</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleBanUser(user._id)} className="cursor-pointer">{user?.isBanned ? 'Unban User' : 'Ban User'}</DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer">
+              View Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer">
+              Send Message
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => handleBanUser(user._id)}
+              className="cursor-pointer"
+            >
+              {user?.isBanned ? "Unban User" : "Ban User"}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       );

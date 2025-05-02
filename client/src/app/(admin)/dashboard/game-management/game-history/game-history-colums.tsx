@@ -14,22 +14,11 @@ import {
 import { deleteGame } from "@/lib/api/admin";
 import { QueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-
-export type GameData = {
-  _id: string;
-  playerOne: string; 
-  playerTwo: string; 
-  result?: "whiteWin" | "blackWin" | "draw";
-  gameType: "blitz" | "bullet" | "rapid";
-  timeControl: string;
-  moves: Array<any>;
-  createdAt: string;
-  gameStatus: "ongoing" | "completed" | "terminated";
-};
+import { ChessMove, GameData } from "@/types/game";
 
 export const gameColumns = (
   queryClient: QueryClient,
-  playerNames: { [key: string]: string } // Add playerNames parameter
+  playerNames: { [key: string]: string }
 ): ColumnDef<GameData>[] => [
   {
     accessorKey: "_id",
@@ -61,20 +50,36 @@ export const gameColumns = (
     cell: ({ row }) => {
       const result = row.getValue("result") as string | undefined;
       const gameStatus = row.getValue("gameStatus") as string | undefined;
-      return <span>{result ? (result === "whiteWin" ? "1-0" : result === "blackWin" ? "0-1" : "½-½") : gameStatus === 'terminated' ? '-' : 'Ongoing'}</span>;
+      return (
+        <span>
+          {result
+            ? result === "whiteWin"
+              ? "1-0"
+              : result === "blackWin"
+              ? "0-1"
+              : "½-½"
+            : gameStatus === "terminated"
+            ? "-"
+            : "Ongoing"}
+        </span>
+      );
     },
     enableSorting: false,
   },
   {
     accessorKey: "gameStatus",
     header: "Status",
-    cell: ({ row }) => <span className="capitalize">{row.getValue("gameStatus")}</span>,
+    cell: ({ row }) => (
+      <span className="capitalize">{row.getValue("gameStatus")}</span>
+    ),
     enableSorting: false,
   },
   {
     accessorKey: "gameType",
     header: "Game Type",
-    cell: ({ row }) => <span className="capitalize">{row.getValue("gameType")}</span>,
+    cell: ({ row }) => (
+      <span className="capitalize">{row.getValue("gameType")}</span>
+    ),
     enableSorting: true,
   },
   {
@@ -86,7 +91,7 @@ export const gameColumns = (
   {
     accessorKey: "moves",
     header: "Moves",
-    cell: ({ row }) => <span>{(row.getValue("moves") as any[]).length}</span>,
+    cell: ({ row }) => <span>{row.getValue<ChessMove[]>("moves").length}</span>,
     enableSorting: true,
     sortingFn: "basic",
   },
@@ -102,7 +107,9 @@ export const gameColumns = (
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    cell: ({ row }) => <span>{format(parseISO(row.getValue("createdAt")), "MMM dd, yyyy")}</span>,
+    cell: ({ row }) => (
+      <span>{format(parseISO(row.getValue("createdAt")), "MMM dd, yyyy")}</span>
+    ),
     sortingFn: "datetime",
   },
   {
@@ -125,12 +132,20 @@ export const gameColumns = (
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(game._id)} className="cursor-pointer">
+            <DropdownMenuItem
+              onClick={() => navigator.clipboard.writeText(game._id)}
+              className="cursor-pointer"
+            >
               Copy Game ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer">View Game Details</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleDeleteGame(game._id)} className="cursor-pointer text-red-600">
+            <DropdownMenuItem className="cursor-pointer">
+              View Game Details
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => handleDeleteGame(game._id)}
+              className="cursor-pointer text-red-600"
+            >
               Delete Game
             </DropdownMenuItem>
           </DropdownMenuContent>

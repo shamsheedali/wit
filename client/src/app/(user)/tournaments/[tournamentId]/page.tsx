@@ -15,7 +15,7 @@ import { useAuthStore } from "@/stores";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/data-table";
 import { standingsColumns } from "./standings-columns";
-import { matchColumns } from "./match-columns";
+import { createMatchColumns } from "./match-columns";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
 import {
@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TournamentData, TournamentMatch, TournamentPlayer, TournamentPlayerUser } from "@/types/tournament";
 
 export default function TournamentPage() {
   const params = useParams();
@@ -41,6 +42,8 @@ export default function TournamentPage() {
     enabled: !!tournamentId,
   });
 
+  const columns = createMatchColumns(user?._id);
+
   const [isJoined, setIsJoined] = useState(false);
   const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -49,9 +52,10 @@ export default function TournamentPage() {
 
   useEffect(() => {
     if (tournament && user?._id) {
-      const joined = tournament.players.some(
-        (p: any) => p.userId?._id === user._id || p.userId === user._id
-      );
+      const joined = tournament.players.some((p: TournamentPlayer) => {
+        const playerId = typeof p.userId === "string" ? p.userId : p.userId._id;
+        return playerId === user._id;
+      });
       setIsJoined(joined);
     }
   }, [tournament, user]);
@@ -59,21 +63,24 @@ export default function TournamentPage() {
   useEffect(() => {
     const socketInstance = getSocket();
     if (socketInstance) {
-      socketInstance.on("tournamentUpdated", (updatedTournament: any) => {
-        if (updatedTournament._id === tournamentId) {
-          queryClient.setQueryData(
-            ["tournament", tournamentId],
-            updatedTournament
-          );
-          toast.info("Tournament updated");
+      socketInstance.on(
+        "tournamentUpdated",
+        (updatedTournament: TournamentData) => {
+          if (updatedTournament._id === tournamentId) {
+            queryClient.setQueryData(
+              ["tournament", tournamentId],
+              updatedTournament
+            );
+            toast.info("Tournament updated");
+          }
         }
-      });
+      );
 
       return () => {
         socketInstance.off("tournamentUpdated");
       };
     }
-  }, [queryClient, tournamentId]);
+  }, [tournamentId, queryClient]);
 
   const handleJoin = async () => {
     if (!user?._id) {
@@ -134,8 +141,8 @@ export default function TournamentPage() {
         socketInstance?.emit("tournamentStarted", {
           tournamentId,
           tournamentName: tournament.name,
-          players: tournament.players.map(
-            (p: any) => p.userId?._id || p.userId
+          players: tournament.players.map((p: TournamentPlayer) => 
+            typeof p.userId === 'string' ? p.userId : p.userId._id
           ),
         });
         queryClient.invalidateQueries({
@@ -230,9 +237,16 @@ export default function TournamentPage() {
 
   if (isLoading || !tournament) return <div>Loading tournament...</div>;
 
-  const userMatches = tournament.matches.filter(
-    (m: any) => m.player1Id?._id === user?._id || m.player2Id?._id === user?._id
-  );
+  const userMatches = tournament.matches.filter((m: TournamentMatch) => {
+    const getPlayerId = (player: string | TournamentPlayerUser): string | undefined => {
+      return typeof player === 'string' ? player : player._id;
+    };
+  
+    const player1Id = getPlayerId(m.player1Id);
+    const player2Id = getPlayerId(m.player2Id);
+    
+    return player1Id === user?._id || player2Id === user?._id;
+  });
 
   const isTournamentFull = tournament.players.length >= tournament.maxPlayers;
 
@@ -288,7 +302,7 @@ export default function TournamentPage() {
           )}
           {tournament.status === "pending" &&
             (user?._id === tournament.createdBy?._id ||
-              (tournament.createdByAdmin && user?.isAdmin)) && (
+              (tournament.createdByAdmin)) && (
               <Button
                 onClick={handleStart}
                 className="bg-blue-600 hover:bg-blue-700"
@@ -344,13 +358,12 @@ export default function TournamentPage() {
         <DataTable
           columns={standingsColumns}
           data={tournament.players}
-          className="mb-8"
         />
 
         {user && (
           <>
             <h2 className="text-xl font-bold mb-4">Your Matches</h2>
-            <DataTable columns={matchColumns} data={userMatches} />
+            <DataTable columns={columns} data={userMatches} />
           </>
         )}
       </div>

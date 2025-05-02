@@ -55,7 +55,7 @@ export const { handlers, signIn, signOut } = NextAuth({
       }
       return true;
     },
-    async redirect({ url, baseUrl}) {
+    async redirect() {
       return '/'
     }
   },

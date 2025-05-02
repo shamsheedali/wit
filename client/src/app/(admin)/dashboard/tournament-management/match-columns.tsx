@@ -16,11 +16,10 @@ export const matchColumns = (
     accessorKey: "player1Id",
     header: "Player 1",
     cell: ({ row }) => {
-      const player1Id = row.getValue("player1Id");
-      const username =
-        typeof player1Id === "string"
-          ? userNamesMap[player1Id] || "Unknown"
-          : player1Id.username || "Unknown";
+      const player1Id = row.getValue<string | { _id: string; username: string }>("player1Id");
+      const username = typeof player1Id === "string" 
+        ? userNamesMap[player1Id] || "Unknown" 
+        : player1Id.username || "Unknown";
       return <span>{username}</span>;
     },
   },
@@ -28,7 +27,7 @@ export const matchColumns = (
     accessorKey: "player2Id",
     header: "Player 2",
     cell: ({ row }) => {
-      const player2Id = row.getValue("player2Id");
+      const player2Id = row.getValue<string | { _id: string; username: string }>("player2Id");
       const username =
         typeof player2Id === "string"
           ? userNamesMap[player2Id] || "Unknown"
