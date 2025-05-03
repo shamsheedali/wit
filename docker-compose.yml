@@ -4,10 +4,10 @@ services:
       context: ./server
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "8080:8080"
     environment:
       - NODE_ENV=production
-      - PORT=5000
+      - PORT=8080
       - REDIS_URL=${REDIS_URL}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - FRONTEND_URL=${FRONTEND_URL}
@@ -38,8 +38,8 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - BACKEND_URL=http://backend:5000
-      - NEXT_PUBLIC_API_BASE_URL=http://backend:5000/api
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:8080
+      - NEXT_PUBLIC_API_BASE_URL=http://backend:8080/api
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - AUTH_SECRET=${AUTH_SECRET}

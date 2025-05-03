@@ -45,6 +45,7 @@ export interface IGame extends Document {
   lossType?: LossType;
   gameDuration?: number;
   gameStatus: GameStatus;
+  eloDifference: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -73,6 +74,10 @@ const GameSchema: Schema = new Schema(
       type: String,
       enum: Object.values(GameStatus),
       default: GameStatus.Ongoing,
+    },
+    eloDifference: {
+      type: Number,
+      default: 0,
     },
     __v: { type: Number, select: false },
   },

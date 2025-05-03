@@ -121,8 +121,6 @@ export default class GameService extends BaseService<IGame> implements IGameServ
     session: ClientSession
   ): Promise<void> {
     try {
-      log.info(`Updating ratings for game ${game._id}`);
-
       const [playerOne, playerTwo] = await Promise.all([
         this._userService.findById(game.playerOne, session),
         this._userService.findById(game.playerTwo, session),
@@ -140,10 +138,22 @@ export default class GameService extends BaseService<IGame> implements IGameServ
         playerTwo.eloRating,
         playerOneResult
       );
+
       const playerTwoEloChange = this.calculateEloChange(
         playerTwo.eloRating,
         playerOne.eloRating,
         playerTwoResult
+      );
+
+      await this._gameRepository.findOneAndUpdate(
+        { _id: game._id },
+        {
+          $set: {
+            eloDifference: playerOneEloChange,
+          },
+          $inc: { __v: 1 },
+        },
+        { session, new: true }
       );
 
       await Promise.all([
@@ -168,8 +178,6 @@ export default class GameService extends BaseService<IGame> implements IGameServ
           { session }
         ),
       ]);
-
-      log.info(`Ratings updated for game ${game._id}`);
     } catch (error) {
       log.error(`Error updating ratings for game ${game._id}:`, error);
       throw error;
