@@ -33,14 +33,14 @@ import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
 import { updateGame } from "@/lib/api/game";
-import { getUsers } from "@/lib/api/user";
+import { getUser, getUsers } from "@/lib/api/user";
 import { Chess } from "chess.js";
 import ChatInterface from "@/components/core/chat-interface";
 import { reportGame } from "@/lib/api/gameReport";
 import { ChessMove, LossType, openings } from "@/types/game";
 
 export default function PlayFriend() {
-  const { user } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const { fetchFriends, friends, sendPlayRequest } = useFriendStore();
   const {
     gameId,
@@ -518,6 +518,9 @@ export default function PlayFriend() {
       setViewMode(false);
       setCurrentOpening("No moves yet");
       setBoardKey((prevKey) => prevKey + 1);
+
+      const updatedUser = await getUser(user?.username as string);
+      updateUser(updatedUser);
     }
   };
 

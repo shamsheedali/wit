@@ -33,7 +33,7 @@ export default class UserRepository extends BaseRepository<IUser> implements IUs
   }
 
   async findOneByUsername(username: string): Promise<IUser | null> {
-    return await this.model.findOne({ username });
+    return await this.model.findOne({ username }).select('-password').exec();
   }
 
   async findById(id: string, session?: mongoose.ClientSession): Promise<IUser | null> {

@@ -45,6 +45,7 @@ type Game = {
   }>;
   gameType: "blitz" | "bullet" | "rapid";
   gameStatus: "completed" | "ongoing" | "terminated";
+  eloDifference: number;
   timeControl: string;
   createdAt: string;
 };
@@ -159,6 +160,18 @@ export default function GameHistoryTable({
     return "text-red-600 font-medium";
   };
 
+  const getEloDifference = (game: Game) => {
+    if (!game.result) return "";
+    if (
+      (game.result === "whiteWin" && game.playerOne === user?._id) ||
+      (game.result === "blackWin" && game.playerTwo === user?._id)
+    ) {
+      return "+";
+    }
+    if (game.result === "draw") return "text-amber-600 font-medium";
+    return "-";
+  };
+
   const handlePreviousPage = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
@@ -183,6 +196,7 @@ export default function GameHistoryTable({
             <TableRow className="bg-muted/50">
               <TableHead className="w-[300px]">Players</TableHead>
               <TableHead className="w-[100px] text-center">Result</TableHead>
+              <TableHead className="w-[100px] text-center">Elo Diff</TableHead>
               <TableHead className="w-[100px] text-center">
                 Time Control
               </TableHead>
@@ -267,6 +281,11 @@ export default function GameHistoryTable({
                   <TableCell className="text-center font-medium">
                     <span className={getResultClass(game)}>
                       {getResultDisplay(game)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center font-medium">
+                    <span className={getResultClass(game)}>
+                      {getEloDifference(game)}{game?.eloDifference}
                     </span>
                   </TableCell>
                   <TableCell className="text-center">
