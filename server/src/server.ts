@@ -7,7 +7,7 @@ import app from './app';
 import socketHandler from './sockets';
 import log from './utils/logger';
 
-const PORT = process.env.PORT || 8080;
+const PORT = Number(process.env.PORT) || 8080;
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -32,6 +32,6 @@ app.set('io', io);
 // Initialize Socket.IO handlers
 socketHandler(io);
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, '0.0.0.0', () => {
   log.info(`Server running on port:${PORT}`);
 });
