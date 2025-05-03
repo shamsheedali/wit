@@ -32,7 +32,7 @@ RUN apk add --no-cache python3 make g++ && \
 COPY --from=builder /app/dist ./dist
 
 # Expose port
-EXPOSE 5000
+EXPOSE 8080
 
 # Start the app
 CMD ["node", "dist/server.js"]
