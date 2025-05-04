@@ -12,7 +12,6 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (admin?._id) {
-      console.log("Initializing socket for admin:", admin._id);
       initSocket(admin._id); // socket with admin._id
     }
   }, [admin?._id]); 

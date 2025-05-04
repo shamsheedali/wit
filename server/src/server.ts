@@ -26,7 +26,6 @@ const io = new Server(httpServer, {
   },
 });
 
-// Pass io to the app
 app.set('io', io);
 
 // Initialize Socket.IO handlers
