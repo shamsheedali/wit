@@ -4,10 +4,12 @@ let socket: Socket | null = null;
 
 export const initSocket = (userId: string): Socket => {
   if (!socket) {
-    socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080', {
+    socket = io(process.env.NEXT_PUBLIC_BACKEND_URL, {
       reconnection: true,
-      transports: ['websocket'],
+      transports: ['polling', 'websocket'],
+      withCredentials: true,
     });
+    
 
     socket.on('connect', () => {
       console.log('Connected to Socket.IO server');
