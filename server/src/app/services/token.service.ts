@@ -9,7 +9,7 @@ export default class TokenService implements ITokenService {
     if (!process.env.JWT_SECRET) {
       throw new Error('JWT_SECRET is not defined in environment variables');
     }
-    return jwt.sign({ userId, email, role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    return jwt.sign({ userId, email, role }, process.env.JWT_SECRET, { expiresIn: '7d' });
   }
 
   generateRefreshToken(userId: string, email: string, role: string): string {

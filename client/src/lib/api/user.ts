@@ -14,7 +14,6 @@ export const registerUser = async (userData: {
 }) => {
   try {
     const response = await apiClient.post(`${API_URL}/register`, userData);
-    console.log("new user", response.data);
     if (response.status === HttpStatus.CREATED) {
       localStorage.setItem("userToken", response.data.accessToken);
       return { success: true, data: response.data };
@@ -28,7 +27,6 @@ export const registerUser = async (userData: {
 export const login = async (userData: { email: string; password: string }) => {
   try {
     const response = await apiClient.post(`${API_URL}/login`, userData);
-    console.log(response)
     if (response.status === HttpStatus.OK) {
       localStorage.setItem("userToken", response.data.accessToken);
       toast.success(response.data.message);
@@ -61,7 +59,6 @@ export const googleUser = async (userData: {
 }) => {
   try {
     const response = await axios.post(`${API_URL}/google-auth`, userData);
-    console.log("google response", response);
     if (response.status === HttpStatus.OK) {
       // Only set localStorage on client side
       if (typeof window !== "undefined") {
