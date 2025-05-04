@@ -1,27 +1,27 @@
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from "socket.io-client";
 
 let socket: Socket | null = null;
 
 export const initSocket = (userId: string): Socket => {
+  console.log(`socket connection: ${process.env.NEXT_PUBLIC_BACKEND_URL}`);
   if (!socket) {
     socket = io(process.env.NEXT_PUBLIC_BACKEND_URL, {
       reconnection: true,
-      transports: ['polling', 'websocket'],
+      transports: ["polling", "websocket"],
       withCredentials: true,
     });
-    
 
-    socket.on('connect', () => {
-      console.log('Connected to Socket.IO server');
-      socket?.emit('join', userId);
+    socket.on("connect", () => {
+      console.log("Connected to Socket.IO server");
+      socket?.emit("join", userId);
     });
 
-    socket.on('disconnect', () => {
-      console.log('Disconnected from Socket.IO server');
+    socket.on("disconnect", () => {
+      console.log("Disconnected from Socket.IO server");
     });
 
-    socket.on('connect_error', (error: Error) => {
-      console.log('Socket connection error:', error);
+    socket.on("connect_error", (error: Error) => {
+      console.log("Socket connection error:", error);
     });
   }
   return socket;
