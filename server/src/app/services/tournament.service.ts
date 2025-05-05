@@ -36,7 +36,9 @@ export default class TournamentService {
     createdBy: string,
     maxPlayers: number,
     password?: string,
-    createdByAdmin = false
+    createdByAdmin = false,
+    isClubTournament = false,
+    clubMemberIds: string[] = []
   ): Promise<ITournament> {
     let creator;
     if (createdByAdmin) {
@@ -62,6 +64,7 @@ export default class TournamentService {
       createdByAdmin,
       players: [],
       matches: [],
+      isClubTournament,
     };
 
     if (password && !createdByAdmin) {
@@ -72,9 +75,22 @@ export default class TournamentService {
     }
 
     const tournament = await this._tournamentRepository.create(tournamentData);
-    if (!createdByAdmin) {
+
+    if (isClubTournament) {
+      // Add all club members to the tournament
+      for (const memberId of clubMemberIds) {
+        const user = await this._userRepository.findById(memberId);
+        if (!user) {
+          console.warn(`User with ID ${memberId} not found, skipping`);
+          continue;
+        }
+        await this._tournamentRepository.addPlayer(tournament._id.toString(), memberId);
+      }
+    } else if (!createdByAdmin) {
+      // Add only the creator for non-club, non-admin tournaments
       await this._tournamentRepository.addPlayer(tournament._id.toString(), createdBy);
     }
+
     return tournament;
   }
 
@@ -96,14 +112,6 @@ export default class TournamentService {
   async deleteTournamentAdmin(tournamentId: string): Promise<ITournament | null> {
     const tournament = await this._tournamentRepository.findById(tournamentId);
     if (!tournament) throw new NotFoundError('Tournament');
-    // if (tournament.createdByAdmin)
-    //   throw new BadRequestError('Cannot delete admin-created tournament');
-    // if (!tournament.createdBy || !tournament.createdBy.equals(new Types.ObjectId(userId))) {
-    //   throw new BadRequestError('Only the creator can delete the tournament');
-    // }
-    // if (tournament.status === 'active' || tournament.status === 'playoff') {
-    //   throw new BadRequestError('Cannot delete tournament in active or playoff status');
-    // }
     const deletedTournament = await this._tournamentRepository.delete(tournamentId);
     return deletedTournament;
   }

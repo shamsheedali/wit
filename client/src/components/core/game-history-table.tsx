@@ -168,7 +168,7 @@ export default function GameHistoryTable({
     ) {
       return "+";
     }
-    if (game.result === "draw") return "text-amber-600 font-medium";
+    if (game.result === "draw") return "";
     return "-";
   };
 

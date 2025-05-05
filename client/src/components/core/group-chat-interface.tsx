@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getGameType } from "@/lib/utils";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   getUserClubs,
@@ -41,6 +41,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { debounce } from "lodash";
+import { TimeDropdown } from "@/components/chess/time-dropdown";
+import { createTournament } from "@/lib/api/tournament";
 
 type Message = {
   id: string;
@@ -81,6 +83,14 @@ export default function ClubChat() {
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    maxGames: "10",
+    maxPlayers: "10",
+    password: "",
+  });
+  const [selectedTime, setSelectedTime] = useState<string>("10min");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socket = getSocket();
   const router = useRouter();
@@ -130,7 +140,9 @@ export default function ClubChat() {
   }, [allUsers]);
 
   const club = userClubs.find((c: Club) => c.name === clubName);
-  const isAdmin = club?.admins?.some((id: ClubMember) => id.toString() === mainUser?._id);
+  const isAdmin = club?.admins?.some(
+    (id: ClubMember) => id.toString() === mainUser?._id
+  );
   const members: ClubMember[] =
     club?.members?.map((id: ClubMember) => {
       const userId = id.toString();
@@ -272,6 +284,47 @@ export default function ClubChat() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const handleTimeChange = (value: string) => {
+    setSelectedTime(value);
+  };
+
+  const handleCreateTournament = async () => {
+    if (!mainUser?._id) {
+      toast.error("Please log in to create a tournament");
+      return;
+    }
+    try {
+      const tournament = await createTournament({
+        name: formData.name,
+        gameType: getGameType(selectedTime),
+        timeControl: selectedTime,
+        maxGames: parseInt(formData.maxGames),
+        maxPlayers: parseInt(formData.maxPlayers),
+        password: formData.password || undefined,
+        createdBy: mainUser._id,
+        isClubTournament: true,
+        clubMemberIds: club?.members || [],
+      });
+      if (tournament) {
+        queryClient.invalidateQueries({ queryKey: ["tournaments"] });
+        queryClient.invalidateQueries({ queryKey: ["userTournaments"] });
+        setOpenCreateDialog(false);
+        setFormData({
+          name: "",
+          maxGames: "10",
+          maxPlayers: "10",
+          password: "",
+        });
+        setSelectedTime("10min");
+      } else {
+        toast.error("Failed to create tournament");
+      }
+    } catch (error) {
+      toast.error("Error creating tournament");
+      console.error(error);
+    }
   };
 
   // EditClubDialog Component
@@ -587,6 +640,19 @@ export default function ClubChat() {
     );
   }
 
+  const isNameValid = formData.name.trim().length > 0;
+  const isMaxGamesValid = parseInt(formData.maxGames) > 0;
+  const isMaxPlayersValid =
+    parseInt(formData.maxPlayers) >= 2 && parseInt(formData.maxPlayers) <= 20;
+  const isPasswordValid =
+    formData.password.length === 0 || formData.password.length === 6;
+  const isFormValid =
+    isNameValid &&
+    isMaxGamesValid &&
+    isMaxPlayersValid &&
+    isPasswordValid &&
+    selectedTime;
+
   if (usersLoading || userClubsLoading) return <div>Loading...</div>;
   if (!clubName) return <div>No club name provided</div>;
   if (!club) return <div>Club not found or you’re not a member</div>;
@@ -637,6 +703,122 @@ export default function ClubChat() {
         onOpenChange={setShowEditDialog}
         club={club}
       />
+
+      <Dialog open={openCreateDialog} onOpenChange={setOpenCreateDialog}>
+        <DialogContent className="bg-[#262522] text-white">
+          <DialogHeader>
+            <DialogTitle>Create New Tournament</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name" className="text-sm">
+                Tournament Name
+              </Label>
+              <Input
+                id="name"
+                placeholder="Enter tournament name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                className="bg-gray-800 text-white border-gray-700 mt-2"
+              />
+              {!isNameValid && formData.name.length > 0 && (
+                <p className="text-red-500 text-sm mt-1">
+                  Tournament name is required
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="timeControl" className="text-sm">
+                Time Control
+              </Label>
+              <TimeDropdown onValueChange={handleTimeChange} />
+              {!selectedTime && (
+                <p className="text-red-500 text-sm mt-1">
+                  Time control is required
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="maxGames" className="text-sm">
+                Max Games per Player
+              </Label>
+              <Input
+                id="maxGames"
+                type="number"
+                placeholder="Enter max games"
+                value={formData.maxGames}
+                onChange={(e) =>
+                  setFormData({ ...formData, maxGames: e.target.value })
+                }
+                className="bg-gray-800 text-white border-gray-700 mt-2"
+              />
+              {!isMaxGamesValid && formData.maxGames.length > 0 && (
+                <p className="text-red-500 text-sm mt-1">
+                  Max games must be greater than 0
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="maxPlayers" className="text-sm">
+                Max Players (2-20)
+              </Label>
+              <Input
+                id="maxPlayers"
+                type="number"
+                placeholder="Enter max players"
+                value={formData.maxPlayers}
+                onChange={(e) =>
+                  setFormData({ ...formData, maxPlayers: e.target.value })
+                }
+                className="bg-gray-800 text-white border-gray-700 mt-2"
+              />
+              {!isMaxPlayersValid && formData.maxPlayers.length > 0 && (
+                <p className="text-red-500 text-sm mt-1">
+                  Max players must be between 2 and 20
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="password" className="text-sm">
+                Password (Optional, 6 characters)
+              </Label>
+              <Input
+                id="password"
+                type="text"
+                placeholder="Enter password (optional)"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                className="bg-gray-800 text-white border-gray-700 mt-2"
+              />
+              {!isPasswordValid && formData.password.length > 0 && (
+                <p className="text-red-500 text-sm mt-1">
+                  Password must be exactly 6 characters
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setOpenCreateDialog(false)}
+              className="bg-gray-700 text-white hover:bg-gray-600"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateTournament}
+              disabled={!isFormValid}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Left sidebar - Member list */}
       <div className="w-80 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-[#09090b] hidden md:block">
@@ -695,6 +877,14 @@ export default function ClubChat() {
             </p>
           </div>
           <div className="flex gap-2">
+            {isAdmin && (
+              <Button
+                variant="outline"
+                onClick={() => setOpenCreateDialog(true)}
+              >
+                Create Tournament
+              </Button>
+            )}
             {isAdmin && (
               <Button variant="outline" onClick={() => setShowEditDialog(true)}>
                 Edit Club

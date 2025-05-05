@@ -22,7 +22,7 @@ export interface ChessMove {
   piece: string;
   san: string;
   color?: "w" | "b";
-  promotion?: "q";
+  promotion?: "q" | "r" | "n" | "b";
   timestamp?: string;
   _id?: string;
 }

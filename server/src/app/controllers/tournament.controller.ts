@@ -23,6 +23,8 @@ export default class TournamentController {
       createdBy,
       password,
       createdByAdmin,
+      isClubTournament,
+      clubMemberIds,
     } = req.body;
 
     if (!name) throw new MissingFieldError('name');
@@ -33,6 +35,9 @@ export default class TournamentController {
     if (!createdBy) throw new MissingFieldError('createdBy');
     if (password && password.length !== 6)
       throw new BadRequestError('Password must be exactly 6 characters');
+    if (isClubTournament && (!clubMemberIds || !Array.isArray(clubMemberIds))) {
+      throw new BadRequestError('clubMemberIds must be an array for club tournaments');
+    }
 
     const tournament = await this._tournamentService.createTournament(
       name,
@@ -42,7 +47,9 @@ export default class TournamentController {
       createdBy,
       maxPlayers,
       password,
-      createdByAdmin || false
+      createdByAdmin || false,
+      isClubTournament || false,
+      clubMemberIds || []
     );
 
     res.status(HttpStatus.CREATED).json({ message: 'Tournament created', tournament });

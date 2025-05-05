@@ -14,6 +14,8 @@ export const createTournament = async (data: {
   createdBy: string;
   password?: string;
   createdByAdmin?: boolean;
+  isClubTournament?: boolean;
+  clubMemberIds?: [];
 }) => {
   try {
     const response = await apiClient.post(`${TOURNAMENT_API_URL}/create`, data);
@@ -50,7 +52,7 @@ export const joinTournament = async (
 
 export const startTournament = async (tournamentId: string, userId: string) => {
   try {
-    const response = await apiClient.post(`${TOURNAMENT_API_URL}/start`, {
+    const response = await apiClient.patch(`${TOURNAMENT_API_URL}/start`, {
       tournamentId,
       userId,
     });

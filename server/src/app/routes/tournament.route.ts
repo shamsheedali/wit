@@ -18,7 +18,7 @@ router.post(
   authenticateToken,
   asyncWrap(tournamentController.joinTournament.bind(tournamentController))
 );
-router.post(
+router.patch(
   '/start',
   authenticateToken,
   asyncWrap(tournamentController.startTournament.bind(tournamentController))

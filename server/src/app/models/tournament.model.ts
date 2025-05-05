@@ -39,6 +39,7 @@ export interface ITournament extends Document {
   createdByAdmin: boolean;
   startDate?: number;
   playoffMatch?: PlayoffMatch;
+  isClubTournament: boolean;
 }
 
 const tournamentSchema = new Schema<ITournament>({
@@ -80,6 +81,7 @@ const tournamentSchema = new Schema<ITournament>({
     player2Id: { type: Schema.Types.ObjectId, ref: 'Users' },
     result: { type: String, enum: ['1-0', '0-1', null], default: null },
   },
+  isClubTournament: { type: Boolean, default: false },
 });
 
 export default models.Tournament || model<ITournament>('Tournament', tournamentSchema);
