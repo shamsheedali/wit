@@ -207,7 +207,6 @@ export default function TournamentPage() {
         queryClient.invalidateQueries({
           queryKey: ["tournament", tournamentId],
         });
-        toast.success("You have left the tournament");
       }
     } catch (error) {
       toast.error("Error leaving tournament");
@@ -227,7 +226,6 @@ export default function TournamentPage() {
         socketInstance?.emit("tournamentUpdate", result);
         setIsDeleteDialogOpen(false);
         router.push("/tournaments");
-        toast.success("Tournament deleted");
       }
     } catch (error) {
       toast.error("Error deleting tournament");

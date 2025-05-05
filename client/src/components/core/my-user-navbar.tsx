@@ -49,7 +49,7 @@ export default function UserNavbar() {
           Wit.
         </Link>
         <nav className="hidden md:flex gap-16">
-          <h1>About Us</h1>
+          <Link href={'/aboutus'}>About Us</Link>
           <h1>Contact Us</h1>
         </nav>
       </div>

@@ -18,7 +18,6 @@ export function UserAvatar() {
   const router = useRouter();
 
   const { user, logout } = useAuthStore();
-  console.log("user from zustand", user);
 
   const onLogout = () => {
     userLogout();
