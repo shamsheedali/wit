@@ -87,7 +87,6 @@ export const userColumns = (
             // if user is in an ongoing game
             try {
               const ongoingGameResponse = await getOngoingGame(userId);
-              console.log("ongoing game response", ongoingGameResponse);
               const ongoingGame = ongoingGameResponse;
               if (ongoingGame) {
                 const opponentId =

@@ -214,7 +214,7 @@ export default function PlayOnline() {
       const socketInstance = getSocket();
       if (socketInstance) {
         socketInstance.on("connect", () => {
-          console.log(`Socket connected for user ${user._id}`);
+          // console.log(`Socket connected for user ${user._id}`);
         });
 
         socketInstance.on("gameTerminated", () => {

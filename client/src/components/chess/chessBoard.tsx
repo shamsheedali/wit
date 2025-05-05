@@ -240,6 +240,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
     };
   }, []);
 
+  //this is test-commit
   return (
     <div
       ref={boardContainerRef}

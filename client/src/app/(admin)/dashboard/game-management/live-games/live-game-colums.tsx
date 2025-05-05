@@ -104,7 +104,6 @@ export const LiveGameColumns = (
               playerOne: game.playerOne,
               playerTwo: game.playerTwo,
             })
-            console.log(`Emitted gameTerminated for game ${gameId} to ${game.playerOne} and ${game.playerTwo}`);
           } else {
             console.error("Socket not initialized");
           }

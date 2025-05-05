@@ -31,7 +31,6 @@ export default function Leaderboard() {
           (a, b) => b.eloRating - a.eloRating
         );
         setUsers(filteredUsers);
-        console.log(allUsers);
       } catch (error) {
         console.error("Failed to fetch users:", error);
       }

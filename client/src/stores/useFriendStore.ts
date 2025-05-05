@@ -9,6 +9,7 @@ import {
 } from "@/lib/api/friend";
 import { FriendRequest, Friend } from "@/types/friend";
 import { useAuthStore } from "@/stores";
+import { toast } from "sonner";
 
 interface FriendState {
   friendRequests: FriendRequest[];
@@ -145,12 +146,12 @@ export const useFriendStore = create<FriendState>((set) => ({
   ) => {
     const userId = useAuthStore.getState().user?._id;
     if (!userId) {
-      console.log("No authenticated user for play request");
+      toast.error("No authenticated user for play request");
       return;
     }
     const socket = getSocket();
     if (!socket) {
-      console.log("Socket not initialized");
+      toast.error("Socket not initialized");
       return;
     }
     socket.emit("playRequest", {
@@ -161,13 +162,11 @@ export const useFriendStore = create<FriendState>((set) => ({
       senderEloRating,
       time,
     });
-    console.log(`Play request sent to ${receiverId}`);
   },
 
   initializeSocket: () => {
     const userId = useAuthStore.getState().user?._id;
     if (!userId) {
-      console.log("No authenticated user for socket");
       return null;
     }
     const socket = getSocket() || initSocket(userId);

@@ -25,7 +25,6 @@ export const fetchFriends = async (userId: string) => {
 export const fetchFriendRequests = async (userId: string) => {
   try {
     const response = await apiClient.get(`${API_URL}/requests?userId=${userId}`);
-    console.log("this response", response)
     if (response.status === HttpStatus.OK) {
       return { success: true, data: response.data };
     }
@@ -46,7 +45,6 @@ export const sendFriendRequest = async (
       senderId,
       receiverId,
     });
-    console.log("sendFriendRequest", response)
     if (response.status === HttpStatus.CREATED) {
       return { success: true, data: response.data.data };
     }
@@ -81,7 +79,6 @@ export const updateFriendRequest = async (
 export const removeFriend = async(userId: string, friendId: string) => {
   try {
     const response = await apiClient.delete(`${API_URL}/friend`, {data: { userId, friendId },});
-    console.log(response);
     return response.data;
   } catch (error) {
     handleApiError(error);

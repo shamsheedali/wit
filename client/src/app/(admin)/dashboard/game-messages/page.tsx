@@ -34,7 +34,6 @@ export default function GameMessagesPage() {
     const socket = getSocket();
     if (socket) {
       const handleGameReportReceived = (data: GameReport) => {
-        console.log("Received game report:", data); // Debug log
         queryClient.setQueryData(
           ["gameReports"],
           (old: GameReport[] | undefined) => {

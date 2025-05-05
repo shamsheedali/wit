@@ -560,9 +560,6 @@ export default function PlayTournament() {
       error instanceof Error &&
       error.message.includes("Match already has result")
     ) {
-      console.log(
-        "Duplicate result submission - fetching current tournament state"
-      );
       return await getTournament(tournamentId);
     }
     throw error;
