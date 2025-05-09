@@ -127,7 +127,7 @@ CLOUDINARY_URL=your_cloudinary_url
 ## Contact
 
 📧 Email: shamsheedali0786@gmail.com
-📌 GitHub: shamsheedali
+📌 GitHub: [shamsheedali](https://github.com/shamsheedali)
 
 ---
 
