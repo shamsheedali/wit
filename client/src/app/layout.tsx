@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/lib/providers/QueryProvider";
 import { Toaster } from "@/components/ui/sonner";
 import ClientSocketInitializer from "@/components/ClientSocketInitializer";
 import ClientNavbarWrapper from "@/components/ClientNavbarWrapper";
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head>
         <link
           href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=stardom@400&display=swap"
@@ -36,7 +41,7 @@ export default function RootLayout({
         <link rel="icon" type="image/svg+xml" href="/test-favicon.svg" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased`}
       >
         <QueryProvider>
           <ClientSocketInitializer />

@@ -2,12 +2,44 @@
 
 import { useEffect } from "react";
 import Cookies from "js-cookie";
-import Link from "next/link";
-import Image from "next/image";
 import { useAuthStore } from "@/stores";
+import { FeatureCard } from "@/components/core/feature-card";
+import { Swords, Trophy, Crown, History } from "lucide-react";
+
+const features = [
+  {
+    title: "New Game",
+    description: "Challenge players worldwide",
+    icon: Swords,
+    href: "/play",
+    color: "from-accent/20 to-accent/5",
+  },
+  {
+    title: "Tournaments",
+    description: "Compete for glory",
+    icon: Trophy,
+    href: "/tournaments",
+    color: "from-chart-2/20 to-chart-2/5",
+  },
+  {
+    title: "Leaderboard",
+    description: "Rise through the ranks",
+    icon: Crown,
+    href: "/leaderboard",
+    color: "from-chart-3/20 to-chart-3/5",
+  },
+  {
+    title: "History",
+    description: "Review past battles",
+    icon: History,
+    href: "/history",
+    color: "from-chart-4/20 to-chart-4/5",
+  },
+];
 
 export default function Home() {
   const { setUser } = useAuthStore();
+  
   useEffect(() => {
     //Saving google user token from server cookie
     // Check if there's a Google auth token cookie
@@ -32,73 +64,42 @@ export default function Home() {
   }, [setUser]);
 
   return (
-    <div className="px-16 w-full h-screen lg:overflow-hidden pt-[80px] font-clashDisplay text-[#f0f0f0db]">
-      <div className="relative h-full flex justify-center">
-        <div className="flex flex-col justify-center items-center gap-[155px] md:gap-[30px] h-fit relative top-5 md:flex-row md:flex-wrap lg:flex-nowrap">
-          <Link
-            href={"/play"}
-            className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative top-14 md:top-32 cursor-pointer overflow-hidden"
-          >
-            <Image
-              src="/images/newGameImg.webp"
-              alt="New Game"
-              width={250}
-              height={194}
-              className="object-cover w-full h-[247px]"
-              quality={100}
-            />
-            <div className="bg-white/5 h-14 w-full absolute bottom-0 rounded-bl-xl rounded-br-xl font-semibold flex items-center justify-end px-10">
-              New Game
-            </div>
-          </Link>
-
-          <Link href={'/tournaments'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative md:top-8 cursor-pointer overflow-hidden">
-            <Image
-              src="/images/tournamentImg.webp"
-              alt="Tournaments"
-              width={250}
-              height={194}
-              className="object-cover w-full h-[247px]"
-              quality={100}
-            />
-            <div className="bg-white/5 h-14 w-full absolute bottom-0 rounded-bl-xl rounded-br-xl font-semibold flex items-center justify-end px-10">
-              Tournaments
-            </div>
-          </Link>
-
-          <Link href={'/leaderboard'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative md:top-32 cursor-pointer overflow-hidden">
-            <Image
-              src="/images/leaderBoardImg.webp"
-              alt="Leaderboard"
-              width={250}
-              height={194}
-              className="object-cover w-full h-[247px]"
-              quality={100}
-            />
-            <div className="bg-white/5 h-14 w-full absolute bottom-0 rounded-bl-xl rounded-br-xl font-semibold flex items-center justify-end px-10">
-              Leaderboard
-            </div>
-          </Link>
-
-          <Link href={'/history'} className="h-[305px] w-[250px] bg-transparent border-2 rounded-xl relative md:top-8 bottom-14 cursor-pointer overflow-hidden">
-            <Image
-              src="/images/historyImg.webp"
-              alt="History"
-              width={250}
-              height={194}
-              className="object-cover w-full h-[331px] relative top-[-85px]"
-              quality={100}
-            />
-            <div className="bg-white/5 h-14 w-full absolute bottom-0 rounded-bl-xl rounded-br-xl font-semibold flex items-center justify-end px-10">
-              History
-            </div>
-          </Link>
-        </div>
-
-        <h1 className="select-none absolute bottom-0 right-0 font-stardom text-[150px] tracking-wider leading-none hidden lg:block">
-          Wit
-        </h1>
+    <div className="min-h-screen bg-background overflow-hidden relative">
+      {/* Background Pattern */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,var(--accent)_0%,transparent_50%)] opacity-[0.03]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,var(--chart-2)_0%,transparent_50%)] opacity-[0.03]" />
       </div>
+
+      <main className="relative z-10 pt-32 pb-20 px-6">
+        <div className="max-w-7xl mx-auto">
+          {/* Hero Section */}
+          <div className="text-center mb-20 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground mb-4">
+              Strategic Excellence
+            </p>
+            <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-balance">
+              Master the Art
+              <br />
+              <span className="text-muted-foreground/60">of Chess</span>
+            </h1>
+          </div>
+
+          {/* Feature Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-300 fill-mode-both">
+            {features.map((feature) => (
+              <FeatureCard key={feature.title} {...feature} />
+            ))}
+          </div>
+
+          {/* Bottom Brand */}
+          <div className="mt-32 flex justify-end animate-in fade-in duration-1000 delay-700 fill-mode-both">
+            <h2 className="font-serif text-[12vw] md:text-[8vw] font-bold leading-none text-foreground/5 select-none">
+              Wit
+            </h2>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
