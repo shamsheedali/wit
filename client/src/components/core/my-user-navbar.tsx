@@ -57,10 +57,10 @@ export default function UserNavbar() {
       <nav className="mx-auto max-w-7xl flex items-center justify-between relative">
         {/* Logo */}
         <Link href="/" className="group flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg bg-primary/10 flex items-center justify-center transition-transform hover:scale-105">
+          {/* <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg bg-primary/10 flex items-center justify-center transition-transform hover:scale-105">
             <span className="font-serif text-2xl font-bold text-foreground">W</span>
-          </div>
-          <span className="font-serif text-2xl font-bold tracking-tight text-foreground">Wit.</span>
+          </div> */}
+          <span className="font-serif text-4xl font-extrabold tracking-tight text-foreground">Wit.</span>
         </Link>
 
         {/* Center Nav */}

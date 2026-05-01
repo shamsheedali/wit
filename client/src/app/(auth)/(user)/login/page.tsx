@@ -51,10 +51,10 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="absolute top-8 left-8 flex items-center gap-3">
           <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg overflow-hidden bg-background/20 flex items-center justify-center">
+            {/* <div className="w-10 h-10 rounded-lg overflow-hidden bg-background/20 flex items-center justify-center">
               <span className="font-serif text-xl font-bold text-primary-foreground">W</span>
-            </div>
-            <span className="font-serif text-xl font-bold text-primary-foreground">Wit.</span>
+            </div> */}
+            <span className="font-serif text-6xl font-extrabold text-primary-foreground">Wit.</span>
           </Link>
         </div>
       </div>

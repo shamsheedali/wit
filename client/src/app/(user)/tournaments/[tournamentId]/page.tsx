@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ArrowLeft, Trophy } from "lucide-react";
 import { TournamentData, TournamentMatch, TournamentPlayer, TournamentPlayerUser } from "@/types/tournament";
 
 export default function TournamentPage() {
@@ -249,34 +250,115 @@ export default function TournamentPage() {
   const isTournamentFull = tournament.players.length >= tournament.maxPlayers;
 
   return (
-    <div className="lg:px-56 w-full h-screen pt-[80px] font-clashDisplay text-[#f0f0f0db]">
-      <div className="p-6 max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-4">{tournament.name}</h1>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,var(--accent)_0%,transparent_50%)] opacity-[0.03]" />
+      </div>
+
+      <main className="relative z-10 max-w-5xl mx-auto px-4 md:px-6 pt-32 pb-20">
+        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => router.push("/tournaments")} 
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-secondary text-foreground hover:bg-secondary/80 transition-colors mr-2"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <Trophy className="w-8 h-8 text-accent" />
+            <h1 className="font-serif text-3xl md:text-4xl text-foreground font-bold tracking-tight line-clamp-1">{tournament.name}</h1>
+          </div>
+          
+          <div className="flex flex-wrap gap-2 md:ml-0">
+            {tournament.status === "pending" && !isJoined && (
+              <button
+                onClick={handleJoin}
+                disabled={isTournamentFull}
+                className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 shadow-sm ${
+                  isTournamentFull ? "opacity-50 cursor-not-allowed bg-secondary text-muted-foreground" : "bg-accent text-accent-foreground hover:bg-accent/90"
+                }`}
+              >
+                Join Tournament
+              </button>
+            )}
+            {tournament.status === "pending" &&
+              (user?._id === tournament.createdBy?._id ||
+                (tournament.createdByAdmin)) && (
+                <button
+                  onClick={handleStart}
+                  className="px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 shadow-sm bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  Start Tournament
+                </button>
+              )}
+            {tournament.status === "active" && isJoined && (
+              <button
+                onClick={handlePlay}
+                className="px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 shadow-sm bg-accent text-accent-foreground hover:bg-accent/90"
+              >
+                Play Next Game
+              </button>
+            )}
+            {(tournament.status === "pending" ||
+              tournament.status === "active") &&
+              isJoined && (
+                <button
+                  onClick={() => setIsExitDialogOpen(true)}
+                  className="px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 shadow-sm border border-red-500/50 text-red-500 hover:bg-red-500/10"
+                >
+                  Exit Tournament
+                </button>
+              )}
+            {(tournament.status === "pending" ||
+              tournament.status === "cancelled") &&
+              !tournament.createdByAdmin &&
+              user?._id === tournament.createdBy?._id && (
+                <button
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  className="px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 shadow-sm border border-red-500/50 text-red-500 hover:bg-red-500/10"
+                >
+                  Delete Tournament
+                </button>
+              )}
+            {tournament.status === "playoff" &&
+              tournament.playoffMatch &&
+              (tournament.playoffMatch.player1Id?._id === user?._id ||
+                tournament.playoffMatch.player2Id?._id === user?._id) && (
+                <button
+                  onClick={handlePlayoff}
+                  className="px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 shadow-sm bg-purple-600 text-white hover:bg-purple-700"
+                >
+                  Play Playoff
+                </button>
+              )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8 bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6">
           <div>
-            <p className="text-sm text-muted-foreground">Time Control</p>
-            <p className="font-medium">{tournament.timeControl}</p>
+            <p className="text-sm text-muted-foreground mb-1">Time Control</p>
+            <p className="font-medium text-foreground">{tournament.timeControl}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Status</p>
-            <p className="font-medium">{tournament.status}</p>
+            <p className="text-sm text-muted-foreground mb-1">Status</p>
+            <p className="font-medium text-foreground capitalize">{tournament.status}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Players</p>
-            <p className="font-medium">
+            <p className="text-sm text-muted-foreground mb-1">Players</p>
+            <p className="font-medium text-foreground">
               {tournament.players.length}/{tournament.maxPlayers}
               {isTournamentFull && (
-                <span className="text-red-500 ml-2">(Full)</span>
+                <span className="text-red-500 ml-2 text-sm">(Full)</span>
               )}
             </p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Max Games</p>
-            <p className="font-medium">{tournament.maxGames}</p>
+            <p className="text-sm text-muted-foreground mb-1">Max Games</p>
+            <p className="font-medium text-foreground">{tournament.maxGames}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Created By</p>
-            <p className="font-medium">
+            <p className="text-sm text-muted-foreground mb-1">Created By</p>
+            <p className="font-medium text-foreground">
               {tournament.createdByAdmin
                 ? "Admin"
                 : tournament.createdBy?.username || "Unknown"}
@@ -284,144 +366,76 @@ export default function TournamentPage() {
           </div>
         </div>
 
-        <div className="flex gap-2 mb-6">
-          {tournament.status === "pending" && !isJoined && (
-            <Button
-              onClick={handleJoin}
-              disabled={isTournamentFull}
-              className={
-                isTournamentFull
-                  ? "bg-gray-600"
-                  : "bg-green-600 hover:bg-green-700"
-              }
-            >
-              Join Tournament
-            </Button>
-          )}
-          {tournament.status === "pending" &&
-            (user?._id === tournament.createdBy?._id ||
-              (tournament.createdByAdmin)) && (
-              <Button
-                onClick={handleStart}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                Start Tournament
-              </Button>
-            )}
-          {tournament.status === "active" && isJoined && (
-            <Button
-              onClick={handlePlay}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              Play Next Game
-            </Button>
-          )}
-          {(tournament.status === "pending" ||
-            tournament.status === "active") &&
-            isJoined && (
-              <Button
-                variant="destructive"
-                onClick={() => setIsExitDialogOpen(true)}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Exit Tournament
-              </Button>
-            )}
-          {(tournament.status === "pending" ||
-            tournament.status === "cancelled") &&
-            !tournament.createdByAdmin &&
-            user?._id === tournament.createdBy?._id && (
-              <Button
-                variant="destructive"
-                onClick={() => setIsDeleteDialogOpen(true)}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Delete Tournament
-              </Button>
-            )}
-          {tournament.status === "playoff" &&
-            tournament.playoffMatch &&
-            (tournament.playoffMatch.player1Id?._id === user?._id ||
-              tournament.playoffMatch.player2Id?._id === user?._id) && (
-              <Button
-                onClick={handlePlayoff}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                Play Playoff
-              </Button>
-            )}
+        <h2 className="text-xl font-serif font-bold mb-4 text-foreground">Standings</h2>
+        <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 overflow-hidden mb-8">
+          <DataTable
+            columns={standingsColumns}
+            data={tournament.players}
+          />
         </div>
 
-        <h2 className="text-xl font-bold mb-4">Standings</h2>
-        <DataTable
-          columns={standingsColumns}
-          data={tournament.players}
-        />
-
-        {user && (
+        {userMatches.length > 0 && (
           <>
-            <h2 className="text-xl font-bold mb-4">Your Matches</h2>
-            <DataTable columns={columns} data={userMatches} />
+            <h2 className="text-xl font-serif font-bold mb-4 text-foreground">Your Matches</h2>
+            <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 overflow-hidden mb-8">
+              <DataTable columns={columns} data={userMatches} />
+            </div>
           </>
         )}
-      </div>
+      </main>
 
       <Dialog open={isExitDialogOpen} onOpenChange={setIsExitDialogOpen}>
-        <DialogContent className="bg-[#262522] text-white max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Exit Tournament</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-gray-300">
+            <p className="text-muted-foreground">
               Are you sure you want to exit the tournament? This action cannot
               be undone.
             </p>
           </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
+          <DialogFooter className="mt-6">
+            <button
               onClick={() => setIsExitDialogOpen(false)}
-              className="bg-gray-700 text-white hover:bg-gray-600"
+              className="px-4 py-2 border border-border rounded-lg text-sm hover:bg-secondary transition-colors"
             >
               Cancel
-            </Button>
-            <Button
-              variant="destructive"
+            </button>
+            <button
               onClick={handleExit}
-              className="bg-red-600 hover:bg-red-700"
+              className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
             >
               Exit
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="bg-[#262522] text-white max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Delete Tournament</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-gray-300">
+            <p className="text-muted-foreground">
               Are you sure you want to delete this tournament? This action
               cannot be undone.
             </p>
           </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
+          <DialogFooter className="mt-6">
+            <button
               onClick={() => setIsDeleteDialogOpen(false)}
-              className="bg-gray-700 text-white hover:bg-gray-600"
+              className="px-4 py-2 border border-border rounded-lg text-sm hover:bg-secondary transition-colors"
             >
               Cancel
-            </Button>
-            <Button
-              variant="destructive"
+            </button>
+            <button
               onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
+              className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
             >
               Delete
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -430,11 +444,11 @@ export default function TournamentPage() {
         open={isPasswordDialogOpen}
         onOpenChange={setIsPasswordDialogOpen}
       >
-        <DialogContent className="bg-[#262522] text-white max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Enter Tournament Password</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 pt-4">
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
@@ -442,23 +456,22 @@ export default function TournamentPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter 6-character password"
-              className="bg-gray-800 text-white border-gray-700"
+              className="mt-2"
             />
           </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
+          <DialogFooter className="mt-6">
+            <button
               onClick={() => setIsPasswordDialogOpen(false)}
-              className="bg-gray-700 text-white hover:bg-gray-600"
+              className="px-4 py-2 border border-border rounded-lg text-sm hover:bg-secondary transition-colors"
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={handlePasswordSubmit}
-              className="bg-green-600 hover:bg-green-700"
+              className="px-4 py-2 bg-accent text-accent-foreground rounded-lg text-sm hover:bg-accent/90 transition-colors"
             >
               Join
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

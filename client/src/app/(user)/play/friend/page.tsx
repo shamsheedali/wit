@@ -28,7 +28,9 @@ import {
   Flag,
   Hand,
   AlertCircle,
+  ArrowLeft,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
@@ -40,6 +42,7 @@ import { reportGame } from "@/lib/api/gameReport";
 import { ChessMove, LossType, openings } from "@/types/game";
 
 export default function PlayFriend() {
+  const router = useRouter();
   const { user, updateUser } = useAuthStore();
   const { fetchFriends, friends, sendPlayRequest } = useFriendStore();
   const {
@@ -657,33 +660,46 @@ export default function PlayFriend() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row w-full h-screen items-center p-4 font-clashDisplay">
+    <div className="min-h-screen bg-background relative overflow-hidden flex flex-col md:flex-row items-center p-4 pt-20 font-clashDisplay gap-6 justify-center">
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,var(--accent)_0%,transparent_50%)] opacity-[0.03]" />
+      </div>
+
+      {/* Back Button */}
+      <button
+        onClick={() => router.back()}
+        className="absolute top-8 left-8 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-md border border-border/50 text-muted-foreground hover:text-foreground transition-all group"
+      >
+        <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+        <span className="text-sm font-medium">Back</span>
+      </button>
+
       {/* Left Section: Chessboard and Player Info */}
-      <div className="flex flex-col items-center w-full md:w-1/2 h-full py-[30px]">
-        <div className="flex items-center justify-between w-full max-w-[500px] pr-10 py-2 rounded-lg">
-          <div className="flex items-center gap-2">
-            <div className="h-10 w-10 bg-[#262522] rounded-full flex items-center justify-center">
+      <div className="relative z-10 flex flex-col items-center w-full md:w-1/2 h-full py-[30px]">
+        <div className="flex items-center justify-between w-full max-w-[500px] bg-card/50 backdrop-blur-sm border border-border/50 px-4 py-3 rounded-2xl mb-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-secondary rounded-full flex items-center justify-center overflow-hidden">
               {selectedFriend?.profileImageUrl ? (
                 <img
                   src={selectedFriend.profileImageUrl}
                   alt="opponent profile image"
-                  className="w-10 h-10 rounded-full"
+                  className="w-full h-full object-cover"
                 />
               ) : opponentProfilePicture ? (
                 <img
                   src={opponentProfilePicture}
                   alt="opponent profile image"
-                  className="w-10 h-10 rounded-full"
+                  className="w-full h-full object-cover"
                 />
               ) : (
                 <UserRound />
               )}
             </div>
-            <h1 className="text-md font-semibold">
+            <h1 className="text-md font-semibold text-foreground">
               {gameStarted && selectedFriend
                 ? selectedFriend.username
                 : opponentName || "Opponent"}
-              <span className="text-gray-500 ml-1">
+              <span className="text-muted-foreground ml-1">
                 (
                 {gameStarted && selectedFriend
                   ? selectedFriend.eloRating
@@ -692,8 +708,8 @@ export default function PlayFriend() {
               </span>
             </h1>
           </div>
-          <div className="bg-[#262522] px-8 py-3 rounded-sm">
-            <h1 className="text-md font-bold">
+          <div className="bg-secondary/50 px-6 py-2 rounded-xl">
+            <h1 className="text-md font-bold font-mono tracking-wider text-foreground">
               {playerColor === "w"
                 ? formatTime(blackTime)
                 : formatTime(whiteTime)}
@@ -716,28 +732,28 @@ export default function PlayFriend() {
         </div>
 
         {/* Player - 01 */}
-        <div className="flex items-center justify-between w-full max-w-[500px] pr-10 py-2 rounded-lg">
-          <div className="flex items-center gap-2">
-            <div className="h-10 w-10 bg-[#262522] rounded-full flex items-center justify-center">
+        <div className="flex items-center justify-between w-full max-w-[500px] bg-card/50 backdrop-blur-sm border border-border/50 px-4 py-3 rounded-2xl mt-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-secondary rounded-full flex items-center justify-center overflow-hidden">
               {user?.profileImageUrl ? (
                 <img
                   src={user.profileImageUrl}
                   alt="user profile image"
-                  className="w-10 h-10 rounded-full"
+                  className="w-full h-full object-cover"
                 />
               ) : (
                 <UserRound />
               )}
             </div>
-            <h1 className="text-md font-semibold">
+            <h1 className="text-md font-semibold text-foreground">
               {user?.username || "Guest"}{" "}
-              <span className="text-gray-500 ml-1">
+              <span className="text-muted-foreground ml-1">
                 ({user?.eloRating || 500})
               </span>
             </h1>
           </div>
-          <div className="bg-[#262522] px-8 py-3 rounded-sm">
-            <h1 className="text-md font-bold">
+          <div className="bg-secondary/50 px-6 py-2 rounded-xl">
+            <h1 className="text-md font-bold font-mono tracking-wider text-foreground">
               {playerColor === "w"
                 ? formatTime(whiteTime)
                 : formatTime(blackTime)}
@@ -748,32 +764,34 @@ export default function PlayFriend() {
 
       {/* Right Section: Pre-Game Panels */}
       {!playAs && !gameStarted && (
-        <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col gap-10 rounded-md">
-          <div className="w-full flex justify-center items-center gap-2">
-            <Handshake width={30} height={30} />
-            <h1 className="text-3xl font-bold">Play a friend</h1>
+        <div className="relative z-10 bg-card/50 backdrop-blur-sm border border-border/50 w-full md:w-1/4 h-[550px] p-10 flex flex-col items-center gap-6 rounded-3xl">
+          <div className="w-full flex justify-center items-center gap-3 text-foreground">
+            <Handshake width={32} height={32} className="text-accent" />
+            <h1 className="text-3xl font-serif font-bold">Play a friend</h1>
           </div>
-          <div>
-            <h1 className="text-xl font-bold">Friends</h1>
+          <div className="w-full">
+            <h1 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Friends</h1>
             {friends && friends.length > 0 ? (
-              friends.map((friend) => (
-                <div
-                  key={friend._id}
-                  className="flex items-center gap-2 mt-5 cursor-pointer"
-                  onClick={() => handleClick(friend._id)}
-                >
-                  <div className="h-10 w-10 bg-white rounded-full">
-                    <img
-                      src={friend.profileImageUrl || "/placeholder.svg"}
-                      alt={`${friend.username}`}
-                      className="h-10 w-10 rounded-full"
-                    />
+              <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                {friends.map((friend) => (
+                  <div
+                    key={friend._id}
+                    className="flex items-center gap-3 p-3 bg-secondary/30 border border-border/50 rounded-xl cursor-pointer hover:bg-secondary/60 transition-colors"
+                    onClick={() => handleClick(friend._id)}
+                  >
+                    <div className="h-10 w-10 bg-secondary rounded-full overflow-hidden border border-border/50">
+                      <img
+                        src={friend.profileImageUrl || "/placeholder.svg"}
+                        alt={`${friend.username}`}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <h1 className="font-medium text-foreground">{friend.username}</h1>
                   </div>
-                  <h1>{friend.username}</h1>
-                </div>
-              ))
+                ))}
+              </div>
             ) : (
-              <p>No friends yet</p>
+              <p className="text-muted-foreground text-center py-4 bg-secondary/20 rounded-xl border border-border/30">No friends yet</p>
             )}
           </div>
         </div>
@@ -781,87 +799,87 @@ export default function PlayFriend() {
 
       {/* Play Vs */}
       {playAs && !gameStarted && (
-        <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col items-center gap-10 rounded-md">
-          <div className="w-full flex justify-center items-center gap-2 relative">
+        <div className="relative z-10 bg-card/50 backdrop-blur-sm border border-border/50 w-full md:w-1/4 h-[550px] p-8 flex flex-col items-center justify-center gap-8 rounded-3xl">
+          <div className="w-full flex justify-center items-center gap-3 relative text-foreground">
             <div
-              className="absolute left-0 cursor-pointer"
+              className="absolute left-0 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setPlayAs(false)}
             >
-              <CircleArrowLeft />
+              <CircleArrowLeft className="w-6 h-6" />
             </div>
             <div className="flex justify-center items-center gap-2">
-              <Handshake width={30} height={30} />
-              <h1 className="text-3xl font-bold">Play vs</h1>
+              <Handshake width={32} height={32} className="text-accent" />
+              <h1 className="text-3xl font-serif font-bold">Play vs</h1>
             </div>
           </div>
-          <div>
-            <div className="flex flex-col items-center gap-2 mt-5">
-              <div className="h-32 w-32 bg-white rounded-full">
+          <div className="w-full">
+            <div className="flex flex-col items-center gap-3 mt-2 mb-6">
+              <div className="h-32 w-32 bg-secondary rounded-full overflow-hidden border-4 border-border/50">
                 <img
                   src={selectedFriend?.profileImageUrl || "/placeholder.svg"}
                   alt={selectedFriend?.username}
-                  className="h-32 w-32 rounded-full"
+                  className="h-full w-full object-cover"
                 />
               </div>
-              <h1>{selectedFriend?.username}</h1>
+              <h1 className="font-bold text-xl text-foreground">{selectedFriend?.username}</h1>
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 w-full">
             <TimeDropdown onValueChange={handleTimeChange} />
           </div>
-          <Button className="w-full h-11 font-bold" onClick={handlePlay}>
+          <button className="w-full h-12 font-bold rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all duration-300" onClick={handlePlay}>
             Play
-          </Button>
+          </button>
         </div>
       )}
 
       {/* Game Info Panel */}
       {gameStarted && (
-        <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-6 flex flex-col gap-6 rounded-md">
-          <div className="border-b border-gray-600 pb-2">
-            <h2 className="text-lg font-semibold text-white">Opening</h2>
-            <p className="text-sm text-gray-300">{currentOpening}</p>
+        <div className="relative z-10 bg-card/50 backdrop-blur-sm border border-border/50 w-full md:w-1/4 h-[550px] p-6 flex flex-col gap-6 rounded-3xl">
+          <div className="border-b border-border/50 pb-3">
+            <h2 className="text-sm uppercase tracking-wider text-muted-foreground mb-1">Opening</h2>
+            <p className="font-medium text-foreground">{currentOpening}</p>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
-            <h2 className="text-lg font-semibold text-white mb-2">Moves</h2>
-            <div className="bg-[#3a3a3a] rounded-md p-2">
-              <table className="w-full text-sm text-white">
-                <thead>
-                  <tr className="border-b border-gray-600">
-                    <th className="w-1/6 text-center">#</th>
-                    <th className="w-5/12 text-center">White</th>
-                    <th className="w-5/12 text-center">Black</th>
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <h2 className="text-sm uppercase tracking-wider text-muted-foreground mb-3">Moves</h2>
+            <div className="bg-secondary/30 rounded-xl overflow-hidden border border-border/50">
+              <table className="w-full text-sm text-foreground">
+                <thead className="bg-secondary/50">
+                  <tr className="border-b border-border/50">
+                    <th className="w-1/6 text-center py-2 text-muted-foreground font-medium">#</th>
+                    <th className="w-5/12 text-center py-2 font-medium">White</th>
+                    <th className="w-5/12 text-center py-2 font-medium">Black</th>
                   </tr>
                 </thead>
                 <tbody>
                   {getMovePairs(moves).map((pair, index) => (
-                    <tr key={index} className="hover:bg-[#4a4a4a]">
-                      <td className="text-center">{index + 1}.</td>
-                      <td className="text-center">
+                    <tr key={index} className="hover:bg-secondary/40 border-b border-border/10 transition-colors">
+                      <td className="text-center py-2 text-muted-foreground">{index + 1}.</td>
+                      <td className="text-center py-2">
                         {pair.white && (
-                          <>
-                            <span className="inline-block w-4 h-4 mr-1">
+                          <span className="flex items-center justify-center gap-1">
+                            <span className="text-lg">
                               {getPieceIcon(
                                 pair.white.piece,
                                 pair.white.color || "w"
                               )}
                             </span>
                             {pair.white.san}
-                          </>
+                          </span>
                         )}
                       </td>
-                      <td className="text-center">
+                      <td className="text-center py-2">
                         {pair.black && (
-                          <>
-                            <span className="inline-block w-4 h-4 mr-1">
+                          <span className="flex items-center justify-center gap-1">
+                            <span className="text-lg">
                               {getPieceIcon(
                                 pair.black.piece,
                                 pair.black.color || "b"
                               )}
                             </span>
                             {pair.black.san}
-                          </>
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -871,18 +889,16 @@ export default function PlayFriend() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="flex gap-2 justify-between">
-              <Button
-                variant="outline"
-                className="w-1/2 bg-gray-700 text-white hover:bg-gray-600"
+          <div className="flex flex-col gap-3 pt-2">
+            <div className="flex gap-3 justify-between">
+              <button
+                className="w-1/2 flex items-center justify-center py-2.5 rounded-full bg-secondary text-foreground hover:bg-secondary/80 transition-colors"
                 onClick={handleDraw}
               >
-                <Hand className="mr-2" /> Draw
-              </Button>
-              <Button
-                variant="destructive"
-                className="w-1/2 bg-red-600 hover:bg-red-700"
+                <Hand className="mr-2 w-4 h-4" /> Draw
+              </button>
+              <button
+                className="w-1/2 flex items-center justify-center py-2.5 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/50 transition-colors"
                 onClick={() =>
                   endGame(
                     playerColor === "w" ? "blackWin" : "whiteWin",
@@ -891,50 +907,40 @@ export default function PlayFriend() {
                   )
                 }
               >
-                <Flag className="mr-2" /> Resign
-              </Button>
+                <Flag className="mr-2 w-4 h-4" /> Resign
+              </button>
             </div>
-            <div className="flex gap-2 justify-center">
-              <Button
-                size="icon"
-                variant="outline"
-                className="bg-gray-700 text-white hover:bg-gray-600"
+            <div className="flex gap-2 justify-center mt-2">
+              <button 
+                className="p-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
                 onClick={handleFirstMove}
               >
-                <ChevronsLeft />
-              </Button>
-              <Button
-                size="icon"
-                variant="outline"
-                className="bg-gray-700 text-white hover:bg-gray-600"
+                <ChevronsLeft className="w-5 h-5" />
+              </button>
+              <button 
+                className="p-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
                 onClick={handlePreviousMove}
               >
-                <ChevronLeft />
-              </Button>
-              <Button
-                size="icon"
-                variant="outline"
-                className="bg-gray-700 text-white hover:bg-gray-600"
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button 
+                className="p-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
                 onClick={handleNextMove}
               >
-                <ChevronRight />
-              </Button>
-              <Button
-                size="icon"
-                variant="outline"
-                className="bg-gray-700 text-white hover:bg-gray-600"
+                <ChevronRight className="w-5 h-5" />
+              </button>
+              <button 
+                className="p-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
                 onClick={handleLastMove}
               >
-                <ChevronsRight />
-              </Button>
-              <Button
-                size="icon"
-                variant="outline"
-                className="bg-gray-700 text-white hover:bg-gray-600"
+                <ChevronsRight className="w-5 h-5" />
+              </button>
+              <button 
+                className="p-2 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors ml-auto"
                 onClick={() => setIsReportModalOpen(true)}
               >
-                <AlertCircle />
-              </Button>
+                <AlertCircle className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
@@ -942,39 +948,39 @@ export default function PlayFriend() {
 
       {/* Report Modal */}
       <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
-        <DialogContent className="bg-[#262522] text-white">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Report Game</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-6 pt-4">
             <div>
-              <Label className="text-sm">Reason for Report</Label>
+              <Label className="text-sm text-muted-foreground mb-3 block uppercase tracking-wider">Reason for Report</Label>
               <RadioGroup
                 value={reportReason}
                 onValueChange={setReportReason}
-                className="mt-2"
+                className="space-y-3"
               >
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3 bg-secondary/30 p-3 rounded-xl border border-border/50">
                   <RadioGroupItem value="cheating" id="cheating" />
-                  <Label htmlFor="cheating">Cheating</Label>
+                  <Label htmlFor="cheating" className="cursor-pointer">Cheating</Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3 bg-secondary/30 p-3 rounded-xl border border-border/50">
                   <RadioGroupItem
                     value="inappropriate_behavior"
                     id="inappropriate_behavior"
                   />
-                  <Label htmlFor="inappropriate_behavior">
+                  <Label htmlFor="inappropriate_behavior" className="cursor-pointer">
                     Inappropriate Behavior
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3 bg-secondary/30 p-3 rounded-xl border border-border/50">
                   <RadioGroupItem value="other" id="other" />
-                  <Label htmlFor="other">Other</Label>
+                  <Label htmlFor="other" className="cursor-pointer">Other</Label>
                 </div>
               </RadioGroup>
             </div>
             <div>
-              <Label htmlFor="details" className="text-sm">
+              <Label htmlFor="details" className="text-sm text-muted-foreground mb-2 block uppercase tracking-wider">
                 Additional Details
               </Label>
               <Input
@@ -982,31 +988,30 @@ export default function PlayFriend() {
                 value={reportDetails}
                 onChange={(e) => setReportDetails(e.target.value)}
                 placeholder="Provide more information..."
-                className="bg-gray-800 text-white border-gray-700 mt-2"
+                className="mt-2"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
+          <DialogFooter className="mt-6">
+            <button
               onClick={() => setIsReportModalOpen(false)}
-              className="bg-gray-700 text-white hover:bg-gray-600"
+              className="px-4 py-2 border border-border rounded-lg text-sm hover:bg-secondary transition-colors"
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={handleReportSubmit}
-              className="bg-red-600 hover:bg-red-700"
+              className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
             >
               Submit Report
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Chat Interface */}
       {gameStarted && (
-        <div className="bg-[#262522] w-full md:w-1/4 h-[550px] p-10 flex flex-col gap-10 rounded-md">
+        <div className="relative z-10 bg-card/50 backdrop-blur-sm border border-border/50 w-full md:w-1/4 h-[550px] p-6 flex flex-col gap-10 rounded-3xl">
           <ChatInterface
             gameId={gameId || ""}
             userId={user?._id || ""}

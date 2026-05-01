@@ -109,12 +109,12 @@ export default function PasswordSettingsForm() {
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>Change Password</CardTitle>
+    <Card className="w-full max-w-2xl border-border/50 bg-card/50 backdrop-blur-xl rounded-3xl shadow-xl overflow-hidden">
+      <CardHeader className="bg-muted/30 border-b border-border/50 pb-6 px-8 pt-8">
+        <CardTitle className="font-serif text-2xl font-bold">Change Password</CardTitle>
         <CardDescription>Update your password to keep your account secure.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-8 py-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
@@ -124,7 +124,7 @@ export default function PasswordSettingsForm() {
                 <FormItem>
                   <FormLabel>Current Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
+                    <Input type="password" placeholder="••••••••" {...field} className="rounded-xl border-border bg-background focus:ring-accent/50 focus:border-accent transition-all h-11" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -138,7 +138,7 @@ export default function PasswordSettingsForm() {
                 <FormItem>
                   <FormLabel>New Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
+                    <Input type="password" placeholder="••••••••" {...field} className="rounded-xl border-border bg-background focus:ring-accent/50 focus:border-accent transition-all h-11" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -152,7 +152,7 @@ export default function PasswordSettingsForm() {
                 <FormItem>
                   <FormLabel>Confirm New Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
+                    <Input type="password" placeholder="••••••••" {...field} className="rounded-xl border-border bg-background focus:ring-accent/50 focus:border-accent transition-all h-11" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -160,7 +160,7 @@ export default function PasswordSettingsForm() {
             />
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="rounded-xl px-8 py-6 font-semibold bg-accent text-accent-foreground hover:bg-accent/90 transition-all">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

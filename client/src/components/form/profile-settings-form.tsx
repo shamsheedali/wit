@@ -143,14 +143,14 @@ export default function ProfileSettingsForm() {
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>Profile Settings</CardTitle>
+    <Card className="w-full max-w-2xl border-border/50 bg-card/50 backdrop-blur-xl rounded-3xl shadow-xl overflow-hidden">
+      <CardHeader className="bg-muted/30 border-b border-border/50 pb-6 px-8 pt-8">
+        <CardTitle className="font-serif text-2xl font-bold">Profile Settings</CardTitle>
         <CardDescription>
           Update your profile information and how others see you on the platform.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-8 py-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <div className="flex flex-col items-center space-y-4">
@@ -188,7 +188,11 @@ export default function ProfileSettingsForm() {
                   <FormItem>
                     <FormLabel>First Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="John" {...field} />
+                      <Input 
+                        placeholder="John" 
+                        {...field} 
+                        className="rounded-xl border-border bg-background focus:ring-accent/50 focus:border-accent transition-all h-11"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -201,7 +205,11 @@ export default function ProfileSettingsForm() {
                   <FormItem>
                     <FormLabel>Last Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Doe" {...field} />
+                      <Input 
+                        placeholder="Doe" 
+                        {...field} 
+                        className="rounded-xl border-border bg-background focus:ring-accent/50 focus:border-accent transition-all h-11"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -216,10 +224,11 @@ export default function ProfileSettingsForm() {
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="johndoe"
-                      {...field}
-                      onChange={(e) => {
+                      <Input
+                        placeholder="johndoe"
+                        {...field}
+                        className="rounded-xl border-border bg-background focus:ring-accent/50 focus:border-accent transition-all h-11"
+                        onChange={(e) => {
                         field.onChange(e);
                         setHasTyped(true);
                         debouncedSetUsername(e.target.value);
@@ -259,11 +268,11 @@ export default function ProfileSettingsForm() {
                 <FormItem>
                   <FormLabel>Bio</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Tell us a little bit about yourself"
-                      className="resize-none min-h-[120px]"
-                      {...field}
-                    />
+                      <Textarea
+                        placeholder="Tell us a little bit about yourself"
+                        className="resize-none min-h-[120px] rounded-xl border-border bg-background focus:ring-accent/50 focus:border-accent transition-all"
+                        {...field}
+                      />
                   </FormControl>
                   <FormDescription>
                     You can write a short bio about yourself. This will be displayed on your profile.
@@ -274,7 +283,11 @@ export default function ProfileSettingsForm() {
             />
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="rounded-xl px-8 py-6 font-semibold bg-accent text-accent-foreground hover:bg-accent/90 transition-all"
+              >
                 {isSubmitting ? "Saving..." : "Save changes"}
               </Button>
             </div>

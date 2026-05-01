@@ -41,8 +41,7 @@ export default function RootLayout({
         <link rel="icon" type="image/svg+xml" href="/test-favicon.svg" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased`}
-      >
+        className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} font-sans antialiased`}>
         <QueryProvider>
           <ClientSocketInitializer />
           <ClientNavbarWrapper />

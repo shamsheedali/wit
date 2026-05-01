@@ -2,20 +2,11 @@ import ForgotPasswordForm from "@/components/form/forgot-password-form";
 
 export default function ForgotPasswordPage() {
   return (
-    <div
-      style={{
-        background: `linear-gradient(20deg, rgb(201, 85, 43) -13%, rgb(0, 0, 0) 10%, rgb(0, 0, 0) 75%, rgb(201, 85, 43) 119%)`,
-        width: "100%",
-        height: "100vh",
-      }}
-      className="grid min-h-svh lg:grid-cols-1"
-    >
-      <div className="flex flex-col gap-4 p-6 md:p-10">
-        <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">
-            <ForgotPasswordForm />
-          </div>
-        </div>
+    <div className="min-h-screen bg-background flex items-center justify-center p-8 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,var(--accent)_0%,transparent_50%)] opacity-[0.08]" />
+      
+      <div className="w-full max-w-md relative z-10">
+        <ForgotPasswordForm />
       </div>
     </div>
   );
