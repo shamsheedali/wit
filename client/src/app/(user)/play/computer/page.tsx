@@ -47,12 +47,8 @@ export default function PlayComputer() {
       <div className="relative z-10 w-full h-full">
         <DynamicPlayWithBot
           bots={bots}
-          onGameCompleted={(winner) => {
-            window.alert(
-              `${
-                winner === "b" ? "Black" : winner === "w" ? "White" : "No one"
-              } is the winner!`
-            );
+          onGameCompleted={() => {
+            // Game completion is handled within the component
           }}
         />
       </div>
