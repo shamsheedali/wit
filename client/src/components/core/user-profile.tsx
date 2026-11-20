@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import React, { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import {
-  Calendar1,
+  Calendar,
   Ellipsis,
   Handshake,
   HeartCrack,
@@ -10,8 +10,8 @@ import {
   Send,
   Sword,
   Swords,
-  // TrendingUp,
-  UsersRound,
+  Users,
+  TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/stores";
@@ -22,12 +22,6 @@ import { toast } from "sonner";
 import { removeFriend } from "@/lib/api/friend";
 import { useRouter } from "next/navigation";
 import ChatPopup from "@/components/core/ChatPopup";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
 import GameHistoryTable from "@/components/core/game-history-table";
 
 const UserProfile = ({ user }: { user: User }) => {
@@ -46,10 +40,7 @@ const UserProfile = ({ user }: { user: User }) => {
   }, [reRender, mainUser?._id, fetchFriends]);
 
   const dateToFormat = isCurrentUser ? mainUser?.createdAt : user?.createdAt;
-  let formatDate;
-  if (dateToFormat) {
-    formatDate = format(new Date(dateToFormat), "MMM d, yyyy");
-  }
+  const formatDateStr = dateToFormat ? format(new Date(dateToFormat), "MMM d, yyyy") : "N/A";
 
   const isFriend = friends.some((friend) => friend?._id === user?._id);
 
@@ -78,125 +69,119 @@ const UserProfile = ({ user }: { user: User }) => {
     router.push("/play/friend");
   };
 
+  const displayedUser = isCurrentUser ? mainUser : user;
+  
+  const stats = [
+    { icon: Calendar, label: "Joined", value: formatDateStr },
+    { icon: Users, label: "Friends", value: displayedUser?.friends?.length || 0, href: `/${user.username}/friends` },
+    { icon: Swords, label: "Games", value: displayedUser?.gamesPlayed || 0 },
+    { icon: TrendingUp, label: "Rating", value: displayedUser?.rating || "1200" },
+  ];
+
   return (
-    <div className="w-full flex flex-col items-center justify-center">
-      <div className="border-2 rounded-lg flex justify-center items-center w-fit p-5 md:py-8 md:px-14 gap-5 lg:gap-20">
-        <Avatar className="cursor-pointer w-32 h-32 md:w-40 md:h-40">
-          <AvatarImage
-            src={
-              isCurrentUser ? mainUser?.profileImageUrl : user?.profileImageUrl
-            }
-            alt={`${user?.username} profile image`}
-            className="object-cover"
-          />
-          <AvatarFallback>{user?.username[0].toUpperCase()}</AvatarFallback>
-        </Avatar>
-
-        <div className="flex flex-col gap-5 relative">
-          <div>
-            <h1 className="text-3xl mb-2">{user?.username}</h1>
-            <h1 className="text-xl">
-              {user?.firstName} {user?.lastName}
-            </h1>
-            <p className="text-sm w-[250px] text-gray-500">{user?.bio}</p>
-
-            {isCurrentUser && (
-              <Link href="/settings/profile">
-                <Button className="absolute right-0 top-0 bg-gray-300">
-                  <Pencil />
-                  Edit
-                </Button>
-              </Link>
-            )}
-          </div>
-
-          <div className="flex gap-14 lg:gap-20 text-center">
-            {/* <div className="flex flex-col items-center gap-3">
-              <TrendingUp />
-              Online Now
-            </div> */}
-            <div className="flex flex-col items-center gap-3">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Calendar1 />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Joined</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              {formatDate}
+    <div className="w-full flex flex-col gap-12">
+      {/* Profile Header */}
+      <div className="relative">
+        {/* Background Card */}
+        <div className="absolute inset-0 bg-card rounded-3xl border border-border/50 shadow-sm" />
+        
+        {/* Content */}
+        <div className="relative p-8 md:p-12">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+            {/* Avatar */}
+            <div className="relative animate-in zoom-in-95 duration-500">
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-secondary overflow-hidden ring-4 ring-background shadow-xl">
+                {displayedUser?.profileImageUrl ? (
+                  <img src={displayedUser.profileImageUrl} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-accent/20 to-accent/5">
+                    <span className="font-serif text-5xl md:text-6xl font-bold text-foreground/20 uppercase">
+                      {displayedUser?.username?.[0] || "?"}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {/* Online indicator */}
+              <div className="absolute bottom-2 right-2 w-5 h-5 bg-win rounded-full ring-4 ring-background animate-pulse" />
             </div>
 
-            <div className="flex flex-col items-center gap-3">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Link href={`/${user.username}/friends`}>
-                      <UsersRound />
+            {/* Info */}
+            <div className="flex-1 text-center md:text-left w-full">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                  <h1 className="font-serif text-3xl md:text-4xl font-bold">{displayedUser?.username}</h1>
+                  {(displayedUser?.firstName || displayedUser?.lastName) && (
+                    <p className="text-muted-foreground mt-1">
+                      {displayedUser.firstName} {displayedUser.lastName}
+                    </p>
+                  )}
+                  {displayedUser?.bio && (
+                    <p className="text-sm text-muted-foreground mt-2 max-w-md">{displayedUser.bio}</p>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap justify-center md:justify-end gap-3">
+                  {isCurrentUser ? (
+                    <Link href="/settings/profile">
+                      <Button variant="outline" className="rounded-full gap-2 hover:bg-accent hover:text-accent-foreground hover:border-accent transition-colors shadow-sm">
+                        <Pencil className="w-3.5 h-3.5" />
+                        Edit Profile
+                      </Button>
                     </Link>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Friends</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              {isCurrentUser ? mainUser?.friends.length : user?.friends.length}
-            </div>
+                  ) : (
+                    <>
+                      {isFriend ? (
+                        <Button variant="destructive" className="rounded-full gap-2 shadow-sm" onClick={handleRemoveFriend}>
+                          <HeartCrack className="w-4 h-4" />
+                          Remove Friend
+                        </Button>
+                      ) : (
+                        <Button variant="outline" className="rounded-full gap-2 shadow-sm" onClick={handleAddFriend} disabled={isRequestSent}>
+                          <Handshake className="w-4 h-4" />
+                          {isRequestSent ? "Request Sent" : "Add Friend"}
+                        </Button>
+                      )}
+                      <Button variant="outline" className="rounded-full gap-2 shadow-sm hover:bg-accent hover:text-accent-foreground" onClick={handleChallenge}>
+                        <Sword className="w-4 h-4" />
+                        Challenge
+                      </Button>
+                      <Button variant="outline" className="rounded-full gap-2 shadow-sm" onClick={() => setIsChatOpen(true)}>
+                        <Send className="w-4 h-4" />
+                        Message
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
 
-            <div className="flex flex-col items-center gap-3">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Swords />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Games Played</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {isCurrentUser ? mainUser?.gamesPlayed : user?.gamesPlayed}
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in slide-in-from-bottom-4 duration-500 delay-150 fill-mode-both">
+                {stats.map((stat, index) => (
+                  <div key={stat.label} className="group">
+                    {stat.href ? (
+                      <Link href={stat.href}>
+                        <div className="p-4 rounded-xl bg-secondary/50 hover:bg-secondary transition-all cursor-pointer hover:scale-[1.02] active:scale-95 shadow-sm h-full">
+                          <stat.icon className="w-5 h-5 text-muted-foreground mb-2 group-hover:text-accent transition-colors" />
+                          <p className="font-mono text-lg font-semibold">{stat.value}</p>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wide">{stat.label}</p>
+                        </div>
+                      </Link>
+                    ) : (
+                      <div className="p-4 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors cursor-default shadow-sm h-full">
+                        <stat.icon className="w-5 h-5 text-muted-foreground mb-2 group-hover:text-accent transition-colors" />
+                        <p className="font-mono text-lg font-semibold">{stat.value}</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide">{stat.label}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-
-          {!isCurrentUser && (
-            <div className="flex gap-5">
-              {isFriend ? (
-                <Button variant="destructive" onClick={handleRemoveFriend}>
-                  <HeartCrack />
-                  Remove Friend
-                </Button>
-              ) : (
-                <Button
-                  className="bg-gray-300"
-                  onClick={handleAddFriend}
-                  disabled={isRequestSent}
-                >
-                  <Handshake />
-                  {isRequestSent ? "Request Sent" : "Add Friend"}
-                </Button>
-              )}
-              <Button className="bg-gray-300" onClick={handleChallenge}>
-                <Sword />
-                Challenge
-              </Button>
-              <Button
-                className="bg-gray-300"
-                onClick={() => setIsChatOpen(true)}
-              >
-                <Send />
-                Message
-              </Button>
-              <Button className="bg-gray-300">
-                <Ellipsis />
-                More
-              </Button>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Chat Popup */}
       {isChatOpen && mainUser?._id && (
         <ChatPopup
           userId={mainUser._id}
@@ -206,11 +191,17 @@ const UserProfile = ({ user }: { user: User }) => {
         />
       )}
 
-      {user.gamesPlayed > 0 && (
-        <div className="my-20">
+      {/* Game History */}
+      <div className="bg-card rounded-2xl border border-border/50 overflow-hidden shadow-sm animate-in slide-in-from-bottom-8 duration-700 delay-300 fill-mode-both">
+        <div className="px-6 py-5 border-b border-border/50">
+          <h2 className="font-serif text-xl font-semibold">Match History</h2>
+          <p className="text-sm text-muted-foreground mt-1">Recent games and statistics</p>
+        </div>
+        <div className="p-0 sm:p-6 sm:pt-4 overflow-hidden">
+          {/* We keep the original functional GameHistoryTable component intact here */}
           <GameHistoryTable user={user} />
         </div>
-      )}
+      </div>
     </div>
   );
 };

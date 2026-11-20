@@ -658,7 +658,7 @@ export default function ClubChat() {
   if (!club) return <div>Club not found or you’re not a member</div>;
 
   return (
-    <div className="flex h-[89vh] max-h-screen w-full">
+    <div className="flex h-full w-full bg-card/50 backdrop-blur-xl border border-border/50 rounded-3xl overflow-hidden shadow-xl">
       {/* Confirmation Dialogs */}
       <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
         <AlertDialogContent>
@@ -705,7 +705,7 @@ export default function ClubChat() {
       />
 
       <Dialog open={openCreateDialog} onOpenChange={setOpenCreateDialog}>
-        <DialogContent className="bg-[#262522] text-white">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Create New Tournament</DialogTitle>
           </DialogHeader>
@@ -721,7 +721,7 @@ export default function ClubChat() {
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                className="bg-gray-800 text-white border-gray-700 mt-2"
+                className="mt-2"
               />
               {!isNameValid && formData.name.length > 0 && (
                 <p className="text-red-500 text-sm mt-1">
@@ -752,7 +752,7 @@ export default function ClubChat() {
                 onChange={(e) =>
                   setFormData({ ...formData, maxGames: e.target.value })
                 }
-                className="bg-gray-800 text-white border-gray-700 mt-2"
+                className="mt-2"
               />
               {!isMaxGamesValid && formData.maxGames.length > 0 && (
                 <p className="text-red-500 text-sm mt-1">
@@ -772,7 +772,7 @@ export default function ClubChat() {
                 onChange={(e) =>
                   setFormData({ ...formData, maxPlayers: e.target.value })
                 }
-                className="bg-gray-800 text-white border-gray-700 mt-2"
+                className="mt-2"
               />
               {!isMaxPlayersValid && formData.maxPlayers.length > 0 && (
                 <p className="text-red-500 text-sm mt-1">
@@ -792,7 +792,7 @@ export default function ClubChat() {
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
                 }
-                className="bg-gray-800 text-white border-gray-700 mt-2"
+                className="mt-2"
               />
               {!isPasswordValid && formData.password.length > 0 && (
                 <p className="text-red-500 text-sm mt-1">
@@ -805,14 +805,12 @@ export default function ClubChat() {
             <Button
               variant="outline"
               onClick={() => setOpenCreateDialog(false)}
-              className="bg-gray-700 text-white hover:bg-gray-600"
             >
               Cancel
             </Button>
             <Button
               onClick={handleCreateTournament}
               disabled={!isFormValid}
-              className="bg-green-600 hover:bg-green-700"
             >
               Create
             </Button>
@@ -821,17 +819,17 @@ export default function ClubChat() {
       </Dialog>
 
       {/* Left sidebar - Member list */}
-      <div className="w-80 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-[#09090b] hidden md:block">
-        <div className="p-[26px] border-b border-gray-200 dark:border-gray-800">
-          <h2 className="text-xl font-bold">{club.name} Members</h2>
+      <div className="w-80 border-r border-border/50 bg-secondary/10 hidden md:flex flex-col">
+        <div className="p-6 border-b border-border/50 bg-muted/30">
+          <h2 className="text-xl font-bold font-serif">{club.name} Members</h2>
         </div>
-        <ScrollArea className="">
-          <div className="p-2">
+        <ScrollArea className="flex-1">
+          <div className="p-4 space-y-2">
             {members.map((member) => (
               <div
                 key={member._id}
                 onClick={() => router.push(`/${member.username}`)}
-                className="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-secondary/50 transition-colors"
               >
                 <div className="relative">
                   <Avatar>
@@ -842,7 +840,7 @@ export default function ClubChat() {
                     <AvatarFallback>{member.username[0]}</AvatarFallback>
                   </Avatar>
                   {member.isOnline && (
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-950 rounded-full"></span>
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-card rounded-full"></span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -853,7 +851,7 @@ export default function ClubChat() {
                       ? "You"
                       : member.username}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {member._id === mainUser?._id
                       ? "Online"
                       : member.isOnline
@@ -868,11 +866,11 @@ export default function ClubChat() {
       </div>
 
       {/* Right side - Chat area */}
-      <div className="flex-1 flex flex-col">
-        <div className="flex justify-between items-center p-4 pr-12 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#09090b]">
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex justify-between items-center p-6 border-b border-border/50 bg-muted/30">
           <div>
-            <h2 className="text-xl font-bold">{club.name}</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <h2 className="text-2xl font-bold font-serif">{club.name}</h2>
+            <p className="text-sm text-muted-foreground">
               {members.length} members
             </p>
           </div>
@@ -880,18 +878,20 @@ export default function ClubChat() {
             {isAdmin && (
               <Button
                 variant="outline"
+                className="rounded-xl border-border/50"
                 onClick={() => setOpenCreateDialog(true)}
               >
                 Create Tournament
               </Button>
             )}
             {isAdmin && (
-              <Button variant="outline" onClick={() => setShowEditDialog(true)}>
+              <Button variant="outline" className="rounded-xl border-border/50" onClick={() => setShowEditDialog(true)}>
                 Edit Club
               </Button>
             )}
             <Button
               variant="destructive"
+              className="rounded-xl"
               onClick={() => setShowLeaveDialog(true)}
             >
               Exit Club
@@ -899,6 +899,7 @@ export default function ClubChat() {
             {isAdmin && (
               <Button
                 variant="destructive"
+                className="rounded-xl"
                 onClick={() => setShowDeleteDialog(true)}
               >
                 Delete Club
@@ -907,8 +908,8 @@ export default function ClubChat() {
           </div>
         </div>
 
-        <ScrollArea className="flex-1 p-4 bg-gray-50 dark:bg-gray-900">
-          <div className="space-y-4">
+        <ScrollArea className="flex-1 p-6 bg-transparent">
+          <div className="space-y-6">
             {messages.map((message) => {
               const sender = members.find((m) => m._id === message.senderId);
               const isCurrentUser = message.senderId === mainUser?._id;
@@ -936,10 +937,10 @@ export default function ClubChat() {
                   )}
                   <div
                     className={cn(
-                      "rounded-lg p-3",
+                      "rounded-xl p-3 shadow-sm",
                       isCurrentUser
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-gray-200 dark:bg-gray-800"
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-secondary/50 text-foreground border border-border/50"
                     )}
                   >
                     {!isCurrentUser && (
@@ -954,8 +955,8 @@ export default function ClubChat() {
                       className={cn(
                         "text-xs mt-1 text-right",
                         isCurrentUser
-                          ? "text-primary-foreground/80"
-                          : "text-gray-500 dark:text-gray-400"
+                          ? "text-accent-foreground/80"
+                          : "text-muted-foreground"
                       )}
                     >
                       {formatTime(message.timestamp)}
@@ -968,19 +969,20 @@ export default function ClubChat() {
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-[#09090b]">
-          <div className="flex items-center gap-2">
+        <div className="p-4 border-t border-border/50 bg-muted/30">
+          <div className="flex items-center gap-2 w-full">
             <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type your message..."
-              className="flex-1"
+              className="flex-1 rounded-xl h-12 bg-background border-border/50 focus:border-accent transition-all"
             />
             <Button
               onClick={handleSendMessage}
               disabled={!newMessage.trim()}
               size="icon"
+              className="h-12 w-12 rounded-xl bg-accent hover:bg-accent/90 text-accent-foreground"
             >
               <Send className="h-5 w-5" />
               <span className="sr-only">Send message</span>

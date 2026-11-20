@@ -1,11 +1,11 @@
-import dotenv from 'dotenv';
-dotenv.config();
-
+import 'dotenv/config';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import app from './app';
 import socketHandler from './sockets';
-import log from './utils/logger';
+import logger from './utils/logger';
+import connectDB from './config/database';
+import { connectRedis } from './config/redis';
 
 const PORT = Number(process.env.PORT) || 8080;
 
@@ -31,6 +31,18 @@ app.set('io', io);
 // Initialize Socket.IO handlers
 socketHandler(io);
 
-httpServer.listen(PORT, '0.0.0.0', () => {
-  log.info(`Server running on port:${PORT}`);
-});
+async function startServer() {
+  try {
+    await connectDB();
+    await connectRedis();
+
+    httpServer.listen(PORT, '0.0.0.0', () => {
+      logger.info(`Server running on port:${PORT}`);
+    });
+  } catch (error) {
+    logger.error('Failed to start server', error);
+    process.exit(1);
+  }
+}
+
+startServer();

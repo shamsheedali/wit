@@ -5,7 +5,7 @@ import UserRepository from '../repositories/user.repository';
 import { IClub } from '../models/club.model';
 import { Types } from 'mongoose';
 import { IClubService } from './interface/IClubService';
-import log from '../../utils/logger';
+import logger from '../../utils/logger';
 import AdminRepository from '../repositories/admin.repository';
 
 @injectable()
@@ -32,7 +32,7 @@ export default class ClubService implements IClubService {
     memberIds: string[],
     maxMembers?: number
   ): Promise<IClub> {
-    log.info('Service data:', { name, description, clubType, adminIds, memberIds, maxMembers });
+    logger.info('Service data:', { name, description, clubType, adminIds, memberIds, maxMembers });
 
     const existingClub = await this._clubRepository.findByName(name);
     if (existingClub) throw new Error('Club name already exists');
@@ -67,7 +67,7 @@ export default class ClubService implements IClubService {
       maxMembers: effectiveMaxMembers,
     };
 
-    log.info('clubData:', clubData);
+    logger.info('clubData:', clubData);
     return this._clubRepository.create(clubData);
   }
 
@@ -158,7 +158,7 @@ export default class ClubService implements IClubService {
       maxMembers: 100,
     };
 
-    log.info('Admin clubData:', clubData);
+    logger.info('Admin clubData:', clubData);
     return this._clubRepository.create(clubData);
   }
 
