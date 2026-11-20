@@ -114,7 +114,7 @@ export function ClubsTabs() {
             <div className="max-h-80 overflow-y-auto">
               {publicClubs.length === 0 ? (
                 <div className="p-6 text-center text-muted-foreground">
-                  No clubs found matching "{searchQuery}"
+                  No clubs found matching &quot;{searchQuery}&quot;
                 </div>
               ) : (
                 publicClubs.map((club: IClub) => {
@@ -214,7 +214,7 @@ export function ClubsTabs() {
             ) : userClubs.length === 0 ? (
               <div className="text-center py-16">
                 <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                <p className="text-muted-foreground">You haven't joined any clubs yet.</p>
+                <p className="text-muted-foreground">You haven&apos;t joined any clubs yet.</p>
                 <p className="text-sm text-muted-foreground mt-1">Check out the Explore tab to find communities.</p>
               </div>
             ) : (

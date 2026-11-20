@@ -12,9 +12,7 @@ import {
 import {
   ChevronDown,
   ChevronUp,
-  User as UserIcon,
   Zap,
-  MoveUpRight,
   Timer,
   MoreVertical,
   Eye,
@@ -147,7 +145,7 @@ export default function GameHistoryTable({
     
     let isWin = false;
     let isLoss = false;
-    let isDraw = game.result === "draw";
+    const isDraw = game.result === "draw";
 
     if (
       (game.result === "whiteWin" && game.playerOne === user?._id) ||

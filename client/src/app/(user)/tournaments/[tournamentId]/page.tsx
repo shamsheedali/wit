@@ -12,7 +12,6 @@ import {
   deleteTournament,
 } from "@/lib/api/tournament";
 import { useAuthStore } from "@/stores";
-import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/data-table";
 import { standingsColumns } from "./standings-columns";
 import { createMatchColumns } from "./match-columns";

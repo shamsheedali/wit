@@ -2,7 +2,6 @@
 
 import { ChessBoard } from "@/components/chess/chessBoard";
 import { TimeDropdown } from "@/components/chess/time-dropdown";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,

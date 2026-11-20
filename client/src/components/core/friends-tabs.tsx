@@ -15,12 +15,6 @@ import {
 } from "lucide-react";
 import { getSocket } from "@/lib/socket";
 
-type Sender = {
-  _id: string;
-  username: string;
-  profileImageUrl?: string;
-};
-
 function getStatusColor(isOnline: boolean) {
   if (isOnline) {
     return "bg-emerald-500";
@@ -202,7 +196,7 @@ export function FriendsTabs() {
             <div className="max-h-80 overflow-y-auto">
               {filteredSearchResults.length === 0 ? (
                 <div className="p-6 text-center text-muted-foreground">
-                  No users found matching "{query}"
+                  No users found matching &quot;{query}&quot;
                 </div>
               ) : (
                 filteredSearchResults.map((user: User) => {
@@ -400,7 +394,7 @@ export function FriendsTabs() {
             {friends.length === 0 && (
                <div className="text-center py-16">
                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                 <p className="text-muted-foreground">You don't have any friends yet.</p>
+                 <p className="text-muted-foreground">You don&apos;t have any friends yet.</p>
                  <p className="text-sm text-muted-foreground mt-1">Use the search bar above to find players.</p>
                </div>
             )}

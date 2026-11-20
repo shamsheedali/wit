@@ -22,6 +22,7 @@ import { getGameType } from "@/lib/utils";
 import { toast } from "sonner";
 import { Trophy, CirclePlus, ArrowRight, Users, ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { TournamentData } from "@/types/tournament";
 
 const LIMIT = 10;
 
@@ -176,7 +177,7 @@ export default function TournamentsPage() {
               ) : (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {publicTournaments?.tournaments?.map((tournament: any) => (
+                    {publicTournaments?.tournaments?.map((tournament: TournamentData) => (
                       <div
                         key={tournament._id}
                         onClick={() => handlePageChange(tournament._id)}
@@ -236,11 +237,11 @@ export default function TournamentsPage() {
               ) : userTournaments?.length === 0 ? (
                 <div className="text-center py-16">
                   <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                  <p className="text-muted-foreground">You haven't joined any tournaments yet.</p>
+                  <p className="text-muted-foreground">You haven&apos;t joined any tournaments yet.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {userTournaments?.map((tournament: any) => (
+                  {userTournaments?.map((tournament: TournamentData) => (
                     <div
                       key={tournament._id}
                       onClick={() => handlePageChange(tournament._id)}
