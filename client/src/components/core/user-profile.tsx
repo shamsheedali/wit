@@ -1,9 +1,7 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import React, { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import {
   Calendar,
-  Ellipsis,
   Handshake,
   HeartCrack,
   Pencil,
@@ -75,7 +73,7 @@ const UserProfile = ({ user }: { user: User }) => {
     { icon: Calendar, label: "Joined", value: formatDateStr },
     { icon: Users, label: "Friends", value: displayedUser?.friends?.length || 0, href: `/${user.username}/friends` },
     { icon: Swords, label: "Games", value: displayedUser?.gamesPlayed || 0 },
-    { icon: TrendingUp, label: "Rating", value: displayedUser?.rating || "1200" },
+    { icon: TrendingUp, label: "Rating", value: displayedUser?.eloRating || "1200" },
   ];
 
   return (
@@ -156,7 +154,7 @@ const UserProfile = ({ user }: { user: User }) => {
 
               {/* Stats Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in slide-in-from-bottom-4 duration-500 delay-150 fill-mode-both">
-                {stats.map((stat, index) => (
+                {stats.map((stat) => (
                   <div key={stat.label} className="group">
                     {stat.href ? (
                       <Link href={stat.href}>

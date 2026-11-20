@@ -19,7 +19,6 @@ import { format } from "date-fns";
 import { useFriendStore } from "@/stores/useFriendStore";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 
 export default function UserNavbar() {
   const { isAuthenticated, user } = useAuthStore();

@@ -1,28 +1,28 @@
-"use client"
+"use client";
 
-import { useLayoutEffect } from 'react'
+import { useLayoutEffect } from "react";
 import { LoginForm } from "@/components/form/login-form";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from '@/stores';
-import Link from 'next/link';
+import { useAuthStore } from "@/stores";
+import Link from "next/link";
 
 export default function LoginPage() {
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
-  
+
   useLayoutEffect(() => {
-    if(isAuthenticated) {
-      router.push('/')
+    if (isAuthenticated) {
+      router.push("/");
     }
-  }, [router])
-    
+  }, [isAuthenticated, router]);
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left Side - Decorative */}
       <div className="hidden lg:flex lg:w-1/2 bg-primary relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(224,122,95,0.3),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(224,122,95,0.2),transparent_50%)]" />
-        
+
         {/* Floating Chess Pieces */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative">
@@ -54,7 +54,9 @@ export default function LoginPage() {
             {/* <div className="w-10 h-10 rounded-lg overflow-hidden bg-background/20 flex items-center justify-center">
               <span className="font-serif text-xl font-bold text-primary-foreground">W</span>
             </div> */}
-            <span className="font-serif text-6xl font-extrabold text-primary-foreground">Wit.</span>
+            <span className="font-serif text-6xl font-extrabold text-primary-foreground">
+              Wit.
+            </span>
           </Link>
         </div>
       </div>

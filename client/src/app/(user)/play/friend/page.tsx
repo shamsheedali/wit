@@ -2,7 +2,6 @@
 
 import { ChessBoard } from "@/components/chess/chessBoard";
 import { TimeDropdown } from "@/components/chess/time-dropdown";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -231,7 +230,7 @@ export default function PlayFriend() {
 
   // Helper function to pair moves
   const getMovePairs = (
-    moves: ChessMove[]
+    moves: ChessMove[],
   ): { white: ChessMove | null; black: ChessMove | null }[] => {
     const pairs: { white: ChessMove | null; black: ChessMove | null }[] = [];
     for (let i = 0; i < moves.length; i += 2) {
@@ -350,14 +349,14 @@ export default function PlayFriend() {
     };
 
     loadRelevantOpenings();
-  }, [moves]);
+  }, [getOpeningFromPGN, moves]);
 
   // Update opening when chess or openings change
   useEffect(() => {
     if (chess) {
       setCurrentOpening(getOpeningFromPGN(chess));
     }
-  }, [chess, openings]);
+  }, [getOpeningFromPGN, chess, openings]);
 
   // Fetch friends and user names
   useEffect(() => {
@@ -400,7 +399,15 @@ export default function PlayFriend() {
         if (timerRef.current) clearInterval(timerRef.current);
       };
     }
-  }, [gameStarted, gameId, activePlayer, whiteTime, blackTime, setGameState]);
+  }, [
+    gameStarted,
+    gameId,
+    activePlayer,
+    whiteTime,
+    blackTime,
+    setGameState,
+    chess,
+  ]);
 
   // Socket listener for opponent moves
   useEffect(() => {
@@ -423,7 +430,7 @@ export default function PlayFriend() {
             // Update activePlayer based on whose turn it is now
             setGameState({ activePlayer: newChess.turn() });
           }
-        }
+        },
       );
 
       socket.on(
@@ -432,23 +439,19 @@ export default function PlayFriend() {
           opponentId: string;
           result: "whiteWin" | "blackWin" | "draw";
         }) => {
-            toast.success(`Opponent resigned: ${data.result}`);
-            resetGame();
-            setChess(new Chess());
-            setMoveIndex(-1);
-            setViewMode(false);
-            setCurrentOpening("No moves yet");
-            setBoardKey((prevKey) => prevKey + 1);
-        }
+          toast.success(`Opponent resigned: ${data.result}`);
+          resetGame();
+          setChess(new Chess());
+          setMoveIndex(-1);
+          setViewMode(false);
+          setCurrentOpening("No moves yet");
+          setBoardKey((prevKey) => prevKey + 1);
+        },
       );
 
       socket.on("drawRequestAccepted", () => {
-        endGame(
-          "draw",
-          "draw",
-          chess.fen()
-        )
-      })
+        endGame("draw", "draw", chess.fen());
+      });
 
       return () => {
         socket.off("moveMade");
@@ -489,7 +492,7 @@ export default function PlayFriend() {
   const endGame = async (
     result: "whiteWin" | "blackWin" | "draw",
     lossType: LossType,
-    fen: string
+    fen: string,
   ) => {
     if (dbGameId && gameStartTime) {
       const gameDuration = Math.floor((Date.now() - gameStartTime) / 1000);
@@ -528,15 +531,15 @@ export default function PlayFriend() {
   };
 
   const handleDraw = () => {
-      const socket = getSocket();
-      if (socket) {
-        socket.emit("opponentDrawRequest", {
-          opponentId,
-          senderId: user?._id,
-          senderName: user?.username,
-        });
-      }
-  }
+    const socket = getSocket();
+    if (socket) {
+      socket.emit("opponentDrawRequest", {
+        opponentId,
+        senderId: user?._id,
+        senderName: user?.username,
+      });
+    }
+  };
 
   const handleMoveUpdate = async (move: ChessMove | undefined, fen: string) => {
     if (!move) return;
@@ -593,10 +596,10 @@ export default function PlayFriend() {
       user.username,
       user.profileImageUrl as string,
       user.eloRating,
-      selectedTime
+      selectedTime,
     );
     toast.success(
-      `Play request sent to ${selectedFriend.username} (${selectedTime})`
+      `Play request sent to ${selectedFriend.username} (${selectedTime})`,
     );
   };
 
@@ -770,7 +773,9 @@ export default function PlayFriend() {
             <h1 className="text-3xl font-serif font-bold">Play a friend</h1>
           </div>
           <div className="w-full">
-            <h1 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Friends</h1>
+            <h1 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">
+              Friends
+            </h1>
             {friends && friends.length > 0 ? (
               <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
                 {friends.map((friend) => (
@@ -786,12 +791,16 @@ export default function PlayFriend() {
                         className="h-full w-full object-cover"
                       />
                     </div>
-                    <h1 className="font-medium text-foreground">{friend.username}</h1>
+                    <h1 className="font-medium text-foreground">
+                      {friend.username}
+                    </h1>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-4 bg-secondary/20 rounded-xl border border-border/30">No friends yet</p>
+              <p className="text-muted-foreground text-center py-4 bg-secondary/20 rounded-xl border border-border/30">
+                No friends yet
+              </p>
             )}
           </div>
         </div>
@@ -821,13 +830,18 @@ export default function PlayFriend() {
                   className="h-full w-full object-cover"
                 />
               </div>
-              <h1 className="font-bold text-xl text-foreground">{selectedFriend?.username}</h1>
+              <h1 className="font-bold text-xl text-foreground">
+                {selectedFriend?.username}
+              </h1>
             </div>
           </div>
           <div className="space-y-2 w-full">
             <TimeDropdown onValueChange={handleTimeChange} />
           </div>
-          <button className="w-full h-12 font-bold rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all duration-300" onClick={handlePlay}>
+          <button
+            className="w-full h-12 font-bold rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all duration-300"
+            onClick={handlePlay}
+          >
             Play
           </button>
         </div>
@@ -837,32 +851,47 @@ export default function PlayFriend() {
       {gameStarted && (
         <div className="relative z-10 bg-card/50 backdrop-blur-sm border border-border/50 w-full md:w-1/4 h-[550px] p-6 flex flex-col gap-6 rounded-3xl">
           <div className="border-b border-border/50 pb-3">
-            <h2 className="text-sm uppercase tracking-wider text-muted-foreground mb-1">Opening</h2>
+            <h2 className="text-sm uppercase tracking-wider text-muted-foreground mb-1">
+              Opening
+            </h2>
             <p className="font-medium text-foreground">{currentOpening}</p>
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar">
-            <h2 className="text-sm uppercase tracking-wider text-muted-foreground mb-3">Moves</h2>
+            <h2 className="text-sm uppercase tracking-wider text-muted-foreground mb-3">
+              Moves
+            </h2>
             <div className="bg-secondary/30 rounded-xl overflow-hidden border border-border/50">
               <table className="w-full text-sm text-foreground">
                 <thead className="bg-secondary/50">
                   <tr className="border-b border-border/50">
-                    <th className="w-1/6 text-center py-2 text-muted-foreground font-medium">#</th>
-                    <th className="w-5/12 text-center py-2 font-medium">White</th>
-                    <th className="w-5/12 text-center py-2 font-medium">Black</th>
+                    <th className="w-1/6 text-center py-2 text-muted-foreground font-medium">
+                      #
+                    </th>
+                    <th className="w-5/12 text-center py-2 font-medium">
+                      White
+                    </th>
+                    <th className="w-5/12 text-center py-2 font-medium">
+                      Black
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {getMovePairs(moves).map((pair, index) => (
-                    <tr key={index} className="hover:bg-secondary/40 border-b border-border/10 transition-colors">
-                      <td className="text-center py-2 text-muted-foreground">{index + 1}.</td>
+                    <tr
+                      key={index}
+                      className="hover:bg-secondary/40 border-b border-border/10 transition-colors"
+                    >
+                      <td className="text-center py-2 text-muted-foreground">
+                        {index + 1}.
+                      </td>
                       <td className="text-center py-2">
                         {pair.white && (
                           <span className="flex items-center justify-center gap-1">
                             <span className="text-lg">
                               {getPieceIcon(
                                 pair.white.piece,
-                                pair.white.color || "w"
+                                pair.white.color || "w",
                               )}
                             </span>
                             {pair.white.san}
@@ -875,7 +904,7 @@ export default function PlayFriend() {
                             <span className="text-lg">
                               {getPieceIcon(
                                 pair.black.piece,
-                                pair.black.color || "b"
+                                pair.black.color || "b",
                               )}
                             </span>
                             {pair.black.san}
@@ -903,7 +932,7 @@ export default function PlayFriend() {
                   endGame(
                     playerColor === "w" ? "blackWin" : "whiteWin",
                     "resignation",
-                    chess.fen()
+                    chess.fen(),
                   )
                 }
               >
@@ -911,31 +940,31 @@ export default function PlayFriend() {
               </button>
             </div>
             <div className="flex gap-2 justify-center mt-2">
-              <button 
+              <button
                 className="p-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
                 onClick={handleFirstMove}
               >
                 <ChevronsLeft className="w-5 h-5" />
               </button>
-              <button 
+              <button
                 className="p-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
                 onClick={handlePreviousMove}
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <button 
+              <button
                 className="p-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
                 onClick={handleNextMove}
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
-              <button 
+              <button
                 className="p-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
                 onClick={handleLastMove}
               >
                 <ChevronsRight className="w-5 h-5" />
               </button>
-              <button 
+              <button
                 className="p-2 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors ml-auto"
                 onClick={() => setIsReportModalOpen(true)}
               >
@@ -954,7 +983,9 @@ export default function PlayFriend() {
           </DialogHeader>
           <div className="space-y-6 pt-4">
             <div>
-              <Label className="text-sm text-muted-foreground mb-3 block uppercase tracking-wider">Reason for Report</Label>
+              <Label className="text-sm text-muted-foreground mb-3 block uppercase tracking-wider">
+                Reason for Report
+              </Label>
               <RadioGroup
                 value={reportReason}
                 onValueChange={setReportReason}
@@ -962,25 +993,35 @@ export default function PlayFriend() {
               >
                 <div className="flex items-center space-x-3 bg-secondary/30 p-3 rounded-xl border border-border/50">
                   <RadioGroupItem value="cheating" id="cheating" />
-                  <Label htmlFor="cheating" className="cursor-pointer">Cheating</Label>
+                  <Label htmlFor="cheating" className="cursor-pointer">
+                    Cheating
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-3 bg-secondary/30 p-3 rounded-xl border border-border/50">
                   <RadioGroupItem
                     value="inappropriate_behavior"
                     id="inappropriate_behavior"
                   />
-                  <Label htmlFor="inappropriate_behavior" className="cursor-pointer">
+                  <Label
+                    htmlFor="inappropriate_behavior"
+                    className="cursor-pointer"
+                  >
                     Inappropriate Behavior
                   </Label>
                 </div>
                 <div className="flex items-center space-x-3 bg-secondary/30 p-3 rounded-xl border border-border/50">
                   <RadioGroupItem value="other" id="other" />
-                  <Label htmlFor="other" className="cursor-pointer">Other</Label>
+                  <Label htmlFor="other" className="cursor-pointer">
+                    Other
+                  </Label>
                 </div>
               </RadioGroup>
             </div>
             <div>
-              <Label htmlFor="details" className="text-sm text-muted-foreground mb-2 block uppercase tracking-wider">
+              <Label
+                htmlFor="details"
+                className="text-sm text-muted-foreground mb-2 block uppercase tracking-wider"
+              >
                 Additional Details
               </Label>
               <Input
