@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import Admin from '../app/models/admin.model';
 import User from '../app/models/user.model';
-import log from '../utils/logger';
+import logger from '../utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 import container from '../config/inversify.config';
 import ClubRepository from '../app/repositories/club.repository';
@@ -15,7 +15,7 @@ export default function socketHandler(io: Server) {
   const clubRepository = container.get<ClubRepository>(TYPES.ClubRepository);
 
   io.on('connection', (socket: Socket) => {
-    log.info(`User connected: ${socket.id}`);
+    logger.info(`User connected: ${socket.id}`);
 
     socket.on('join', async (userId: string) => {
       onlineUsers.set(userId, socket.id);

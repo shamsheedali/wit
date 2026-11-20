@@ -7,7 +7,7 @@ import { IGame, GameResult, GameType, LossType, GameStatus, IMove } from '../mod
 import { IGameInput } from '../dtos/game.dto';
 import TYPES from '../../config/types';
 import { IGameService } from './interface/IGameService';
-import log from '../../utils/logger';
+import logger from '../../utils/logger';
 
 @injectable()
 export default class GameService extends BaseService<IGame> implements IGameService {
@@ -68,7 +68,7 @@ export default class GameService extends BaseService<IGame> implements IGameServ
 
       try {
         session.startTransaction();
-        log.info(`Attempt ${attempt + 1} to update game ${gameId}`);
+        logger.info(`Attempt ${attempt + 1} to update game ${gameId}`);
 
         const updatedGame = await this._gameRepository.findOneAndUpdate(
           { _id: gameId },
@@ -81,7 +81,7 @@ export default class GameService extends BaseService<IGame> implements IGameServ
 
         if (!updatedGame) {
           await session.abortTransaction();
-          log.warn(`Game ${gameId} not found`);
+          logger.warn(`Game ${gameId} not found`);
           return null;
         }
 
@@ -90,7 +90,7 @@ export default class GameService extends BaseService<IGame> implements IGameServ
         }
 
         await session.commitTransaction();
-        log.info(`Successfully updated game ${gameId}`);
+        logger.info(`Successfully updated game ${gameId}`);
         return updatedGame;
       } catch (error: any) {
         await session.abortTransaction();
@@ -99,19 +99,19 @@ export default class GameService extends BaseService<IGame> implements IGameServ
           lastError = error;
           attempt++;
           const delay = 100 * Math.pow(2, attempt);
-          log.warn(`Write conflict on game ${gameId}, retrying in ${delay}ms`);
+          logger.warn(`Write conflict on game ${gameId}, retrying in ${delay}ms`);
           await new Promise((resolve) => setTimeout(resolve, delay));
           continue;
         }
 
-        log.error(`Error updating game ${gameId}:`, error);
+        logger.error(`Error updating game ${gameId}:`, error);
         throw error;
       } finally {
         session.endSession();
       }
     }
 
-    log.error(`Max retries reached for game ${gameId} update`);
+    logger.error(`Max retries reached for game ${gameId} update`);
     throw lastError || new Error('Max retries reached due to persistent write conflicts');
   }
 
@@ -179,7 +179,7 @@ export default class GameService extends BaseService<IGame> implements IGameServ
         ),
       ]);
     } catch (error) {
-      log.error(`Error updating ratings for game ${game._id}:`, error);
+      logger.error(`Error updating ratings for game ${game._id}:`, error);
       throw error;
     }
   }

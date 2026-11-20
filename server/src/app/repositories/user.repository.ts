@@ -6,7 +6,7 @@ import TYPES from '../../config/types';
 import { cloudinary } from '../../config/cloudinary.config';
 import { IUserRepository } from './interface/IUserRepository';
 import { CreateUserDTO, GoogleUserInput } from '../dtos/user.dto';
-import log from '../../utils/logger';
+import logger from '../../utils/logger';
 
 @injectable()
 export default class UserRepository extends BaseRepository<IUser> implements IUserRepository {
@@ -100,7 +100,7 @@ export default class UserRepository extends BaseRepository<IUser> implements IUs
 
       return await this.update(userId, userData);
     } catch (error) {
-      log.error('Error updating profile image:', error);
+      logger.error('Error updating profile image:', error);
       throw error;
     }
   }
