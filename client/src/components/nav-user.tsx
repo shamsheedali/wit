@@ -30,6 +30,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
+import { disconnectSocket } from "@/lib/socket"
 
 export function NavUser({
   user,
@@ -46,6 +47,7 @@ export function NavUser({
 
   const handleAdminLogout = () => {
     localStorage.removeItem('adminToken');
+    disconnectSocket();
     router.push('/admin-login');
   }
 

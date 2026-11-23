@@ -17,7 +17,7 @@ interface FriendState {
   sendFriendRequest: (receiverId: string) => Promise<{ receiverId: string }>;
   updateFriendRequest: (
     requestId: string,
-    status: "accepted" | "ignored"
+    status: "accepted" | "ignored",
   ) => Promise<void>;
   fetchFriends: () => Promise<void>;
   sendPlayRequest: (
@@ -25,7 +25,7 @@ interface FriendState {
     senderName: string,
     senderPfp: string,
     eloRating: number,
-    time?: string
+    time?: string,
   ) => void;
   initializeSocket: () => Socket | null;
 }
@@ -49,7 +49,7 @@ export const useFriendStore = create<FriendState>((set) => ({
             friend &&
             typeof friend === "object" &&
             friend._id &&
-            typeof friend._id === "string"
+            typeof friend._id === "string",
         );
 
         set({ friends: validFriends });
@@ -75,7 +75,7 @@ export const useFriendStore = create<FriendState>((set) => ({
     } else {
       console.error(
         "Failed to fetch friend requests:",
-        result.error || result.message
+        result.error || result.message,
       );
     }
   },
@@ -95,7 +95,7 @@ export const useFriendStore = create<FriendState>((set) => ({
     } else {
       console.error(
         "Failed to send friend request:",
-        result.error || result.message
+        result.error || result.message,
       );
       throw new Error(result.message || "Failed to send friend request");
     }
@@ -103,7 +103,7 @@ export const useFriendStore = create<FriendState>((set) => ({
 
   updateFriendRequest: async (
     requestId: string,
-    status: "accepted" | "ignored"
+    status: "accepted" | "ignored",
   ) => {
     try {
       const userId = useAuthStore.getState().user?._id;
@@ -116,7 +116,7 @@ export const useFriendStore = create<FriendState>((set) => ({
       if (result.success) {
         set((state) => {
           const updatedRequests = state.friendRequests.map((req) =>
-            req._id === requestId ? result.data : req
+            req._id === requestId ? result.data : req,
           );
 
           return {
@@ -141,7 +141,7 @@ export const useFriendStore = create<FriendState>((set) => ({
     senderName: string,
     senderPfp: string,
     senderEloRating: number,
-    time = "10min"
+    time = "10min",
   ) => {
     const userId = useAuthStore.getState().user?._id;
     if (!userId) {
@@ -170,7 +170,8 @@ export const useFriendStore = create<FriendState>((set) => ({
       console.log("No authenticated user for socket");
       return null;
     }
-    const socket = getSocket() || initSocket(userId);
+    const socket = getSocket() || initSocket();
+    if (!socket) return null;
 
     socket
       .off("friendRequest")
@@ -185,7 +186,7 @@ export const useFriendStore = create<FriendState>((set) => ({
       .on("friendshipCreated", (data: { user: Friend }) => {
         set((state) => {
           const exists = state.friends.some(
-            (friend) => friend._id === data.user?._id
+            (friend) => friend._id === data.user?._id,
           );
           if (exists) return state;
           return { friends: [...state.friends, data.user] };
@@ -201,10 +202,10 @@ export const useFriendStore = create<FriendState>((set) => ({
             friendRequests: state.friendRequests.map((req) =>
               req._id === data.requestId
                 ? { ...req, status: data.status as "accepted" | "ignored" }
-                : req
+                : req,
             ),
           }));
-        }
+        },
       );
 
     return socket;

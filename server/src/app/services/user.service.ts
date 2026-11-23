@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import mongoose, { ClientSession, FilterQuery, QueryOptions, UpdateQuery } from 'mongoose';
+import mongoose, { FilterQuery, QueryOptions, UpdateQuery } from 'mongoose';
 import bcrypt from 'bcrypt';
 import { IUser } from '../models/user.model';
 import BaseService from '../../core/base.service';

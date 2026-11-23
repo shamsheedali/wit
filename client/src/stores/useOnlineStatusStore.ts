@@ -18,7 +18,8 @@ export const useOnlineStatusStore = create<OnlineStatusState>((set, get) => ({
       console.log("No authenticated user for socket");
       return null;
     }
-    const socket = getSocket() || initSocket(userId);
+    const socket = getSocket() || initSocket();
+    if(!socket) return null;
 
     socket.off('onlineUsersUpdate').on('onlineUsersUpdate', (userIds: string[]) => {
       set({ onlineUsers: userIds });

@@ -12,7 +12,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (admin?._id) {
-      initSocket(admin._id); // socket with admin._id
+      initSocket(true);
     }
   }, [admin?._id]); 
 

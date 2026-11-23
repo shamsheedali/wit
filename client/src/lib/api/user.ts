@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { handleApiError } from "../constants/errorHandler";
 import apiClient from "../apiClient";
 import axios from "axios";
+import { disconnectSocket } from "../socket";
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user`;
 
@@ -208,6 +209,7 @@ export const updateUserProfile = async ({
 //USER_LOGOUT
 export const userLogout = () => {
   localStorage.removeItem("userToken");
+  disconnectSocket();
 };
 
 //GET_ALL_USERS
