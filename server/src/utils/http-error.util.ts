@@ -1,55 +1,68 @@
 import HttpStatus from '../constants/httpStatus';
 
 export class ApplicationError extends Error {
-  public readonly code: number;
+  public readonly statusCode: number;
+  public readonly errorCode: string;
+  public readonly details?: unknown;
+  public readonly isOperational: boolean = true;
 
-  constructor(code: number, message: string = 'An error occurred') {
+  constructor(
+    statusCode: number,
+    message: string = 'An error occurred',
+    errorCode: string = 'APPLICATION_ERROR',
+    details?: unknown
+  ) {
     super(message);
-    this.code = code;
-    this.name = this.constructor.name; // Set error name for identification
-    Object.setPrototypeOf(this, ApplicationError.prototype);
-    Error.captureStackTrace?.(this, this.constructor); // Preserve stack trace
-  }
-}
+    this.statusCode = statusCode;
+    this.errorCode = errorCode;
+    this.details = details;
+    this.name = this.constructor.name;
 
-export class NotFoundError extends ApplicationError {
-  constructor(message: string = 'Resource not found') {
-    super(HttpStatus.NOT_FOUND, message);
-    Object.setPrototypeOf(this, NotFoundError.prototype);
+    Object.setPrototypeOf(this, new.target.prototype);
+    Error.captureStackTrace?.(this, this.constructor);
   }
 }
 
 export class BadRequestError extends ApplicationError {
-  constructor(message: string = 'Bad request') {
-    super(HttpStatus.BAD_REQUEST, message);
-    Object.setPrototypeOf(this, BadRequestError.prototype);
+  constructor(message: string = 'Bad request', details?: unknown) {
+    super(HttpStatus.BAD_REQUEST, message, 'BAD_REQUEST', details);
+  }
+}
+
+export class MissingFieldError extends ApplicationError {
+  constructor(fieldName: string) {
+    super(HttpStatus.BAD_REQUEST, `${fieldName} is required`, 'MISSING_FIELD', {
+      field: fieldName,
+    });
   }
 }
 
 export class UnauthorizedError extends ApplicationError {
-  constructor(message: string = 'Unauthorized access') {
-    super(HttpStatus.UNAUTHORIZED, message);
-    Object.setPrototypeOf(this, UnauthorizedError.prototype);
+  constructor(message: string = 'Unauthorized access', errorCode: string = 'UNAUTHORIZED') {
+    super(HttpStatus.UNAUTHORIZED, message, errorCode);
   }
 }
 
 export class ForbiddenError extends ApplicationError {
   constructor(message: string = 'Forbidden access') {
-    super(HttpStatus.FORBIDDEN, message);
-    Object.setPrototypeOf(this, ForbiddenError.prototype);
+    super(HttpStatus.FORBIDDEN, message, 'FORBIDDEN');
   }
 }
 
-export class MissingFieldError extends BadRequestError {
-  constructor(fieldName: string) {
-    super(`${fieldName} is required`);
-    Object.setPrototypeOf(this, MissingFieldError.prototype);
+export class NotFoundError extends ApplicationError {
+  constructor(message: string = 'Resource not found') {
+    super(HttpStatus.NOT_FOUND, message, 'NOT_FOUND');
+  }
+}
+
+export class ConflictError extends ApplicationError {
+  constructor(message: string = 'Resource already exists', details?: unknown) {
+    super(HttpStatus.CONFLICT, message, 'CONFLICT', details);
   }
 }
 
 export class InternalError extends ApplicationError {
   constructor(message: string = 'Internal server error') {
-    super(HttpStatus.INTERNAL_SERVER_ERROR, message);
-    Object.setPrototypeOf(this, InternalError.prototype);
+    super(HttpStatus.INTERNAL_SERVER_ERROR, message, 'INTERNAL_ERROR');
   }
 }

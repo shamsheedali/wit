@@ -29,7 +29,7 @@ export default class UserRepository extends BaseRepository<IUser> implements IUs
   }
 
   async findOneByEmail(email: string): Promise<IUser | null> {
-    return await this.model.findOne({ email });
+    return await this.model.findOne({ email }).select('+password').exec();
   }
 
   async findOneByUsername(username: string): Promise<IUser | null> {

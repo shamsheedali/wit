@@ -8,9 +8,8 @@ import TYPES from '../../config/types';
 import {
   CreateUserDTO,
   GoogleUserInput,
-  GoogleUserResponseDTO,
-  LoginResponseDTO,
   LoginUserDTO,
+  toUserDTO,
   UserResponseDTO,
 } from '../dtos/user.dto';
 import { IUserService } from './interface/IUserService';
@@ -37,18 +36,7 @@ export default class UserService extends BaseService<IUser> implements IUserServ
     const existingUserEmail = await this._userRepository.findOneByEmail(email);
     if (existingUserEmail) {
       return {
-        user: {
-          _id: existingUserEmail._id.toString(),
-          username: existingUserEmail.username,
-          email: existingUserEmail.email,
-          friends: Array.isArray(existingUserEmail.friends)
-            ? (existingUserEmail.friends as mongoose.Types.ObjectId[]).map((id) => id.toString())
-            : [],
-          eloRating: existingUserEmail.eloRating,
-          gamesPlayed: existingUserEmail.gamesPlayed,
-          createdAt: existingUserEmail.createdAt,
-          updatedAt: existingUserEmail.updatedAt,
-        },
+        user: toUserDTO(existingUserEmail),
         isNewUser: false,
         duplicate: 'email',
       };
@@ -57,18 +45,7 @@ export default class UserService extends BaseService<IUser> implements IUserServ
     const existingUserUsername = await this._userRepository.findOneByUsername(username);
     if (existingUserUsername) {
       return {
-        user: {
-          _id: existingUserUsername._id.toString(),
-          username: existingUserUsername.username,
-          email: existingUserUsername.email,
-          friends: Array.isArray(existingUserUsername.friends)
-            ? (existingUserUsername.friends as mongoose.Types.ObjectId[]).map((id) => id.toString())
-            : [],
-          eloRating: existingUserUsername.eloRating,
-          gamesPlayed: existingUserUsername.gamesPlayed,
-          createdAt: existingUserUsername.createdAt,
-          updatedAt: existingUserUsername.updatedAt,
-        },
+        user: toUserDTO(existingUserUsername),
         isNewUser: false,
         duplicate: 'username',
       };
@@ -82,23 +59,12 @@ export default class UserService extends BaseService<IUser> implements IUserServ
     });
 
     return {
-      user: {
-        _id: newUser._id.toString(),
-        username: newUser.username,
-        email: newUser.email,
-        friends: Array.isArray(newUser.friends)
-          ? (newUser.friends as mongoose.Types.ObjectId[]).map((id) => id.toString())
-          : [],
-        eloRating: newUser.eloRating,
-        gamesPlayed: newUser.gamesPlayed,
-        createdAt: newUser.createdAt,
-        updatedAt: newUser.updatedAt,
-      },
+      user: toUserDTO(newUser),
       isNewUser: true,
     };
   }
 
-  async loginUser(dto: LoginUserDTO): Promise<LoginResponseDTO> {
+  async loginUser(dto: LoginUserDTO): Promise<UserResponseDTO> {
     const { email, password } = dto;
 
     const user = await this.findByEmail(email);
@@ -115,27 +81,10 @@ export default class UserService extends BaseService<IUser> implements IUserServ
       throw new ApplicationError(HttpStatus.BAD_REQUEST, HttpResponse.PASSWORD_INCORRECT);
     }
 
-    return {
-      _id: user._id.toString(),
-      firstName: user.firstName,
-      lastName: user.lastName,
-      username: user.username,
-      email: user.email,
-      bio: user.bio,
-      friends: Array.isArray(user.friends)
-        ? (user.friends as mongoose.Types.ObjectId[]).map((id) => id.toString())
-        : [],
-      eloRating: user.eloRating,
-      gamesPlayed: user.gamesPlayed,
-      profileImageUrl: user.profileImageUrl,
-      profileImageId: user.profileImageId,
-      isBanned: user.isBanned,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+    return toUserDTO(user);
   }
 
-  async googleUser(dto: GoogleUserInput): Promise<GoogleUserResponseDTO> {
+  async googleUser(dto: GoogleUserInput): Promise<UserResponseDTO> {
     const { googleId, username, email, profileImageUrl } = dto;
     const newUsername = username.includes(' ') ? username.replace(/ /g, '_') : username;
 
@@ -149,24 +98,7 @@ export default class UserService extends BaseService<IUser> implements IUserServ
       });
     }
 
-    return {
-      _id: user._id.toString(),
-      firstName: user.firstName,
-      lastName: user.lastName,
-      username: user.username,
-      email: user.email,
-      bio: user.bio,
-      friends: Array.isArray(user.friends)
-        ? (user.friends as mongoose.Types.ObjectId[]).map((id) => id.toString())
-        : [],
-      eloRating: user.eloRating,
-      gamesPlayed: user.gamesPlayed,
-      profileImageUrl: user.profileImageUrl,
-      profileImageId: user.profileImageId,
-      isBanned: user.isBanned,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+    return toUserDTO(user);
   }
 
   async hashPassword(password: string) {

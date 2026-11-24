@@ -1,11 +1,4 @@
-import {
-  CreateUserDTO,
-  GoogleUserInput,
-  UserResponseDTO,
-  LoginUserDTO,
-  LoginResponseDTO,
-  GoogleUserResponseDTO,
-} from '../../dtos/user.dto';
+import { CreateUserDTO, GoogleUserInput, UserResponseDTO, LoginUserDTO } from '../../dtos/user.dto';
 import { IUser } from '../../models/user.model';
 
 export interface IUserService {
@@ -14,8 +7,8 @@ export interface IUserService {
     isNewUser: boolean;
     duplicate?: 'email' | 'username';
   }>;
-  loginUser(dto: LoginUserDTO): Promise<LoginResponseDTO>;
-  googleUser(dto: GoogleUserInput): Promise<GoogleUserResponseDTO>;
+  loginUser(dto: LoginUserDTO): Promise<UserResponseDTO>;
+  googleUser(dto: GoogleUserInput): Promise<UserResponseDTO>;
   findAllPaginated(skip: number, limit: number): Promise<IUser[]>;
   searchUser(query: string): Promise<IUser[]>;
   findByUsername(name: string): Promise<IUser | null>;

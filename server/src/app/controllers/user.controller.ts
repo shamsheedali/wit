@@ -5,7 +5,13 @@ import HttpStatus from '../../constants/httpStatus';
 import UserService from '../services/user.service';
 import TokenService from '../services/token.service';
 import TYPES from '../../config/types';
-import { CreateUserDTO, GoogleUserInput, LoginUserDTO } from '../dtos/user.dto';
+import {
+  CreateUserDTO,
+  GoogleUserInput,
+  LoginUserDTO,
+  toPublicUserDTO,
+  toUserDTO,
+} from '../dtos/user.dto';
 import MailService from '../services/mail.service';
 import redisClient from '../../config/redis';
 import {
@@ -17,6 +23,7 @@ import {
 } from '../../utils/http-error.util';
 import HttpResponse from '../../constants/response-message.constant';
 import Role from '../../constants/role';
+import { sendCreated, sendPaginated, sendSuccess } from '../../utils/response.util';
 
 @injectable()
 export default class UserController {
@@ -56,11 +63,11 @@ export default class UserController {
       );
       this._tokenService.setRefreshTokenCookie(res, refreshToken);
 
-      res.status(HttpStatus.CREATED).json({
-        message: HttpResponse.USER_CREATION_SUCCESS,
-        user: userResult.user,
-        accessToken,
-      });
+      return sendCreated(
+        res,
+        { user: userResult.user, accessToken },
+        HttpResponse.USER_CREATION_SUCCESS
+      );
     } else if (userResult.duplicate === 'username') {
       throw new BadRequestError(HttpResponse.USERNAME_EXIST);
     } else {
@@ -80,11 +87,7 @@ export default class UserController {
     const refreshToken = this._tokenService.generateRefreshToken(user._id, dto.email, Role.USER);
     this._tokenService.setRefreshTokenCookie(res, refreshToken);
 
-    res.status(HttpStatus.OK).json({
-      message: 'Login Successful',
-      user,
-      accessToken,
-    });
+    return sendSuccess(res, { user, accessToken }, HttpResponse.LOGIN_SUCCESS);
   }
 
   async checkUsername(req: Request, res: Response) {
@@ -95,7 +98,7 @@ export default class UserController {
     const existingUser = await this._userService.findByUsername(username);
     if (existingUser) throw new BadRequestError(HttpResponse.USERNAME_EXIST);
 
-    res.status(HttpStatus.OK).json({ message: 'Username verified' });
+    return sendSuccess(res, { available: true }, HttpResponse.USERNAME_VERIFIED);
   }
 
   async googleUser(req: Request, res: Response) {
@@ -111,11 +114,7 @@ export default class UserController {
     const refreshToken = this._tokenService.generateRefreshToken(user._id, dto.email, Role.USER);
     this._tokenService.setRefreshTokenCookie(res, refreshToken);
 
-    res.status(HttpStatus.OK).json({
-      message: 'Google auth successful',
-      accessToken,
-      user,
-    });
+    return sendSuccess(res, { user, accessToken }, HttpResponse.LOGIN_SUCCESS);
   }
 
   async verifyPassword(req: Request, res: Response) {
@@ -130,7 +129,7 @@ export default class UserController {
     const passwordValidation = await this._userService.isPasswordValid(password, user.password);
     if (!passwordValidation) throw new BadRequestError(HttpResponse.PASSWORD_INCORRECT);
 
-    res.status(HttpStatus.OK).json({ message: HttpResponse.PASSWORD_MATCHED });
+    return sendSuccess(res, { verified: true }, HttpResponse.PASSWORD_MATCHED);
   }
 
   async forgotPassword(req: Request, res: Response) {
@@ -150,7 +149,7 @@ export default class UserController {
 
     await this._mailService.sendMail(mailOptions);
 
-    res.status(HttpStatus.OK).json({ message: HttpResponse.RESET_PASS_LINK });
+    return sendSuccess(res, null, HttpResponse.RESET_PASS_LINK);
   }
 
   async resetPassword(req: Request, res: Response) {
@@ -168,7 +167,7 @@ export default class UserController {
     if (!updatedUser)
       throw new ApplicationError(HttpStatus.INTERNAL_SERVER_ERROR, 'Failed to update password');
 
-    res.status(HttpStatus.OK).json({ message: HttpResponse.PASSWORD_CHANGE_SUCCESS });
+    return sendSuccess(res, null, HttpResponse.PASSWORD_CHANGE_SUCCESS);
   }
 
   async sendOtp(req: Request, res: Response) {
@@ -192,7 +191,7 @@ export default class UserController {
     await this._mailService.sendMail(mailOptions);
     await redisClient.set(`otp:${email}`, generatedOtp, { EX: 300 }); // 5 min
 
-    res.status(HttpStatus.OK).json({ message: 'OTP mail shared' });
+    return sendSuccess(res, null, HttpResponse.OTP_MAIL_SHARED);
   }
 
   async verifyOtp(req: Request, res: Response) {
@@ -208,7 +207,7 @@ export default class UserController {
 
     await redisClient.del(`otp:${email}`);
 
-    res.status(HttpStatus.OK).json({ message: 'OTP Verified' });
+    return sendSuccess(res, { verified: true }, HttpResponse.OTP_VERIFIED);
   }
 
   async searchUser(req: Request, res: Response) {
@@ -217,7 +216,8 @@ export default class UserController {
     if (!query) throw new BadRequestError('Search query is required');
 
     const users = await this._userService.searchUser(query);
-    res.status(HttpStatus.OK).json(users);
+
+    return sendSuccess(res, users.map(toPublicUserDTO));
   }
 
   async getUser(req: Request, res: Response) {
@@ -228,7 +228,7 @@ export default class UserController {
     const user = await this._userService.findByUsername(username);
     if (!user) throw new NotFoundError(HttpResponse.USER_NOT_FOUND);
 
-    res.status(HttpStatus.OK).json(user);
+    return sendSuccess(res, toPublicUserDTO(user));
   }
 
   async updateProfile(req: Request, res: Response) {
@@ -242,10 +242,7 @@ export default class UserController {
     const updatedUser = await this._userService.updateUserProfile(userId, userData, profileImage);
     if (!updatedUser) throw new NotFoundError(HttpResponse.USER_NOT_FOUND);
 
-    res.status(HttpStatus.OK).json({
-      message: HttpResponse.RESOURCE_UPDATED,
-      user: updatedUser,
-    });
+    return sendSuccess(res, toUserDTO(updatedUser), HttpResponse.RESOURCE_UPDATED);
   }
 
   async refreshToken(req: Request, res: Response) {
@@ -259,10 +256,7 @@ export default class UserController {
     const newRefreshToken = this._tokenService.generateRefreshToken(userId, email, role);
     this._tokenService.setRefreshTokenCookie(res, newRefreshToken, false);
 
-    res.status(HttpStatus.OK).json({
-      message: 'Token refreshed successfully',
-      accessToken: newAccessToken,
-    });
+    return sendSuccess(res, { accessToken: newAccessToken }, HttpResponse.TOKEN_REFRESHED);
   }
 
   async getUsers(req: Request, res: Response) {
@@ -270,14 +264,11 @@ export default class UserController {
     const limit = parseInt(req.query.limit as string) || 7;
     const skip = (page - 1) * limit;
 
-    const users = await this._userService.findAllPaginated(skip, limit);
-    const totalUsers = await this._userService.getTotalUsers();
+    const [users, total] = await Promise.all([
+      this._userService.findAllPaginated(skip, limit),
+      this._userService.getTotalUsers(),
+    ]);
 
-    res.status(HttpStatus.OK).json({
-      users,
-      totalUsers,
-      totalPages: Math.ceil(totalUsers / limit),
-      currentPage: page,
-    });
+    return sendPaginated(res, users.map(toPublicUserDTO), { total, page, limit });
   }
 }

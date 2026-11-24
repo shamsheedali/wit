@@ -39,6 +39,7 @@ const UserSchema = new Schema<IUser>(
     },
     password: {
       type: String,
+      select: false, // Excluded from all queries
       validate: {
         validator: function (this: IUser, value: string) {
           return !!this.googleId || !!value; // Password is required only if no Google ID
