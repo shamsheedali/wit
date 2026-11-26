@@ -2,8 +2,14 @@ import { Request, Response } from 'express';
 import { inject, injectable } from 'inversify';
 import TYPES from '../../config/types';
 import TournamentService from '../services/tournament.service';
-import HttpStatus from '../../constants/httpStatus';
-import { MissingFieldError, BadRequestError, NotFoundError } from '../../utils/http-error.util';
+import {
+  MissingFieldError,
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
+} from '../../utils/http-error.util';
+import HttpResponse from '../../constants/response-message.constant';
+import { sendCreated, sendPaginated, sendSuccess } from '../../utils/response.util';
 
 @injectable()
 export default class TournamentController {
@@ -33,8 +39,9 @@ export default class TournamentController {
     if (!maxGames) throw new MissingFieldError('maxGames');
     if (!maxPlayers) throw new MissingFieldError('maxPlayers');
     if (!createdBy) throw new MissingFieldError('createdBy');
-    if (password && password.length !== 6)
+    if (password && password.length !== 6) {
       throw new BadRequestError('Password must be exactly 6 characters');
+    }
     if (isClubTournament && (!clubMemberIds || !Array.isArray(clubMemberIds))) {
       throw new BadRequestError('clubMemberIds must be an array for club tournaments');
     }
@@ -52,7 +59,7 @@ export default class TournamentController {
       clubMemberIds || []
     );
 
-    res.status(HttpStatus.CREATED).json({ message: 'Tournament created', tournament });
+    return sendCreated(res, tournament, HttpResponse.TOURNAMENT_CREATION_SUCCESS);
   }
 
   async joinTournament(req: Request, res: Response) {
@@ -63,7 +70,7 @@ export default class TournamentController {
 
     const tournament = await this._tournamentService.joinTournament(tournamentId, userId, password);
 
-    res.status(HttpStatus.OK).json({ message: 'Joined tournament', tournament });
+    return sendSuccess(res, tournament, HttpResponse.TOURNAMENT_JOINED_SUCCESS);
   }
 
   async startTournament(req: Request, res: Response) {
@@ -74,7 +81,7 @@ export default class TournamentController {
 
     const tournament = await this._tournamentService.startTournament(tournamentId, userId);
 
-    res.status(HttpStatus.OK).json({ message: 'Tournament started', tournament });
+    return sendSuccess(res, tournament, HttpResponse.TOURNAMENT_STARTED);
   }
 
   async leaveTournament(req: Request, res: Response) {
@@ -85,7 +92,7 @@ export default class TournamentController {
 
     const tournament = await this._tournamentService.leaveTournament(tournamentId, userId);
 
-    res.status(HttpStatus.OK).json({ message: 'Left tournament', tournament });
+    return sendSuccess(res, tournament, HttpResponse.TOURNAMENT_LEFT_SUCCESS);
   }
 
   async deleteTournament(req: Request, res: Response) {
@@ -96,7 +103,7 @@ export default class TournamentController {
 
     const tournament = await this._tournamentService.deleteTournament(tournamentId, userId);
 
-    res.status(HttpStatus.OK).json({ message: 'Tournament deleted', tournament });
+    return sendSuccess(res, tournament, HttpResponse.TOURNAMENT_DELETION_SUCCESS);
   }
 
   async getTournaments(req: Request, res: Response) {
@@ -105,12 +112,7 @@ export default class TournamentController {
 
     const { tournaments, total } = await this._tournamentService.getTournaments(page, limit);
 
-    res.status(HttpStatus.OK).json({
-      tournaments,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
-    });
+    return sendPaginated(res, tournaments, { total, page, limit });
   }
 
   async getUserTournaments(req: Request, res: Response) {
@@ -120,7 +122,7 @@ export default class TournamentController {
 
     const tournaments = await this._tournamentService.findByUserId(userId);
 
-    res.status(HttpStatus.OK).json({ tournaments });
+    return sendSuccess(res, tournaments);
   }
 
   async getTournament(req: Request, res: Response) {
@@ -129,9 +131,9 @@ export default class TournamentController {
     if (!tournamentId) throw new MissingFieldError('tournamentId');
 
     const tournament = await this._tournamentService.getTournament(tournamentId);
-    if (!tournament) throw new NotFoundError('Tournament not found');
+    if (!tournament) throw new NotFoundError(HttpResponse.TOURNAMENT_NOT_FOUND);
 
-    res.status(HttpStatus.OK).json({ tournament });
+    return sendSuccess(res, tournament);
   }
 
   async submitResult(req: Request, res: Response) {
@@ -149,7 +151,7 @@ export default class TournamentController {
       userId
     );
 
-    res.status(HttpStatus.OK).json({ message: 'Result submitted', tournament });
+    return sendSuccess(res, tournament, HttpResponse.TOURNAMENT_RESULT_SUBMITTED);
   }
 
   async submitPlayoffResult(req: Request, res: Response) {
@@ -165,21 +167,21 @@ export default class TournamentController {
       userId
     );
 
-    res.status(HttpStatus.OK).json({ message: 'Playoff result submitted', tournament });
+    return sendSuccess(res, tournament, HttpResponse.TOURNAMENT_PLAYOFF_RESULT_SUBMITTED);
   }
 
   async pairMatch(req: Request, res: Response) {
     const { tournamentId } = req.body;
     const userId = req.user?.userId;
 
+    if (!userId) throw new UnauthorizedError(HttpResponse.UNAUTHORIZED);
     if (!tournamentId) throw new MissingFieldError('tournamentId');
-    if (!userId) throw new MissingFieldError('userId');
 
     const match = await this._tournamentService.pairMatch(tournamentId, userId);
     if (!match) {
-      return res.status(HttpStatus.OK).json({ message: 'No available opponents' });
+      return sendSuccess(res, null, HttpResponse.NO_AVAILABLE_OPPONENTS);
     }
 
-    res.status(HttpStatus.OK).json({ message: 'Match paired', match });
+    return sendSuccess(res, match, HttpResponse.MATCH_PAIRED_SUCCESS);
   }
 }

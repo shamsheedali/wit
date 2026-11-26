@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import { inject, injectable } from 'inversify';
-import HttpStatus from '../../constants/httpStatus';
 import GameService from '../services/game.service';
 import TYPES from '../../config/types';
 import { MissingFieldError, BadRequestError, NotFoundError } from '../../utils/http-error.util';
 import HttpResponse from '../../constants/response-message.constant';
+import { sendCreated, sendPaginated, sendSuccess } from '../../utils/response.util';
 
 @injectable()
 export default class GameController {
@@ -34,7 +34,7 @@ export default class GameController {
       moves
     );
 
-    res.status(HttpStatus.CREATED).json({ game });
+    return sendCreated(res, game, HttpResponse.GAME_CREATION_SUCCESS);
   }
 
   async getGame(req: Request, res: Response) {
@@ -42,7 +42,9 @@ export default class GameController {
     if (!gameId) throw new BadRequestError('Game ID is required');
 
     const game = await this._gameService.getGame(gameId);
-    res.status(HttpStatus.OK).json({ game });
+    if (!game) throw new NotFoundError(HttpResponse.GAME_NOT_FOUND);
+
+    return sendSuccess(res, game);
   }
 
   async updateGame(req: Request, res: Response) {
@@ -60,9 +62,9 @@ export default class GameController {
       gameStatus,
     });
 
-    if (!updatedGame) throw new NotFoundError(HttpResponse.GAME_NOT_FOUND); // Add to HttpResponse
+    if (!updatedGame) throw new NotFoundError(HttpResponse.GAME_NOT_FOUND);
 
-    res.status(HttpStatus.OK).json({ game: updatedGame });
+    return sendSuccess(res, updatedGame, HttpResponse.GAME_UPDATED_SUCCESS);
   }
 
   async getUserGames(req: Request, res: Response) {
@@ -73,13 +75,8 @@ export default class GameController {
     if (!userId) throw new BadRequestError('User ID is required');
 
     const { games, total } = await this._gameService.getUserGames(userId, page, limit);
-    res.status(HttpStatus.OK).json({
-      games,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    });
+
+    return sendPaginated(res, games, { total, page, limit });
   }
 
   async getOngoingGameByUserId(req: Request, res: Response) {
@@ -87,8 +84,8 @@ export default class GameController {
     if (!userId) throw new BadRequestError('User ID is required');
 
     const game = await this._gameService.findOngoingGameByUserId(userId);
-    if (!game) throw new NotFoundError('No ongoing game found for this user');
+    if (!game) throw new NotFoundError(HttpResponse.ONGOING_GAME_NOT_FOUND);
 
-    res.status(HttpStatus.OK).json(game);
+    return sendSuccess(res, game);
   }
 }

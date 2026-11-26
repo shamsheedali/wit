@@ -53,7 +53,7 @@ const clubSchema = new Schema<IClub>(
     },
     messages: [
       {
-        senderId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        senderId: { type: Schema.Types.ObjectId, ref: 'Users', required: true },
         content: { type: String, required: true },
         timestamp: { type: Number, default: Date.now },
       },

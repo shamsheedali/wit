@@ -73,7 +73,7 @@ export default class UserService extends BaseService<IUser> implements IUserServ
     }
 
     if (user.isBanned) {
-      throw new ApplicationError(HttpStatus.FORBIDDEN, HttpResponse.USER_BANNED);
+      throw new ApplicationError(HttpStatus.FORBIDDEN, HttpResponse.ACCOUNT_BANNED);
     }
 
     const isValid = await this.isPasswordValid(password, user.password);

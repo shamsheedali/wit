@@ -2,10 +2,11 @@ import { inject, injectable } from 'inversify';
 import { Request, Response } from 'express';
 import FriendService from '../services/friend.service';
 import TYPES from '../../config/types';
-import HttpStatus from '../../constants/httpStatus';
 import { Server } from 'socket.io';
 import { MissingFieldError, BadRequestError, NotFoundError } from '../../utils/http-error.util';
 import HttpResponse from '../../constants/response-message.constant';
+import { sendCreated, sendSuccess } from '../../utils/response.util';
+import { toUserDTO } from '../dtos/user.dto';
 
 @injectable()
 export default class FriendController {
@@ -20,7 +21,7 @@ export default class FriendController {
     if (!userId) throw new MissingFieldError('userId');
 
     const friends = await this._friendService.getFriends(userId as string);
-    res.status(HttpStatus.OK).json(friends);
+    return sendSuccess(res, friends);
   }
 
   async sendFriendRequest(req: Request, res: Response) {
@@ -31,7 +32,7 @@ export default class FriendController {
     const io = req.app.get('io') as Server;
     const request = await this._friendService.sendFriendRequest(senderId, receiverId, io);
 
-    res.status(HttpStatus.CREATED).json({ success: true, data: request });
+    return sendCreated(res, request, HttpResponse.FRIEND_REQUEST_SENT);
   }
 
   async getFriendRequests(req: Request, res: Response) {
@@ -39,7 +40,7 @@ export default class FriendController {
     if (!userId) throw new MissingFieldError('userId');
 
     const requests = await this._friendService.getFriendRequests(userId as string);
-    res.status(HttpStatus.OK).json(requests);
+    return sendSuccess(res, requests);
   }
 
   async updateFriendRequest(req: Request, res: Response) {
@@ -58,7 +59,7 @@ export default class FriendController {
       io
     );
 
-    res.status(HttpStatus.OK).json({ success: true, data: updatedRequest });
+    return sendSuccess(res, updatedRequest, HttpResponse.FRIEND_REQUEST_UPDATED);
   }
 
   async removeFriend(req: Request, res: Response) {
@@ -73,6 +74,6 @@ export default class FriendController {
     const updatedFriend = await this._friendService.removeFriend(friendId, userId);
     if (!updatedFriend) throw new NotFoundError(HttpResponse.USER_NOT_FOUND);
 
-    res.status(HttpStatus.OK).json({ message: 'Friend removed successfully', updatedUser });
+    return sendSuccess(res, toUserDTO(updatedUser), HttpResponse.FRIEND_REMOVED_SUCCESS);
   }
 }

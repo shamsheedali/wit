@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import { inject, injectable } from 'inversify';
-import HttpStatus from '../../constants/httpStatus';
 import GameReportService from '../services/gameReport.service';
 import TYPES from '../../config/types';
 import { MissingFieldError, UnauthorizedError } from '../../utils/http-error.util';
 import HttpResponse from '../../constants/response-message.constant';
+import { sendCreated } from '../../utils/response.util';
 
 @injectable()
 export default class GameReportController {
@@ -31,9 +31,6 @@ export default class GameReportController {
       details,
     });
 
-    res.status(HttpStatus.CREATED).json({
-      message: HttpResponse.REPORT_SUBMITTED,
-      data: report,
-    });
+    return sendCreated(res, report, HttpResponse.REPORT_SUBMITTED);
   }
 }

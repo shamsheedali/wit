@@ -1,6 +1,7 @@
-import { Document, Schema, model } from 'mongoose';
+import { Document, Schema, Types, model } from 'mongoose';
 
 export interface IAdmin extends Document {
+  _id: Types.ObjectId;
   email: string;
   password: string;
 }

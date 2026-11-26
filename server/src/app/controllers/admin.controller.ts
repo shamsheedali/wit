@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { inject, injectable } from 'inversify';
-import HttpStatus from '../../constants/httpStatus';
 import UserService from '../services/user.service';
 import TokenService from '../services/token.service';
 import GameService from '../services/game.service';
@@ -17,6 +16,9 @@ import {
 } from '../../utils/http-error.util';
 import HttpResponse from '../../constants/response-message.constant';
 import GameReportService from '../services/gameReport.service';
+import { sendCreated, sendPaginated, sendSuccess } from '../../utils/response.util';
+import { toUserDTO } from '../dtos/user.dto';
+import { toAdminDTO } from '../dtos/admin.dto';
 
 @injectable()
 export default class AdminController {
@@ -59,16 +61,12 @@ export default class AdminController {
     if (!isPasswordValid) throw new UnauthorizedError(HttpResponse.PASSWORD_INCORRECT);
 
     const accessToken = this._tokenService.generateAccessToken(
-      admin._id as string,
+      admin._id.toString(),
       email,
       Role.ADMIN
     );
 
-    res.status(HttpStatus.OK).json({
-      message: HttpResponse.LOGIN_SUCCESS,
-      accessToken,
-      admin,
-    });
+    return sendSuccess(res, { admin: toAdminDTO(admin), accessToken }, HttpResponse.LOGIN_SUCCESS);
   }
 
   async getUsers(req: Request, res: Response) {
@@ -76,15 +74,12 @@ export default class AdminController {
     const limit = parseInt(req.query.limit as string) || 7;
     const skip = (page - 1) * limit;
 
-    const users = await this._userService.findAllPaginated(skip, limit);
-    const totalUsers = await this._userService.getTotalUsers();
+    const [users, total] = await Promise.all([
+      this._userService.findAllPaginated(skip, limit),
+      this._userService.getTotalUsers(),
+    ]);
 
-    res.status(HttpStatus.OK).json({
-      users,
-      totalUsers,
-      totalPages: Math.ceil(totalUsers / limit),
-      currentPage: page,
-    });
+    return sendPaginated(res, users.map(toUserDTO), { total, page, limit });
   }
 
   async toggleBan(req: Request, res: Response) {
@@ -97,24 +92,20 @@ export default class AdminController {
     const updatedUser = await this._userService.update(userId, { isBanned: !user.isBanned });
     if (!updatedUser) throw new BadRequestError('Failed to toggle ban status');
 
-    res.status(HttpStatus.OK).json({
-      message: updatedUser.isBanned ? 'User banned successfully' : 'User unbanned successfully',
-      user: updatedUser,
-    });
+    return sendSuccess(
+      res,
+      toUserDTO(updatedUser),
+      updatedUser.isBanned ? HttpResponse.USER_BANNED : HttpResponse.USER_UNBANNED
+    );
   }
 
   async getAllGames(req: Request, res: Response) {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 7;
 
-    const { games, totalGames, totalPages } = await this._gameService.getAllGames(page, limit);
+    const { games, totalGames } = await this._gameService.getAllGames(page, limit);
 
-    res.status(HttpStatus.OK).json({
-      games,
-      totalGames,
-      totalPages,
-      currentPage: page,
-    });
+    return sendPaginated(res, games, { total: totalGames, page, limit });
   }
 
   async deleteGame(req: Request, res: Response) {
@@ -124,7 +115,7 @@ export default class AdminController {
     const game = await this._gameService.deleteGame(gameId);
     if (!game) throw new NotFoundError(HttpResponse.GAME_NOT_FOUND);
 
-    res.status(HttpStatus.OK).json({ message: 'Game deleted successfully' });
+    return sendSuccess(res, null, HttpResponse.GAME_DELETED_SUCCESS);
   }
 
   async terminateGame(req: Request, res: Response) {
@@ -134,7 +125,7 @@ export default class AdminController {
     const game = await this._gameService.terminateGame(gameId);
     if (!game) throw new NotFoundError(HttpResponse.GAME_NOT_FOUND);
 
-    res.status(HttpStatus.OK).json({ message: 'Game terminated successfully', game });
+    return sendSuccess(res, game, HttpResponse.GAME_TERMINATED_SUCCESS);
   }
 
   async getAllTournaments(req: Request, res: Response) {
@@ -143,12 +134,7 @@ export default class AdminController {
 
     const { tournaments, total } = await this._tournamentService.getTournaments(page, limit);
 
-    res.status(HttpStatus.OK).json({
-      tournaments,
-      totalTournaments: total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-    });
+    return sendPaginated(res, tournaments, { total, page, limit });
   }
 
   async createTournament(req: Request, res: Response) {
@@ -172,10 +158,7 @@ export default class AdminController {
       true
     );
 
-    res.status(HttpStatus.OK).json({
-      message: 'Tournament created successfully',
-      tournament,
-    });
+    return sendCreated(res, tournament, HttpResponse.TOURNAMENT_CREATION_SUCCESS);
   }
 
   async startTournament(req: Request, res: Response) {
@@ -186,7 +169,7 @@ export default class AdminController {
 
     const tournament = await this._tournamentService.startTournament(tournamentId, userId);
 
-    res.status(HttpStatus.OK).json({ message: 'Tournament started', tournament });
+    return sendSuccess(res, tournament, HttpResponse.TOURNAMENT_STARTED);
   }
 
   async deleteTournament(req: Request, res: Response) {
@@ -196,51 +179,42 @@ export default class AdminController {
     const tournament = await this._tournamentService.deleteTournamentAdmin(tournamentId);
     if (!tournament) throw new NotFoundError('Tournament not found');
 
-    res.status(HttpStatus.OK).json({ message: 'Tournament deleted successfully' });
+    return sendSuccess(res, null, HttpResponse.TOURNAMENT_DELETION_SUCCESS);
   }
 
   async getUserGrowth(req: Request, res: Response) {
     const { period = 'daily' } = req.query;
     const growthData = await this._userService.getUserGrowth(period as string);
 
-    res.status(HttpStatus.OK).json(growthData);
+    return sendSuccess(res, growthData);
   }
 
   async getTotalUsers(req: Request, res: Response) {
     const totalUsers = await this._userService.getTotalUsers();
-    res.status(HttpStatus.OK).json({ total: totalUsers });
+    return sendSuccess(res, { total: totalUsers });
   }
 
   async getTotalGames(req: Request, res: Response) {
     const totalGames = await this._gameService.getTotalGames();
-    res.status(HttpStatus.OK).json({ total: totalGames });
+    return sendSuccess(res, { total: totalGames });
   }
 
-  //GET ALL GAME REPORTS
   async getReports(req: Request, res: Response) {
     const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedError(HttpResponse.UNAUTHORIZED);
 
     const reports = await this._gameReportService.getReports();
 
-    res.status(HttpStatus.OK).json({
-      message: HttpResponse.REPORTS_FETCHED,
-      data: reports,
-    });
+    return sendSuccess(res, reports, HttpResponse.REPORTS_FETCHED);
   }
 
   async getAllClubs(req: Request, res: Response) {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 7;
 
-    const { clubs, totalClubs, totalPages } = await this._clubService.getAllClubs(page, limit);
+    const { clubs, totalClubs } = await this._clubService.getAllClubs(page, limit);
 
-    res.status(HttpStatus.OK).json({
-      clubs,
-      totalClubs,
-      totalPages,
-      currentPage: page,
-    });
+    return sendPaginated(res, clubs, { total: totalClubs, page, limit });
   }
 
   async createClub(req: Request, res: Response) {
@@ -251,10 +225,7 @@ export default class AdminController {
 
     const club = await this._clubService.createAdminClub(name, description, userId);
 
-    res.status(HttpStatus.CREATED).json({
-      message: 'Club created successfully',
-      club,
-    });
+    return sendCreated(res, club, HttpResponse.CLUB_CREATION_SUCCESS);
   }
 
   async deleteClub(req: Request, res: Response) {
@@ -264,7 +235,7 @@ export default class AdminController {
     const club = await this._clubService.deleteAdminClub(clubId);
     if (!club) throw new NotFoundError('Club not found');
 
-    res.status(HttpStatus.OK).json({ message: 'Club deleted successfully' });
+    return sendSuccess(res, null, HttpResponse.CLUB_DELETION_SUCCESS);
   }
 
   async refreshToken(req: Request, res: Response) {
@@ -278,9 +249,6 @@ export default class AdminController {
     const newRefreshToken = this._tokenService.generateRefreshToken(userId, email, role);
     this._tokenService.setRefreshTokenCookie(res, newRefreshToken, true);
 
-    res.status(HttpStatus.OK).json({
-      message: 'Token refreshed successfully',
-      accessToken: newAccessToken,
-    });
+    return sendSuccess(res, { accessToken: newAccessToken }, HttpResponse.TOKEN_REFRESHED);
   }
 }

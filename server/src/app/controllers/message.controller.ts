@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import { inject, injectable } from 'inversify';
-import HttpStatus from '../../constants/httpStatus';
 import MessageService from '../services/message.service';
 import TYPES from '../../config/types';
 import { MissingFieldError, UnauthorizedError } from '../../utils/http-error.util';
 import HttpResponse from '../../constants/response-message.constant';
+import { sendCreated, sendSuccess } from '../../utils/response.util';
+import { toMessageDTO } from '../dtos/message.dto';
 
 @injectable()
 export default class MessageController {
@@ -24,17 +25,7 @@ export default class MessageController {
 
     const message = await this._messageService.sendMessage(senderId, receiverId, content);
 
-    res.status(HttpStatus.CREATED).json({
-      message: HttpResponse.MESSAGE_SENT,
-      data: {
-        _id: message._id,
-        senderId: message.senderId.toString(),
-        receiverId: message.receiverId.toString(),
-        content: message.content,
-        timestamp: message.timestamp,
-        read: message.read,
-      },
-    });
+    return sendCreated(res, toMessageDTO(message), HttpResponse.MESSAGE_SENT);
   }
 
   async getMessages(req: Request, res: Response) {
@@ -46,16 +37,6 @@ export default class MessageController {
 
     const messages = await this._messageService.getMessages(currentUserId, userId);
 
-    res.status(HttpStatus.OK).json({
-      message: HttpResponse.MESSAGES_FETCHED,
-      data: messages.map((msg) => ({
-        _id: msg._id,
-        senderId: msg.senderId.toString(),
-        receiverId: msg.receiverId.toString(),
-        content: msg.content,
-        timestamp: msg.timestamp,
-        read: msg.read,
-      })),
-    });
+    return sendSuccess(res, messages.map(toMessageDTO), HttpResponse.MESSAGES_FETCHED);
   }
 }

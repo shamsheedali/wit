@@ -2,8 +2,9 @@ import { Request, Response } from 'express';
 import { inject, injectable } from 'inversify';
 import TYPES from '../../config/types';
 import ClubService from '../services/club.service';
-import HttpStatus from '../../constants/httpStatus';
 import { MissingFieldError, BadRequestError } from '../../utils/http-error.util';
+import HttpResponse from '../../constants/response-message.constant';
+import { sendCreated, sendSuccess } from '../../utils/response.util';
 
 @injectable()
 export default class ClubController {
@@ -35,7 +36,7 @@ export default class ClubController {
       memberIds || []
     );
 
-    res.status(HttpStatus.CREATED).json({ message: 'Club created successfully', club });
+    return sendCreated(res, club, HttpResponse.CLUB_CREATION_SUCCESS);
   }
 
   async joinClub(req: Request, res: Response) {
@@ -45,13 +46,13 @@ export default class ClubController {
     if (!userId) throw new MissingFieldError('userId');
 
     const updatedClub = await this._clubService.joinClub(clubId, userId);
-    res.status(HttpStatus.OK).json({ message: 'Joined club successfully', club: updatedClub });
+    return sendSuccess(res, updatedClub, HttpResponse.CLUB_JOINED_SUCCESS);
   }
 
   async getPublicClubs(req: Request, res: Response) {
     const { search } = req.query;
     const clubs = await this._clubService.getPublicClubs((search as string) || '');
-    res.status(HttpStatus.OK).json({ clubs });
+    return sendSuccess(res, clubs);
   }
 
   async getUserClubs(req: Request, res: Response) {
@@ -62,7 +63,7 @@ export default class ClubController {
     }
 
     const clubs = await this._clubService.getUserClubs(userId);
-    res.status(HttpStatus.OK).json({ clubs });
+    return sendSuccess(res, clubs);
   }
 
   async leaveClub(req: Request, res: Response) {
@@ -72,7 +73,7 @@ export default class ClubController {
     if (!userId) throw new MissingFieldError('userId');
 
     const updatedClub = await this._clubService.leaveClub(clubId, userId);
-    res.status(HttpStatus.OK).json({ message: 'Left club successfully', club: updatedClub });
+    return sendSuccess(res, updatedClub, HttpResponse.CLUB_LEFT_SUCCESS);
   }
 
   async updateClub(req: Request, res: Response) {
@@ -91,7 +92,7 @@ export default class ClubController {
       memberIds || []
     );
 
-    res.status(HttpStatus.OK).json({ message: 'Club updated successfully', club: updatedClub });
+    return sendSuccess(res, updatedClub, HttpResponse.CLUB_UPDATED_SUCCESS);
   }
 
   async addMessage(req: Request, res: Response) {
@@ -102,7 +103,7 @@ export default class ClubController {
     if (!content) throw new MissingFieldError('content');
 
     const updatedClub = await this._clubService.addMessage(clubId, senderId, content);
-    res.status(HttpStatus.OK).json({ message: 'Message added successfully', club: updatedClub });
+    return sendSuccess(res, updatedClub, HttpResponse.CLUB_MESSAGE_ADDED);
   }
 
   async deleteClub(req: Request, res: Response) {
@@ -112,6 +113,6 @@ export default class ClubController {
     if (!userId) throw new MissingFieldError('userId');
 
     await this._clubService.deleteClub(clubId, userId);
-    res.status(HttpStatus.OK).json({ message: 'Club deleted successfully' });
+    return sendSuccess(res, null, HttpResponse.CLUB_DELETION_SUCCESS);
   }
 }
